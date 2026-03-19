@@ -1,0 +1,396 @@
+@include('common.navigations.header')
+
+@php
+    $role = session('role');
+    $canManageFacilities = in_array($role, ['super', 'admin'], true);
+    $canDeleteFacilities = $role === 'super';
+@endphp
+
+<div class="flex flex-col gap-6 pb-8">
+    <x-page-header title="All Facilities" description="Manage all geographical or organizational facility nodes." icon="building-2">
+        @if($role === 'super')
+            <x-slot name="actions">
+                <button
+                    id="create-facility-button"
+                    type="button"
+                    class="inline-flex h-12 items-center gap-2 rounded-2xl bg-sky-500 px-4 text-sm font-semibold text-white transition hover:bg-sky-400">
+                    <i data-lucide="plus" class="h-4 w-4"></i>
+                    Add Facility
+                </button>
+            </x-slot>
+        @endif
+    </x-page-header>
+
+    <x-data-table id="facilities-grid" class="mb-10 workstation-table-shell" />
+</div>
+
+<div id="facility-action-overlay" class="pointer-events-none fixed inset-0 z-[1200] hidden">
+    <div
+        id="facility-action-menu"
+        class="pointer-events-auto fixed hidden w-52 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_20px_60px_-28px_rgba(15,23,42,0.35)]">
+        @if($canManageFacilities)
+            <button
+                id="facility-action-edit"
+                type="button"
+                class="flex w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-sky-50 hover:text-sky-700">
+                <i data-lucide="pencil-line" class="h-4 w-4"></i>
+                Edit Facility
+            </button>
+        @endif
+        @if($canDeleteFacilities)
+            <button
+                id="facility-action-delete"
+                type="button"
+                class="flex w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
+                <i data-lucide="trash-2" class="h-4 w-4"></i>
+                Delete Facility
+            </button>
+        @endif
+    </div>
+</div>
+
+<div id="facility-edit-modal" class="fixed inset-0 z-[1300] hidden items-center justify-center bg-slate-950/40 p-6">
+    <div class="w-full max-w-2xl rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]">
+        <div class="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+            <div>
+                <p id="facility-edit-kicker" class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Edit Facility</p>
+                <h3 id="facility-edit-title" class="mt-2 text-2xl font-semibold text-slate-900">Update facility details</h3>
+            </div>
+            <button id="facility-edit-close" type="button" class="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700">
+                <i data-lucide="x" class="h-5 w-5"></i>
+            </button>
+        </div>
+
+        <div class="px-6 py-6">
+            <div id="facility-edit-loading" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+                Loading facility form...
+            </div>
+            <div id="facility-edit-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700"></div>
+            <div id="facility-edit-form"></div>
+        </div>
+    </div>
+</div>
+
+<div id="facility-delete-modal" class="fixed inset-0 z-[1300] hidden items-center justify-center bg-slate-950/40 p-6">
+    <div class="w-full max-w-lg rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]">
+        <div class="border-b border-slate-200 px-6 py-5">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-rose-400">Delete Facility</p>
+            <h3 class="mt-2 text-2xl font-semibold text-slate-900">Delete this facility?</h3>
+            <p class="mt-3 text-sm text-slate-500">
+                This action will permanently remove <span id="facility-delete-name" class="font-semibold text-slate-700"></span>.
+                Facilities that still have workstations attached cannot be deleted.
+            </p>
+        </div>
+
+        <div class="flex justify-end gap-3 px-6 py-5">
+            <button
+                id="facility-delete-cancel"
+                type="button"
+                class="inline-flex h-11 items-center rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                Cancel
+            </button>
+            <button
+                id="facility-delete-confirm"
+                type="button"
+                class="inline-flex h-11 items-center rounded-2xl bg-rose-500 px-4 text-sm font-semibold text-white transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-60">
+                Delete Facility
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const canManageFacilities = @json($canManageFacilities);
+    const canDeleteFacilities = @json($canDeleteFacilities);
+    let initialized = false;
+    const state = {
+        actionTarget: null,
+        deleteTarget: null,
+        grid: null,
+    };
+
+    const els = {};
+
+    function init() {
+        if (initialized) return;
+        if (!window.Perfectlum || !window.gridjs) {
+            window.setTimeout(init, 50);
+            return;
+        }
+
+        initialized = true;
+        bindElements();
+        bindEvents();
+        initGrid();
+        window.facilitiesPage = { toggleActionMenu };
+        window.lucide?.createIcons();
+    }
+
+    function bindElements() {
+        els.createButton = document.getElementById('create-facility-button');
+        els.grid = document.getElementById('facilities-grid');
+        els.actionOverlay = document.getElementById('facility-action-overlay');
+        els.actionMenu = document.getElementById('facility-action-menu');
+        els.actionEdit = document.getElementById('facility-action-edit');
+        els.actionDelete = document.getElementById('facility-action-delete');
+
+        els.editModal = document.getElementById('facility-edit-modal');
+        els.editClose = document.getElementById('facility-edit-close');
+        els.editLoading = document.getElementById('facility-edit-loading');
+        els.editError = document.getElementById('facility-edit-error');
+        els.editForm = document.getElementById('facility-edit-form');
+        els.editKicker = document.getElementById('facility-edit-kicker');
+        els.editTitle = document.getElementById('facility-edit-title');
+
+        els.deleteModal = document.getElementById('facility-delete-modal');
+        els.deleteName = document.getElementById('facility-delete-name');
+        els.deleteCancel = document.getElementById('facility-delete-cancel');
+        els.deleteConfirm = document.getElementById('facility-delete-confirm');
+    }
+
+    function bindEvents() {
+        els.createButton?.addEventListener('click', () => openEditModal(0));
+        document.addEventListener('click', (event) => {
+            if (els.actionOverlay && !els.actionMenu.contains(event.target)) {
+                closeActionMenu();
+            }
+        });
+
+        els.actionOverlay?.addEventListener('click', closeActionMenu);
+        els.actionEdit?.addEventListener('click', () => state.actionTarget && openEditModal(state.actionTarget.id));
+        els.actionDelete?.addEventListener('click', () => state.actionTarget && openDeleteModal(state.actionTarget.id, state.actionTarget.name));
+
+        els.editClose?.addEventListener('click', closeEditModal);
+        els.editModal?.addEventListener('click', (event) => {
+            if (event.target === els.editModal) closeEditModal();
+        });
+
+        els.deleteCancel?.addEventListener('click', closeDeleteModal);
+        els.deleteConfirm?.addEventListener('click', confirmDelete);
+        els.deleteModal?.addEventListener('click', (event) => {
+            if (event.target === els.deleteModal) closeDeleteModal();
+        });
+    }
+
+    function csrfToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    }
+
+    function mapRows(d) {
+        return d.data.map(r => [
+            { id: r.id, name: r.name },
+            r.location,
+            r.timezone,
+            r.workgroupsCount,
+            r.usersCount,
+            r.displaysCount,
+            { id: r.id, name: r.name },
+        ]);
+    }
+
+    function initGrid() {
+        if (!els.grid || state.grid) return;
+
+        state.grid = Perfectlum.createGrid(els.grid, {
+            columns: [
+                {
+                    name: 'Name',
+                    formatter: (c) => !canManageFacilities ? '' : gridjs.html(`
+                        <button
+                            type="button"
+                            onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'facility',id:${c.id}}}))"
+                            class="cursor-pointer font-medium text-sky-600 transition hover:text-sky-700 hover:underline">
+                            ${Perfectlum.escapeHtml(c.name)}
+                        </button>
+                    `),
+                },
+                { name: 'Location', formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
+                { name: 'Timezone', formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
+                { name: 'Workgroups', sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
+                { name: 'Users', sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
+                { name: 'Displays', sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
+                {
+                    name: 'Actions',
+                    sort: false,
+                    width: '112px',
+                    formatter: (c) => gridjs.html(`
+                        <div class="flex justify-center">
+                            <button
+                                type="button"
+                                onclick='window.facilitiesPage && window.facilitiesPage.toggleActionMenu(event, ${c.id}, ${JSON.stringify(c.name)})'
+                                class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                            </button>
+                        </div>`),
+                },
+            ],
+            server: {
+                url: '/api/facilities',
+                then: mapRows,
+                total: d => d.total,
+            },
+            pagination: {
+                enabled: true,
+                limit: 10,
+                server: {
+                    url: (prev, pg, lim) => `${prev}${prev.includes('?') ? '&' : '?'}page=${pg + 1}&limit=${lim}`,
+                },
+            },
+            search: {
+                enabled: true,
+                server: {
+                    url: (prev, kw) => `${prev}${prev.includes('?') ? '&' : '?'}search=${encodeURIComponent(kw)}`,
+                },
+            },
+            sort: { multiColumn: false },
+            language: { search: { placeholder: 'Search facilities...' } },
+        });
+    }
+
+    function reloadGrid() {
+        closeActionMenu();
+        if (!state.grid) {
+            initGrid();
+            return;
+        }
+
+        state.grid.forceRender();
+    }
+
+    function toggleActionMenu(event, id, name) {
+        if (!canManageFacilities) return;
+        event.preventDefault();
+        event.stopPropagation();
+
+        const rect = event.currentTarget.getBoundingClientRect();
+        const nextOpen = !(state.actionTarget && state.actionTarget.id === id && !els.actionMenu.classList.contains('hidden'));
+        state.actionTarget = nextOpen ? { id, name } : null;
+
+        if (!nextOpen) {
+            closeActionMenu();
+            return;
+        }
+
+        els.actionOverlay.classList.remove('hidden');
+        els.actionMenu.classList.remove('hidden');
+        els.actionMenu.style.left = `${Math.max(16, rect.right - 208)}px`;
+        els.actionMenu.style.top = `${rect.bottom + 10}px`;
+        window.lucide?.createIcons();
+    }
+
+    function closeActionMenu() {
+        els.actionOverlay.classList.add('hidden');
+        els.actionMenu.classList.add('hidden');
+    }
+
+    async function openEditModal(id) {
+        closeActionMenu();
+        els.editModal.classList.remove('hidden');
+        els.editModal.classList.add('flex');
+        els.editLoading.classList.remove('hidden');
+        els.editError.classList.add('hidden');
+        els.editError.textContent = '';
+        els.editForm.innerHTML = '';
+        if (els.editKicker) els.editKicker.textContent = id === 0 ? 'Add Facility' : 'Edit Facility';
+        if (els.editTitle) els.editTitle.textContent = id === 0 ? 'Create a new facility' : 'Update facility details';
+
+        try {
+            const formData = new FormData();
+            formData.append('_token', csrfToken());
+            formData.append('id', id);
+            const payload = await Perfectlum.postForm('/facility-form', formData);
+            els.editForm.innerHTML = payload.content || '';
+            bindEditForm();
+            window.lucide?.createIcons();
+        } catch (error) {
+            els.editError.textContent = error.message || 'Unable to load facility form.';
+            els.editError.classList.remove('hidden');
+        } finally {
+            els.editLoading.classList.add('hidden');
+        }
+    }
+
+    function bindEditForm() {
+        const form = els.editForm.querySelector('form');
+        if (!form) return;
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            if (form.dataset.submitting === '1') return;
+            form.dataset.submitting = '1';
+
+            try {
+                const formData = new FormData(form);
+                if (!formData.get('_token')) {
+                    formData.append('_token', csrfToken());
+                }
+                await Perfectlum.postForm(form.getAttribute('action') || window.location.pathname, formData);
+                closeEditModal();
+                reloadGrid();
+            } catch (error) {
+                els.editError.textContent = error.message || 'Unable to save facility.';
+                els.editError.classList.remove('hidden');
+            } finally {
+                form.dataset.submitting = '0';
+            }
+        });
+    }
+
+    function closeEditModal() {
+        els.editModal.classList.add('hidden');
+        els.editModal.classList.remove('flex');
+        els.editLoading.classList.add('hidden');
+        els.editError.classList.add('hidden');
+        els.editError.textContent = '';
+        els.editForm.innerHTML = '';
+    }
+
+    function openDeleteModal(id, name) {
+        if (!canDeleteFacilities) return;
+        closeActionMenu();
+        state.deleteTarget = { id, name };
+        els.deleteName.textContent = name || '';
+        els.deleteModal.classList.remove('hidden');
+        els.deleteModal.classList.add('flex');
+    }
+
+    function closeDeleteModal() {
+        state.deleteTarget = null;
+        els.deleteModal.classList.add('hidden');
+        els.deleteModal.classList.remove('flex');
+        els.deleteConfirm.disabled = false;
+        els.deleteConfirm.textContent = 'Delete Facility';
+    }
+
+    async function confirmDelete() {
+        if (!state.deleteTarget?.id || els.deleteConfirm.disabled) return;
+        els.deleteConfirm.disabled = true;
+        els.deleteConfirm.textContent = 'Deleting...';
+
+        try {
+            const formData = new FormData();
+            formData.append('_token', csrfToken());
+            formData.append('id', state.deleteTarget.id);
+            const payload = await Perfectlum.postForm('/delete-facility', formData);
+            if (!payload.success) {
+                throw new Error(payload.msg || 'Unable to delete facility.');
+            }
+            closeDeleteModal();
+            reloadGrid();
+        } catch (error) {
+            window.alert(error.message || 'Unable to delete facility.');
+            els.deleteConfirm.disabled = false;
+            els.deleteConfirm.textContent = 'Delete Facility';
+        }
+    }
+
+    window.closeFacilityPanel = closeEditModal;
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init, { once: true });
+    } else {
+        init();
+    }
+})();
+</script>
+
+@include('common.navigations.footer')

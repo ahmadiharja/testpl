@@ -1,0 +1,394 @@
+@import 'tailwindcss';
+
+@theme {
+    --font-sans: 'Inter', 'Outfit', ui-sans-serif, system-ui, sans-serif;
+    
+    --color-obsidian-950: #050505;
+    --color-obsidian-900: #0A0A0C;
+    --color-obsidian-800: #111216;
+    --color-obsidian-700: #161820;
+    
+    --color-accent-blue: #38bdf8;
+    --color-accent-fuchsia: #ee82ee;
+    --color-accent-amber: #fbbf24;
+}
+
+@layer base {
+    body {
+        @apply antialiased selection:bg-sky-500/30 selection:text-sky-200;
+        font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    }
+}
+
+@layer components {
+
+    /* BENTO CARD DESIGN SYSTEM */
+    .bento-card {
+        @apply rounded-[2rem] transition-all duration-500 relative overflow-hidden;
+    }
+
+    /* Light Theme implementation (PerfectLum) */
+    .theme-lum .bento-card {
+        @apply bg-white border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_40px_rgb(0,0,0,0.06)] hover:border-gray-200;
+    }
+
+    .theme-lum .stat-value {
+        @apply text-gray-900;
+    }
+
+    .theme-lum .sidebar-active {
+        @apply bg-black text-white shadow-xl shadow-gray-200;
+    }
+
+    .theme-lum .sidebar-item {
+        @apply text-gray-500 hover:bg-gray-50 hover:text-gray-900;
+    }
+
+    .theme-lum .divider {
+        @apply bg-gray-100;
+    }
+
+    /* Dark Theme implementation (PerfectChroma) */
+    .theme-chroma .bento-card {
+        @apply bg-obsidian-900 border border-white/5 shadow-2xl hover:border-white/10 hover:shadow-black/50;
+    }
+
+    .theme-chroma .stat-value {
+        @apply text-white;
+    }
+
+    .theme-chroma .sidebar-active {
+        @apply bg-sky-500 text-white shadow-[0_0_20px_-5px_rgba(14,165,233,0.5)];
+    }
+
+    .theme-chroma .sidebar-item {
+        @apply text-white/40 hover:text-white hover:bg-white/5;
+    }
+
+    .theme-chroma .divider {
+        @apply bg-white/5;
+    }
+
+    /* UTILITIES */
+    .glass-card {
+        @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl;
+    }
+
+    .admin-page {
+        @apply flex flex-col gap-6 pb-10;
+    }
+
+    .admin-section-title {
+        @apply text-lg font-semibold tracking-tight text-slate-900;
+    }
+
+    .admin-section-copy {
+        @apply text-sm text-slate-500;
+    }
+}
+
+@layer utilities {
+    .gridjs-container {
+        font-size: 0.8125rem !important;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+
+    .gridjs-head {
+        padding: 1.5rem 1.5rem 0.75rem !important;
+        background: transparent !important;
+    }
+
+    .gridjs-search {
+        float: none !important;
+    }
+
+    .gridjs-search-input {
+        width: 100% !important;
+        max-width: 18rem;
+        border-radius: 9999px !important;
+        border: 1px solid rgba(148, 163, 184, 0.25) !important;
+        background: rgba(255, 255, 255, 0.86) !important;
+        padding: 0.7rem 1rem !important;
+        font-size: 0.8125rem !important;
+        box-shadow: none !important;
+    }
+
+    .theme-chroma .gridjs-search-input {
+        background: rgba(17, 18, 22, 0.92) !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+        color: #e5e7eb !important;
+    }
+
+    .gridjs-wrapper,
+    .gridjs-table,
+    .gridjs-footer {
+        border: 0 !important;
+        box-shadow: none !important;
+        background: transparent !important;
+    }
+
+    .gridjs-table {
+        width: 100% !important;
+    }
+
+    .gridjs-th {
+        background: transparent !important;
+        border: 0 !important;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.15) !important;
+        color: #94a3b8 !important;
+        font-size: 0.6875rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.08em;
+        padding: 0.875rem 1rem !important;
+        text-transform: uppercase;
+    }
+
+    .gridjs-td {
+        border: 0 !important;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.08) !important;
+        background: transparent !important;
+        color: inherit !important;
+        font-size: 0.8125rem !important;
+        padding: 1rem !important;
+    }
+
+    .gridjs-tr:hover .gridjs-td {
+        background: rgba(148, 163, 184, 0.04) !important;
+    }
+
+    .theme-chroma .gridjs-tr:hover .gridjs-td {
+        background: rgba(255, 255, 255, 0.03) !important;
+    }
+
+    .gridjs-footer {
+        padding: 1rem 1.5rem 1.5rem !important;
+    }
+
+    .gridjs-pagination .gridjs-pages button {
+        border-radius: 0.75rem !important;
+        border: 0 !important;
+        background: transparent !important;
+        color: #64748b !important;
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
+        padding: 0.45rem 0.8rem !important;
+    }
+
+    .gridjs-pagination .gridjs-pages button.gridjs-currentPage {
+        background: #0ea5e9 !important;
+        color: #fff !important;
+    }
+
+    .theme-chroma .gridjs-pagination .gridjs-pages button {
+        color: #9ca3af !important;
+    }
+
+    .workstation-table-shell {
+        padding: 0.5rem;
+    }
+
+    .theme-lum .workstation-table-shell {
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(226, 232, 240, 0.85);
+        box-shadow: 0 18px 40px -18px rgba(15, 23, 42, 0.14);
+    }
+
+    .theme-chroma .workstation-table-shell {
+        background: rgba(10, 10, 12, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .workstation-table-shell .gridjs-head,
+    .workstation-table-shell .gridjs-wrapper,
+    .workstation-table-shell .gridjs-footer {
+        border-radius: 1.5rem;
+    }
+
+    .theme-lum .workstation-table-shell .gridjs-head,
+    .theme-lum .workstation-table-shell .gridjs-wrapper,
+    .theme-lum .workstation-table-shell .gridjs-footer {
+        background: #ffffff !important;
+    }
+
+    .theme-chroma .workstation-table-shell .gridjs-head,
+    .theme-chroma .workstation-table-shell .gridjs-wrapper,
+    .theme-chroma .workstation-table-shell .gridjs-footer {
+        background: rgba(17, 18, 22, 0.94) !important;
+    }
+
+    .workstation-table-shell .gridjs-head {
+        padding-bottom: 1rem !important;
+    }
+
+    .workstation-table-shell .gridjs-wrapper {
+        overflow: hidden;
+    }
+
+    .workstation-table-shell .gridjs-th:first-child,
+    .workstation-table-shell .gridjs-td:first-child {
+        padding-left: 1.25rem !important;
+    }
+
+    .workstation-table-shell .gridjs-th:last-child,
+    .workstation-table-shell .gridjs-td:last-child {
+        padding-right: 1.25rem !important;
+    }
+
+    .scheduler-calendar-shell .fc {
+        --fc-border-color: rgba(226, 232, 240, 0.9);
+        --fc-page-bg-color: transparent;
+        --fc-neutral-bg-color: #f8fafc;
+        --fc-now-indicator-color: #0ea5e9;
+        --fc-today-bg-color: rgba(14, 165, 233, 0.08);
+        color: #0f172a;
+        font-family: inherit;
+    }
+
+    .scheduler-calendar-shell .fc .fc-toolbar {
+        margin-bottom: 1.5rem;
+        gap: 1rem;
+    }
+
+    .scheduler-calendar-shell .fc .fc-toolbar-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: #0f172a;
+    }
+
+    .scheduler-calendar-shell .fc .fc-button {
+        border-radius: 9999px;
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        background: #fff;
+        color: #475569;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        padding: 0.7rem 1rem;
+        font-size: 0.8125rem;
+        font-weight: 700;
+        text-transform: none;
+        transition: all 0.2s ease;
+    }
+
+    .scheduler-calendar-shell .fc .fc-button-primary,
+    .scheduler-calendar-shell .fc .fc-button-primary:disabled {
+        background: #fff;
+        border-color: rgba(226, 232, 240, 0.9);
+        color: #475569;
+    }
+
+    .scheduler-calendar-shell .fc .fc-button:hover,
+    .scheduler-calendar-shell .fc .fc-button:focus {
+        background: #f8fafc;
+        border-color: rgba(148, 163, 184, 0.45);
+        color: #0f172a;
+    }
+
+    .scheduler-calendar-shell .fc .fc-button-primary:not(:disabled).fc-button-active,
+    .scheduler-calendar-shell .fc .fc-button-primary:not(:disabled):active {
+        background: #0ea5e9;
+        border-color: #0ea5e9;
+        color: #fff;
+        box-shadow: 0 12px 28px rgba(14, 165, 233, 0.22);
+    }
+
+    .scheduler-calendar-shell .fc .fc-scrollgrid,
+    .scheduler-calendar-shell .fc .fc-daygrid-body,
+    .scheduler-calendar-shell .fc .fc-timegrid-body {
+        border-radius: 1.5rem;
+        overflow: hidden;
+    }
+
+    .scheduler-calendar-shell .fc .fc-col-header-cell {
+        background: rgba(248, 250, 252, 0.9);
+        padding: 0.75rem 0;
+    }
+
+    .scheduler-calendar-shell .fc .fc-col-header-cell-cushion {
+        padding: 0.55rem 0.25rem;
+        font-size: 0.8125rem;
+        font-weight: 800;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .scheduler-calendar-shell .fc .fc-daygrid-day-top,
+    .scheduler-calendar-shell .fc .fc-timegrid-axis-cushion,
+    .scheduler-calendar-shell .fc .fc-timegrid-slot-label-cushion {
+        color: #0f172a;
+        font-weight: 700;
+    }
+
+    .scheduler-calendar-shell .fc .fc-daygrid-day-number {
+        padding: 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .scheduler-calendar-shell .fc .fc-event {
+        border: 0;
+        border-radius: 1rem;
+        padding: 0.15rem 0.25rem;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+    }
+
+    .scheduler-calendar-shell .fc .fc-daygrid-event {
+        margin: 0.2rem 0.45rem;
+    }
+
+    .scheduler-calendar-shell .fc .fc-timegrid-event-harness {
+        margin-right: 0.35rem;
+    }
+
+    .scheduler-calendar-shell .fc .fc-event-main {
+        padding: 0.5rem 0.7rem;
+        border-radius: 0.9rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        line-height: 1.35;
+        color: inherit;
+    }
+
+    .scheduler-calendar-shell .fc .fc-event-main,
+    .scheduler-calendar-shell .fc .fc-event-main-frame,
+    .scheduler-calendar-shell .fc .fc-event-title,
+    .scheduler-calendar-shell .fc .fc-event-time,
+    .scheduler-calendar-shell .fc a.fc-event,
+    .scheduler-calendar-shell .fc a.fc-event:hover,
+    .scheduler-calendar-shell .fc a.fc-event:visited {
+        color: inherit !important;
+        text-decoration: none;
+    }
+
+    .scheduler-calendar-shell .fc .event-green {
+        background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+        color: #166534;
+    }
+
+    .scheduler-calendar-shell .fc .event-red {
+        background: linear-gradient(135deg, #ffe4e6, #fecdd3);
+        color: #be123c;
+    }
+
+    .scheduler-calendar-shell .fc .event-blue {
+        background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+        color: #075985;
+    }
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    @apply bg-gray-200 rounded-full hover:bg-gray-300 transition-colors;
+}
+.theme-chroma ::-webkit-scrollbar-thumb {
+    @apply bg-white/10 hover:bg-white/20;
+}

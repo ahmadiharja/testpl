@@ -1,0 +1,10 @@
+{
+    "version": "1.0.2",
+    "archive": "remote_1.0.2.zip",
+    "description": "Add app version for workstation, Fix workstation last connected timezone, hide \"Never\" tasks that not appeared on client"
+}
+{
+    "version": "1.2.2",
+    "archive": "remote_1.2.2.zip",
+    "description": ""
+}

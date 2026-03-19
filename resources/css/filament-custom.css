@@ -1,0 +1,123 @@
+/* =========================================
+   FILAMENT TABLES - PREMIUM OVERRIDES
+   Supports Light (.theme-lum) & Dark (.theme-chroma)
+========================================= */
+
+/* Strip default borders/padding from container */
+.fi-ta {
+    @apply border-none shadow-none bg-transparent !important;
+}
+
+.fi-ta-ctn {
+    @apply rounded-[2rem] border-none shadow-none bg-transparent !important;
+}
+
+.fi-ta-header {
+    @apply px-4 py-4 !important;
+}
+
+
+/* =========================================
+   LIGHT THEME (PERFECTLUM) STYLING
+========================================= */
+.theme-lum .fi-ta-header-cell {
+    @apply py-4 px-6 bg-[#F9FAFB] text-[11px] font-bold uppercase tracking-[0.1em] text-gray-400 border-b border-gray-100 !important;
+}
+
+.theme-lum .fi-ta-row {
+    @apply transition-all duration-300 border-b border-gray-100 bg-white !important;
+}
+
+.theme-lum .fi-ta-row:hover {
+    @apply bg-blue-50/50 translate-x-1 border-blue-100/30 !important;
+}
+
+.theme-lum .fi-ta-cell {
+    @apply py-5 px-6 text-[13px] font-medium text-gray-700 !important;
+}
+
+.theme-lum .fi-ta-header-search-ctn input {
+    @apply bg-[#F4F6F9] border-gray-100 rounded-full px-5 py-2.5 text-[13px] text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all shadow-sm !important;
+}
+
+.theme-lum .fi-ta-pagination {
+    @apply flex items-center justify-between px-8 py-6 bg-white border-t border-gray-100 !important;
+}
+
+.theme-lum .fi-paginator-btn {
+    @apply rounded-xl border-gray-200 bg-white hover:bg-gray-50 text-gray-600 shadow-sm transition-all !important;
+}
+
+.theme-lum .fi-ta-empty-state {
+    @apply py-20 bg-white !important;
+}
+
+.theme-lum .fi-ta-empty-state-icon {
+    @apply text-gray-200 w-16 h-16 !important;
+}
+
+/* Base link color inside table */
+.theme-lum .text-sky-400 {
+    @apply text-blue-600 hover:text-blue-800 font-semibold !important;
+}
+
+
+/* =========================================
+   DARK THEME (PERFECTCHROMA) STYLING
+========================================= */
+.theme-chroma .fi-ta-header-cell {
+    @apply py-4 px-6 bg-transparent text-[11px] font-bold uppercase tracking-[0.1em] text-white/30 border-b border-white/5 !important;
+}
+
+.theme-chroma .fi-ta-row {
+    @apply transition-all duration-300 border-b border-white/5 bg-transparent !important;
+}
+
+.theme-chroma .fi-ta-row:hover {
+    @apply bg-white/[0.02] translate-x-1 border-white/10 !important;
+}
+
+.theme-chroma .fi-ta-cell {
+    @apply py-5 px-6 text-[13px] font-medium text-white/80 !important;
+}
+
+.theme-chroma .fi-ta-header-search-ctn input {
+    @apply bg-white/[0.03] border-white/5 rounded-full px-5 py-2.5 text-[13px] text-white placeholder-gray-500 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500/50 transition-all !important;
+}
+
+.theme-chroma .fi-ta-pagination {
+    @apply flex items-center justify-between px-8 py-6 bg-transparent border-t border-white/5 !important;
+}
+
+.theme-chroma .fi-paginator-btn {
+    @apply rounded-xl border-white/5 bg-white/[0.05] hover:bg-white/10 text-white/60 hover:text-white transition-all !important;
+}
+
+.theme-chroma .fi-ta-empty-state {
+    @apply py-20 bg-transparent !important;
+}
+
+.theme-chroma .fi-ta-empty-state-icon {
+    @apply text-white/10 w-16 h-16 !important;
+}
+
+
+/* =========================================
+   COMMON UTILITIES
+========================================= */
+.fi-badge {
+    @apply rounded-md font-bold text-[10px] tracking-wider px-2 py-0.5 uppercase border-none !important;
+}
+
+.fi-ta-filter-indicators-row {
+    @apply bg-sky-500/10 rounded-xl px-4 py-3 mt-4 !important;
+}
+
+/* Pagination Flex Fixes */
+.fi-ta-pagination nav > ul {
+    @apply flex flex-row items-center gap-1.5 !important;
+}
+
+.fi-ta-pagination > div {
+    @apply flex flex-row items-center gap-4 !important;
+}

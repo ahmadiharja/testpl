@@ -40,7 +40,7 @@
             </a>
         </div>
 
-        <div class="flex-1 overflow-y-auto px-1">
+        <div class="flex-1 overflow-y-auto px-1 no-scrollbar">
             <div class="mb-3 px-3" x-show="!sidebarCollapsed" x-cloak>
                 <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Workspace</p>
             </div>
@@ -100,36 +100,20 @@
             </div>
         </div>
 
-        <div class="mt-4 px-1">
-            <button @click="sidebarCollapsed = !sidebarCollapsed"
-                    type="button"
-                    class="hidden w-full items-center rounded-2xl border transition lg:inline-flex"
-                    :class="[
-                        sidebarCollapsed ? 'mx-auto h-12 w-12 justify-center' : 'gap-3 px-4 py-3',
-                        theme === 'perfectlum'
-                            ? 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-900'
-                            : 'border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
-                    ]"
-                    :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-                <i data-lucide="panel-left-close" class="h-4 w-4 shrink-0 transition-transform" :class="sidebarCollapsed ? 'rotate-180' : ''"></i>
-                <span x-show="!sidebarCollapsed" x-cloak class="text-[13px] font-semibold tracking-wide" x-text="sidebarCollapsed ? 'Expand' : 'Collapse'"></span>
-            </button>
-        </div>
-
-        <div class="mt-6 rounded-[1.5rem] border p-3 transition-colors duration-300"
-             :class="theme === 'perfectlum' ? 'border-slate-200 bg-slate-50' : 'border-white/5 bg-white/[0.03]'">
-            <div class="flex items-center gap-3" :class="sidebarCollapsed ? 'justify-center' : ''">
-                <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-400 to-indigo-600 text-xs font-bold text-white shadow-lg shadow-sky-500/20">
-                    {{ substr(auth()->user()->name ?? 'AD', 0, 2) }}
-                </div>
-                <div x-show="!sidebarCollapsed" x-cloak class="min-w-0">
-                    <p class="truncate text-[12px] font-bold" :class="theme === 'perfectlum' ? 'text-slate-900' : 'text-white'">{{ auth()->user()->name ?? 'Administrator' }}</p>
-                    <p class="truncate text-[10px] font-medium text-slate-400">{{ auth()->user()->facility_name ?? 'Enterprise License' }}</p>
-                </div>
-                <a x-show="!sidebarCollapsed" x-cloak href="{{ url('logout') }}" class="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-xl transition"
-                   :class="theme === 'perfectlum' ? 'bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-900' : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'">
-                    <i data-lucide="log-out" class="h-4 w-4"></i>
-                </a>
+        <div class="mt-6 px-2" :class="sidebarCollapsed ? 'flex justify-center' : ''">
+            <div class="rounded-[1.25rem] border px-4 py-3 text-center transition-colors duration-300"
+                 :class="theme === 'perfectlum' ? 'border-slate-200 bg-slate-50/90' : 'border-white/5 bg-white/[0.03]'">
+                <p x-show="!sidebarCollapsed"
+                   x-cloak
+                   class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    Powered by
+                </p>
+                <img
+                    src="{{ asset('assets/images/qubyx-black.png') }}"
+                    alt="Qubyx"
+                    class="mx-auto mt-2 h-6 w-auto object-contain"
+                    :class="sidebarCollapsed ? 'mt-0 h-7' : 'mt-2'"
+                >
             </div>
         </div>
     </div>

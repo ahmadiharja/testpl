@@ -18,6 +18,17 @@
             <i data-lucide="menu" class="w-5 h-5"></i>
         </button>
 
+        <button
+            @click="sidebarCollapsed = !sidebarCollapsed"
+            type="button"
+            class="hidden lg:inline-flex h-10 w-10 items-center justify-center rounded-2xl border transition-all"
+            :class="theme === 'perfectlum'
+                ? 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                : 'border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'"
+            :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+            <i data-lucide="panel-left-close" class="h-4 w-4 transition-transform" :class="sidebarCollapsed ? 'rotate-180' : ''"></i>
+        </button>
+
         <!-- Breadcrumb & Context -->
         <div class="flex items-center gap-3">
             <div class="hidden sm:flex items-center justify-center w-10 h-10 rounded-xl transition-all"

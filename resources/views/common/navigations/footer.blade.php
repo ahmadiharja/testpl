@@ -32,7 +32,7 @@
                     };
                     return map[t] || t;
                 })(),
-                settingsExpanded: true,
+                settingsExpanded: false,
                 viewState: 'list', 
                 theme: '{{ session("platform", "perfectlum") }}',
                 

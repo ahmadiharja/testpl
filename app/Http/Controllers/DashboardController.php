@@ -943,7 +943,7 @@ class DashboardController extends Controller
             }));
 
         $total = $query->count();
-        $rows  = (clone $query)->orderBy('facilities.name')->offset($offset)->limit($limit)->get();
+        $rows  = (clone $query)->orderBy('facilities.id')->offset($offset)->limit($limit)->get();
 
         $data = $rows->map(fn($r) => [
             'id'               => $r->id,

@@ -108,12 +108,18 @@ async function postForm(url, formData) {
 function remountGrid(elementId, init) {
     const element = document.getElementById(elementId);
     if (!element) {
-        return;
+        return null;
     }
 
-    element.innerHTML = '';
-    element._gi = false;
-    init();
+    const freshElement = element.cloneNode(false);
+    freshElement.id = elementId;
+    element.parentNode?.replaceChild(freshElement, element);
+
+    if (typeof init === 'function') {
+        init(freshElement);
+    }
+
+    return freshElement;
 }
 
 let structureMapModulePromise = null;

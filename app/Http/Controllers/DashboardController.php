@@ -109,6 +109,157 @@ class DashboardController extends Controller
             'facilities' => $facilities,
         ]);
     }
+
+    public function api_global_search(Request $request)
+    {
+        $userId = $request->session()->get('id');
+        $user = \App\Models\User::find($userId);
+        $role = $request->session()->get('role');
+
+        if (!$user) {
+            return response()->json(['data' => []]);
+        }
+
+        $query = trim((string) $request->get('q', ''));
+        if (mb_strlen($query) < 2) {
+            return response()->json(['data' => []]);
+        }
+
+        $limit = max(4, min((int) $request->get('limit', 12), 20));
+        $perType = max(2, (int) ceil($limit / 4));
+        $like = '%'.$query.'%';
+        $facilityId = $role === 'super' ? null : $user->facility_id;
+
+        $facilities = DB::table('facilities')
+            ->select([
+                'facilities.id',
+                'facilities.name',
+                'facilities.location',
+                'facilities.timezone',
+            ])
+            ->when($facilityId, fn ($q) => $q->where('facilities.id', $facilityId))
+            ->where('facilities.name', 'like', $like)
+            ->orderBy('facilities.name')
+            ->limit($perType)
+            ->get()
+            ->map(fn ($item) => [
+                'id' => 'facility-'.$item->id,
+                'recordId' => (int) $item->id,
+                'type' => 'facility',
+                'title' => $item->name,
+                'subtitle' => collect([$item->location, $item->timezone])->filter()->implode(' • '),
+                'url' => url('facility-info/'.$item->id),
+            ]);
+
+        $workgroups = DB::table('workgroups')
+            ->join('facilities', 'facilities.id', '=', 'workgroups.facility_id')
+            ->select([
+                'workgroups.id',
+                'workgroups.name',
+                'facilities.name as facility_name',
+            ])
+            ->when($facilityId, fn ($q) => $q->where('workgroups.facility_id', $facilityId))
+            ->where('workgroups.name', 'like', $like)
+            ->orderBy('workgroups.name')
+            ->limit($perType)
+            ->get()
+            ->map(fn ($item) => [
+                'id' => 'workgroup-'.$item->id,
+                'recordId' => (int) $item->id,
+                'type' => 'workgroup',
+                'title' => $item->name,
+                'subtitle' => $item->facility_name,
+                'url' => url('workgroups-info/'.$item->id),
+            ]);
+
+        $workstations = DB::table('workstations')
+            ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+            ->join('facilities', 'facilities.id', '=', 'workgroups.facility_id')
+            ->select([
+                'workstations.id',
+                'workstations.name',
+                'workgroups.name as workgroup_name',
+                'facilities.name as facility_name',
+            ])
+            ->when($facilityId, fn ($q) => $q->where('workgroups.facility_id', $facilityId))
+            ->where('workstations.name', 'like', $like)
+            ->orderBy('workstations.name')
+            ->limit($perType)
+            ->get()
+            ->map(fn ($item) => [
+                'id' => 'workstation-'.$item->id,
+                'recordId' => (int) $item->id,
+                'type' => 'workstation',
+                'title' => $item->name,
+                'subtitle' => $item->workgroup_name.' • '.$item->facility_name,
+                'url' => url('workstations-info/'.$item->id),
+            ]);
+
+        $displays = DB::table('displays')
+            ->join('workstations', 'workstations.id', '=', 'displays.workstation_id')
+            ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+            ->join('facilities', 'facilities.id', '=', 'workgroups.facility_id')
+            ->leftJoin('display_preferences as exclude_pref', function ($join) {
+                $join->on('exclude_pref.display_id', '=', 'displays.id')
+                    ->where('exclude_pref.name', '=', 'exclude');
+            })
+            ->select([
+                'displays.id',
+                'displays.manufacturer',
+                'displays.model',
+                'displays.serial',
+                'workstations.name as workstation_name',
+                'workgroups.name as workgroup_name',
+                'facilities.name as facility_name',
+            ])
+            ->when($facilityId, fn ($q) => $q->where('workgroups.facility_id', $facilityId))
+            ->where(function ($q) use ($like) {
+                $q->where('displays.manufacturer', 'like', $like)
+                    ->orWhere('displays.model', 'like', $like)
+                    ->orWhere('displays.serial', 'like', $like);
+            })
+            ->where(function ($q) {
+                $q->whereNull('exclude_pref.value')
+                    ->orWhere('exclude_pref.value', '0');
+            })
+            ->orderBy('displays.manufacturer')
+            ->orderBy('displays.model')
+            ->orderBy('displays.serial')
+            ->limit($perType)
+            ->get()
+            ->map(function ($item) {
+                $title = trim(
+                    collect([$item->manufacturer, $item->model])
+                        ->filter()
+                        ->implode(' ')
+                );
+
+                if ($item->serial) {
+                    $title .= ($title ? ' ' : '').'('.$item->serial.')';
+                }
+
+                return [
+                    'id' => 'display-'.$item->id,
+                    'recordId' => (int) $item->id,
+                    'type' => 'display',
+                    'title' => $title ?: 'Display #'.$item->id,
+                    'subtitle' => collect([$item->workstation_name, $item->workgroup_name, $item->facility_name])->filter()->implode(' • '),
+                    'url' => url('display-settings/'.$item->id),
+                ];
+            });
+
+        $results = collect()
+            ->merge($facilities)
+            ->merge($workgroups)
+            ->merge($workstations)
+            ->merge($displays)
+            ->take($limit)
+            ->values();
+
+        return response()->json([
+            'data' => $results,
+        ]);
+    }
     
     public function update_sidebar(Request $request)
     {
@@ -258,6 +409,7 @@ class DashboardController extends Controller
         }
 
         $facility_id = $user->facility_id;
+        $limit = max(1, min((int) $request->get('limit', 10), 50));
 
         // Single JOIN query — no Eloquent eager loading chains
         $query = DB::table('displays')
@@ -286,7 +438,7 @@ class DashboardController extends Controller
             ])
             ->when($facility_id, fn($q) => $q->where('workgroups.facility_id', $facility_id))
             ->orderBy('displays.updated_at', 'desc')
-            ->limit(10)
+            ->limit($limit)
             ->get();
 
         $formattedData = $query->map(function ($record) {
@@ -333,6 +485,7 @@ class DashboardController extends Controller
         }
 
         $facility_id = $user->facility_id;
+        $limit = max(1, min((int) $request->get('limit', 10), 50));
 
         // Single JOIN query — no Eloquent eager loading chains
         $rows = DB::table('histories')
@@ -353,7 +506,7 @@ class DashboardController extends Controller
             ])
             ->when($facility_id, fn($q) => $q->where('workgroups.facility_id', $facility_id))
             ->orderBy('histories.time', 'desc')
-            ->limit(10)
+            ->limit($limit)
             ->get();
 
         $formattedData = $rows->map(function ($history) {
@@ -493,6 +646,7 @@ class DashboardController extends Controller
             ? ($requestedFacilityId !== null && $requestedFacilityId !== '' ? $requestedFacilityId : null)
             : $user->facility_id;
         $workgroup_id = $request->get('workgroup_id');
+        $type = $request->get('type');
         $search = $request->get('search', '');
         $limit  = (int)$request->get('limit', 25);
         $page   = (int)$request->get('page', 1);
@@ -501,16 +655,28 @@ class DashboardController extends Controller
         $query = DB::table('workstations')
             ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
             ->join('facilities', 'facilities.id', '=', 'workgroups.facility_id')
-            ->leftJoin(DB::raw('(SELECT workstation_id, COUNT(*) as cnt FROM displays GROUP BY workstation_id) dc'),
+            ->leftJoin(DB::raw('(
+                SELECT
+                    workstation_id,
+                    COUNT(*) as cnt,
+                    SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as ok_cnt,
+                    SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as failed_cnt
+                FROM displays
+                GROUP BY workstation_id
+            ) dc'),
                 'dc.workstation_id', '=', 'workstations.id')
             ->select([
                 'workstations.id', 'workstations.name', 'workstations.last_connected', 'workstations.sleep_time', 'workstations.workgroup_id as wg_id',
                 'workgroups.name as wg_name', 'workgroups.facility_id as fac_id',
                 'facilities.name as fac_name',
                 DB::raw('COALESCE(dc.cnt, 0) as displays_count'),
+                DB::raw('COALESCE(dc.ok_cnt, 0) as ok_displays_count'),
+                DB::raw('COALESCE(dc.failed_cnt, 0) as failed_displays_count'),
             ])
             ->when($facility_id,  fn($q) => $q->where('workgroups.facility_id', $facility_id))
             ->when($workgroup_id, fn($q) => $q->where('workstations.workgroup_id', $workgroup_id))
+            ->when($type === 'ok', fn($q) => $q->whereRaw('COALESCE(dc.failed_cnt, 0) = 0 AND COALESCE(dc.ok_cnt, 0) = COALESCE(dc.cnt, 0) AND COALESCE(dc.cnt, 0) > 0'))
+            ->when($type === 'failed', fn($q) => $q->whereRaw('COALESCE(dc.failed_cnt, 0) > 0'))
             ->when($search, fn($q) => $q->where(function($q2) use ($search) {
                 $q2->where('workstations.name', 'like', "%$search%")
                    ->orWhere('workgroups.name', 'like', "%$search%")
@@ -536,6 +702,11 @@ class DashboardController extends Controller
                 'lastConnected' => $lcFormatted,
                 'lcColor'       => $lcColor,
                 'displaysCount' => (int)$r->displays_count,
+                'okDisplaysCount' => (int)$r->ok_displays_count,
+                'failedDisplaysCount' => (int)$r->failed_displays_count,
+                'displayHealth' => (int)$r->failed_displays_count > 0
+                    ? 'failed'
+                    : (((int)$r->displays_count > 0) && ((int)$r->ok_displays_count === (int)$r->displays_count) ? 'ok' : 'unknown'),
                 'canManage'     => in_array($role, ['super', 'admin'], true),
                 'canDelete'     => in_array($role, ['super', 'admin'], true),
             ];
@@ -557,6 +728,7 @@ class DashboardController extends Controller
         $facility_id = $userRole === 'super'
             ? ($requestedFacilityId !== null && $requestedFacilityId !== '' ? $requestedFacilityId : null)
             : $user->facility_id;
+        $type = $request->get('type');
         $search = $request->get('search', '');
         $limit  = (int)$request->get('limit', 25);
         $page   = (int)$request->get('page', 1);
@@ -566,15 +738,29 @@ class DashboardController extends Controller
             ->join('facilities', 'facilities.id', '=', 'workgroups.facility_id')
             ->leftJoin(DB::raw('(SELECT workgroup_id, COUNT(*) as cnt FROM workstations GROUP BY workgroup_id) wsc'),
                 'wsc.workgroup_id', '=', 'workgroups.id')
-            ->leftJoin(DB::raw('(SELECT workgroups.id as wg_id, COUNT(displays.id) as cnt FROM displays JOIN workstations ON workstations.id = displays.workstation_id JOIN workgroups ON workgroups.id = workstations.workgroup_id GROUP BY workgroups.id) dsc'),
+            ->leftJoin(DB::raw('(
+                SELECT
+                    workgroups.id as wg_id,
+                    COUNT(displays.id) as cnt,
+                    SUM(CASE WHEN displays.status = 1 THEN 1 ELSE 0 END) as ok_cnt,
+                    SUM(CASE WHEN displays.status = 2 THEN 1 ELSE 0 END) as failed_cnt
+                FROM displays
+                JOIN workstations ON workstations.id = displays.workstation_id
+                JOIN workgroups ON workgroups.id = workstations.workgroup_id
+                GROUP BY workgroups.id
+            ) dsc'),
                 'dsc.wg_id', '=', 'workgroups.id')
             ->select([
                 'workgroups.id', 'workgroups.name', 'workgroups.address', 'workgroups.phone', 'workgroups.facility_id as fac_id',
                 'facilities.name as fac_name',
                 DB::raw('COALESCE(wsc.cnt, 0) as workstations_count'),
                 DB::raw('COALESCE(dsc.cnt, 0) as displays_count'),
+                DB::raw('COALESCE(dsc.ok_cnt, 0) as ok_displays_count'),
+                DB::raw('COALESCE(dsc.failed_cnt, 0) as failed_displays_count'),
             ])
             ->when($facility_id, fn($q) => $q->where('workgroups.facility_id', $facility_id))
+            ->when($type === 'ok', fn($q) => $q->whereRaw('COALESCE(dsc.failed_cnt, 0) = 0 AND COALESCE(dsc.ok_cnt, 0) = COALESCE(dsc.cnt, 0) AND COALESCE(dsc.cnt, 0) > 0'))
+            ->when($type === 'failed', fn($q) => $q->whereRaw('COALESCE(dsc.failed_cnt, 0) > 0'))
             ->when($search, fn($q) => $q->where(function($q2) use ($search) {
                 $q2->where('workgroups.name', 'like', "%$search%")
                    ->orWhere('facilities.name', 'like', "%$search%");
@@ -592,6 +778,11 @@ class DashboardController extends Controller
             'facName'           => $r->fac_name          ?? '-',
             'workstationsCount' => (int)$r->workstations_count,
             'displaysCount'     => (int)$r->displays_count,
+            'okDisplaysCount'   => (int)$r->ok_displays_count,
+            'failedDisplaysCount' => (int)$r->failed_displays_count,
+            'displayHealth'     => (int)$r->failed_displays_count > 0
+                ? 'failed'
+                : (((int)$r->displays_count > 0) && ((int)$r->ok_displays_count === (int)$r->displays_count) ? 'ok' : 'unknown'),
             'canManage'         => in_array($role, ['super', 'admin'], true),
             'canDelete'         => in_array($role, ['super', 'admin'], true),
         ]);
@@ -715,6 +906,9 @@ class DashboardController extends Controller
                 'tasks.nextrun as due_at',
                 'displays.manufacturer', 'displays.model', 'displays.serial',
                 'displays.workstation_id',
+                'workstations.id as ws_id',
+                'workgroups.id as wg_id',
+                'facilities.id as fac_id',
                 'workstations.name as ws_name',
                 'workgroups.name as wg_name',
                 'facilities.name as fac_name',
@@ -751,6 +945,9 @@ class DashboardController extends Controller
                 'qa_tasks.nextdate as due_at',
                 'displays.manufacturer', 'displays.model', 'displays.serial',
                 'displays.workstation_id',
+                'workstations.id as ws_id',
+                'workgroups.id as wg_id',
+                'facilities.id as fac_id',
                 'workstations.name as ws_name',
                 'workgroups.name as wg_name',
                 'facilities.name as fac_name',
@@ -779,7 +976,12 @@ class DashboardController extends Controller
                 'type'        => $r->record_type,
                 'displayId'   => $r->display_id,
                 'displayName' => trim(($r->manufacturer ?? '') . ' ' . ($r->model ?? '')) . ' (' . ($r->serial ?? '') . ')',
+                'wsId'        => $r->ws_id ?? $r->workstation_id,
+                'wgId'        => $r->wg_id ?? null,
+                'facId'       => $r->fac_id ?? null,
                 'wsName'      => $r->ws_name  ?? '-',
+                'wgName'      => $r->wg_name  ?? '-',
+                'facName'     => $r->fac_name ?? '-',
                 'taskName'    => $r->task_name ?? $r->record_type,
                 'scheduleName'=> $r->schedule_name ?? '-',
                 'dueAt'       => $dueFormatted,
@@ -929,6 +1131,7 @@ class DashboardController extends Controller
         $role = $request->session()->get('role');
         if (!$user) return response()->json(['data' => [], 'total' => 0]);
 
+        $type = $request->get('type');
         $search = $request->get('search', '');
         $limit  = (int)$request->get('limit', 25);
         $page   = (int)$request->get('page', 1);
@@ -939,15 +1142,29 @@ class DashboardController extends Controller
                 'wgc.facility_id', '=', 'facilities.id')
             ->leftJoin(DB::raw('(SELECT facility_id, COUNT(*) as cnt FROM users GROUP BY facility_id) uc'),
                 'uc.facility_id', '=', 'facilities.id')
-            ->leftJoin(DB::raw('(SELECT w2.facility_id, COUNT(d.id) as cnt FROM displays d JOIN workstations ws ON ws.id = d.workstation_id JOIN workgroups w2 ON w2.id = ws.workgroup_id GROUP BY w2.facility_id) dc'),
+            ->leftJoin(DB::raw('(
+                SELECT
+                    w2.facility_id,
+                    COUNT(d.id) as cnt,
+                    SUM(CASE WHEN d.status = 1 THEN 1 ELSE 0 END) as ok_cnt,
+                    SUM(CASE WHEN d.status = 2 THEN 1 ELSE 0 END) as failed_cnt
+                FROM displays d
+                JOIN workstations ws ON ws.id = d.workstation_id
+                JOIN workgroups w2 ON w2.id = ws.workgroup_id
+                GROUP BY w2.facility_id
+            ) dc'),
                 'dc.facility_id', '=', 'facilities.id')
             ->select([
                 'facilities.id', 'facilities.name', 'facilities.location', 'facilities.timezone',
                 DB::raw('COALESCE(wgc.cnt, 0) as workgroups_count'),
                 DB::raw('COALESCE(uc.cnt, 0) as users_count'),
                 DB::raw('COALESCE(dc.cnt, 0) as displays_count'),
+                DB::raw('COALESCE(dc.ok_cnt, 0) as ok_displays_count'),
+                DB::raw('COALESCE(dc.failed_cnt, 0) as failed_displays_count'),
             ])
             ->when($role !== 'super', fn($q) => $q->where('facilities.id', $user->facility_id))
+            ->when($type === 'ok', fn($q) => $q->whereRaw('COALESCE(dc.failed_cnt, 0) = 0 AND COALESCE(dc.ok_cnt, 0) = COALESCE(dc.cnt, 0) AND COALESCE(dc.cnt, 0) > 0'))
+            ->when($type === 'failed', fn($q) => $q->whereRaw('COALESCE(dc.failed_cnt, 0) > 0'))
             ->when($search, fn($q) => $q->where(function($q2) use ($search) {
                 $q2->where('facilities.name',     'like', "%$search%")
                    ->orWhere('facilities.timezone','like', "%$search%");
@@ -964,6 +1181,11 @@ class DashboardController extends Controller
             'workgroupsCount'  => (int)$r->workgroups_count,
             'usersCount'       => (int)$r->users_count,
             'displaysCount'    => (int)$r->displays_count,
+            'okDisplaysCount'  => (int)$r->ok_displays_count,
+            'failedDisplaysCount' => (int)$r->failed_displays_count,
+            'displayHealth'    => (int)$r->failed_displays_count > 0
+                ? 'failed'
+                : (((int)$r->displays_count > 0) && ((int)$r->ok_displays_count === (int)$r->displays_count) ? 'ok' : 'unknown'),
             'canManage'        => in_array($role, ['super', 'admin'], true),
             'canDelete'        => $role === 'super',
         ]);

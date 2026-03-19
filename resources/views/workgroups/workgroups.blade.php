@@ -3,6 +3,7 @@
 @php
     $role = session('role');
     $canManageWorkgroups = in_array($role, ['super', 'admin'], true);
+    $initialWorkgroupStatus = in_array(request('type'), ['ok', 'failed'], true) ? request('type') : '';
 @endphp
 
 <div class="flex flex-col gap-6 pb-8">
@@ -24,7 +25,7 @@
     </x-page-header>
 
     <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_-32px_rgba(15,23,42,0.18)]">
-        <div class="grid gap-4 lg:grid-cols-[minmax(0,240px)_1fr]">
+        <div class="grid gap-4 lg:grid-cols-[minmax(0,240px)_minmax(0,280px)_1fr]">
             <div class="space-y-2">
                 <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Facility</label>
                 <div class="relative">
@@ -47,6 +48,42 @@
                         <p id="facility-filter-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="facility-filter-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                     </div>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Status</label>
+                <div class="grid h-12 grid-cols-3 rounded-2xl border border-slate-200 bg-white p-1">
+                    <button
+                        id="workgroup-status-all"
+                        type="button"
+                        data-status=""
+                        class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
+                        <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
+                            <i data-lucide="layers-3" class="h-4 w-4"></i>
+                            <span>All</span>
+                        </span>
+                    </button>
+                    <button
+                        id="workgroup-status-ok"
+                        type="button"
+                        data-status="ok"
+                        class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
+                        <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
+                            <i data-lucide="badge-check" class="h-4 w-4"></i>
+                            <span>OK</span>
+                        </span>
+                    </button>
+                    <button
+                        id="workgroup-status-failed"
+                        type="button"
+                        data-status="failed"
+                        class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
+                        <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
+                            <i data-lucide="triangle-alert" class="h-4 w-4"></i>
+                            <span>Not OK</span>
+                        </span>
+                    </button>
                 </div>
             </div>
 
@@ -146,6 +183,8 @@
     const state = {
         config: { canChooseFacility: false, facilities: [], selectedFacilityId: '' },
         selectedFacilityId: '',
+        defaultStatus: @json($initialWorkgroupStatus),
+        selectedStatus: @json($initialWorkgroupStatus),
         facilitySearch: '',
         activeDropdown: null,
         actionTarget: null,
@@ -188,6 +227,7 @@
         els.facilitySearch = document.getElementById('facility-filter-search');
         els.facilityHint = document.getElementById('facility-filter-hint');
         els.facilityOptions = document.getElementById('facility-filter-options');
+        els.statusButtons = Array.from(document.querySelectorAll('[data-status]'));
         els.resetFilters = document.getElementById('reset-workgroup-filters');
         els.grid = document.getElementById('workgroups-grid');
 
@@ -216,6 +256,13 @@
         els.facilitySearch?.addEventListener('input', (event) => {
             state.facilitySearch = event.target.value || '';
             renderFacilityOptions();
+        });
+        els.statusButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                state.selectedStatus = button.dataset.status || '';
+                renderStatusFilter();
+                reloadGrid();
+            });
         });
         els.resetFilters?.addEventListener('click', resetFilters);
 
@@ -264,6 +311,28 @@
             ? findOptionLabel(facilities, state.selectedFacilityId, 'Select facility')
             : 'All facilities';
         renderFacilityOptions();
+        renderStatusFilter();
+    }
+
+    function renderStatusFilter() {
+        els.statusButtons.forEach((button) => {
+            const status = button.dataset.status || '';
+            const active = status === (state.selectedStatus || '');
+            button.className = 'rounded-[0.9rem] px-3 text-sm font-semibold transition';
+
+            if (active) {
+                if (status === 'ok') {
+                    button.classList.add('bg-emerald-50', 'text-emerald-700', 'shadow-[inset_0_0_0_1px_rgba(16,185,129,0.22)]');
+                } else if (status === 'failed') {
+                    button.classList.add('bg-rose-50', 'text-rose-700', 'shadow-[inset_0_0_0_1px_rgba(244,63,94,0.22)]');
+                } else {
+                    button.classList.add('bg-sky-50', 'text-sky-700', 'shadow-[inset_0_0_0_1px_rgba(14,165,233,0.18)]');
+                }
+                return;
+            }
+
+            button.classList.add('text-slate-600', 'hover:bg-slate-50', 'hover:text-slate-900');
+        });
     }
 
     function renderFacilityOptions() {
@@ -317,6 +386,7 @@
 
     function resetFilters() {
         state.selectedFacilityId = state.config.canChooseFacility ? '' : (getFacilityOptions()[0] ? String(getFacilityOptions()[0].id) : '');
+        state.selectedStatus = state.defaultStatus || '';
         state.facilitySearch = '';
         if (els.facilitySearch) els.facilitySearch.value = '';
         closeDropdown();
@@ -327,13 +397,34 @@
     function buildGridUrl(extra = {}) {
         return Perfectlum.buildServerUrl('/api/workgroups', {
             facility_id: state.selectedFacilityId || '',
+            type: state.selectedStatus || '',
             ...extra,
         });
     }
 
+    function workgroupMatchesSelectedStatus(item) {
+        if (!state.selectedStatus) {
+            return true;
+        }
+
+        const displaysCount = Number(item.displaysCount || 0);
+        const okDisplaysCount = Number(item.okDisplaysCount || 0);
+        const failedDisplaysCount = Number(item.failedDisplaysCount || 0);
+
+        if (state.selectedStatus === 'failed') {
+            return failedDisplaysCount > 0;
+        }
+
+        if (state.selectedStatus === 'ok') {
+            return displaysCount > 0 && failedDisplaysCount === 0 && okDisplaysCount === displaysCount;
+        }
+
+        return true;
+    }
+
     function mapRows(d) {
-        return d.data.map(r => [
-            { id: r.id, name: r.name },
+        return (d.data || []).filter(workgroupMatchesSelectedStatus).map(r => [
+            { id: r.id, name: r.name, okDisplaysCount: r.okDisplaysCount, failedDisplaysCount: r.failedDisplaysCount },
             r.address,
             r.phone,
             { facId: r.facId, facName: r.facName },
@@ -351,12 +442,20 @@
                 {
                     name: 'Name',
                     formatter: (c) => gridjs.html(`
-                        <button
-                            type="button"
-                            onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'workgroup',id:${c.id}}}))"
-                            class="cursor-pointer font-medium text-sky-600 transition hover:text-sky-700 hover:underline">
-                            ${Perfectlum.escapeHtml(c.name)}
-                        </button>
+                        <div class="flex items-center gap-2.5">
+                            <span class="inline-flex h-2.5 w-2.5 shrink-0 rounded-full ${Number(c.failedDisplaysCount || 0) > 0 ? 'bg-rose-500 shadow-[0_0_0_4px_rgba(244,63,94,0.12)]' : (Number(c.okDisplaysCount || 0) > 0 ? 'bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]' : 'bg-slate-300 shadow-[0_0_0_4px_rgba(148,163,184,0.12)]')}"></span>
+                            <div class="min-w-0">
+                                <button
+                                    type="button"
+                                    onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'workgroup',id:${c.id}}}))"
+                                    class="cursor-pointer font-medium text-sky-600 transition hover:text-sky-700 hover:underline">
+                                    ${Perfectlum.escapeHtml(c.name)}
+                                </button>
+                                ${Number(c.failedDisplaysCount || 0) > 0
+                                    ? `<p class="mt-1 text-[11px] font-medium text-rose-600">${Perfectlum.escapeHtml(String(c.failedDisplaysCount))} display${Number(c.failedDisplaysCount) === 1 ? '' : 's'} need attention</p>`
+                                    : ''}
+                            </div>
+                        </div>
                     `),
                 },
                 { name: 'Address', formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
@@ -409,31 +508,17 @@
 
     function reloadGrid() {
         closeActionMenu();
-        if (!state.grid) {
+        state.grid = null;
+        if (!els.grid) {
             initGrid();
             return;
         }
 
-        state.grid.updateConfig({
-            server: {
-                url: buildGridUrl(),
-                then: mapRows,
-                total: d => d.total,
-            },
-            pagination: {
-                enabled: true,
-                limit: 10,
-                server: {
-                    url: (_, pg, lim) => buildGridUrl({ page: pg + 1, limit: lim }),
-                },
-            },
-            search: {
-                enabled: true,
-                server: {
-                    url: (_, kw) => buildGridUrl({ search: kw }),
-                },
-            },
-        }).forceRender();
+        Perfectlum.remountGrid('workgroups-grid', (freshGrid) => {
+            els.grid = freshGrid || document.getElementById('workgroups-grid');
+            state.grid = null;
+            initGrid();
+        });
     }
 
     function toggleActionMenu(event, id, name) {

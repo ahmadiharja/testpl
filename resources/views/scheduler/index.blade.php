@@ -537,10 +537,6 @@
         }
 
         async function deleteSchedulerTask(id) {
-            if (!confirm('Delete this task?')) {
-                return;
-            }
-
             const formData = new FormData();
             formData.append('_token', @json(csrf_token()));
             formData.append('id', id);
@@ -668,17 +664,20 @@
                 ],
                 server: {
                     url: '/api/tasks?sort_mode=due_desc',
-                    then: d => d.data.map(r => [
-                        { id: r.id, displayId: r.displayId, displayName: r.displayName, dueColor: r.dueColor, statusColor: r.statusColor },
-                        r.wsName,
-                        r.wgName,
-                        r.facName,
-                        r.taskName,
-                        r.scheduleName,
-                        r.dueAt,
-                        r.status,
-                        null
-                    ]),
+                    then: d => {
+                        setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 50);
+                        return d.data.map(r => [
+                            { id: r.id, displayId: r.displayId, displayName: r.displayName, dueColor: r.dueColor, statusColor: r.statusColor },
+                            r.wsName,
+                            r.wgName,
+                            r.facName,
+                            r.taskName,
+                            r.scheduleName,
+                            r.dueAt,
+                            r.status,
+                            null
+                        ]);
+                    },
                     total: d => d.total
                 },
                 pagination: {
@@ -736,7 +735,9 @@
                 event.preventDefault();
                 event.stopPropagation();
                 closeSchedulerTaskMenus();
-                deleteSchedulerTask(deleteButton.dataset.schedulerTaskDelete);
+                window.openTaskDeleteConfirm?.({
+                    onConfirm: () => deleteSchedulerTask(deleteButton.dataset.schedulerTaskDelete)
+                });
                 return;
             }
 
@@ -754,4 +755,5 @@
 </script>
 
 @include('tasks.schedule_task_modal')
+@include('tasks.delete_task_confirm_modal')
 @include('common.navigations.footer')

@@ -4,6 +4,7 @@
     $role = session('role');
     $canManageFacilities = in_array($role, ['super', 'admin'], true);
     $canDeleteFacilities = $role === 'super';
+    $initialFacilityStatus = in_array(request('type'), ['ok', 'failed'], true) ? request('type') : '';
 @endphp
 
 <div class="flex flex-col gap-6 pb-8">
@@ -20,6 +21,56 @@
             </x-slot>
         @endif
     </x-page-header>
+
+    <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_-32px_rgba(15,23,42,0.18)]">
+        <div class="grid gap-4 lg:grid-cols-[minmax(0,280px)_1fr]">
+            <div class="space-y-2">
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Status</label>
+                <div class="grid h-12 grid-cols-3 rounded-2xl border border-slate-200 bg-white p-1">
+                    <button
+                        id="facility-status-all"
+                        type="button"
+                        data-status=""
+                        class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
+                        <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
+                            <i data-lucide="layers-3" class="h-4 w-4"></i>
+                            <span>All</span>
+                        </span>
+                    </button>
+                    <button
+                        id="facility-status-ok"
+                        type="button"
+                        data-status="ok"
+                        class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
+                        <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
+                            <i data-lucide="badge-check" class="h-4 w-4"></i>
+                            <span>OK</span>
+                        </span>
+                    </button>
+                    <button
+                        id="facility-status-failed"
+                        type="button"
+                        data-status="failed"
+                        class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
+                        <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
+                            <i data-lucide="triangle-alert" class="h-4 w-4"></i>
+                            <span>Not OK</span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex items-end justify-end">
+                <button
+                    id="reset-facility-filters"
+                    type="button"
+                    class="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900">
+                    <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
+                    Reset Filters
+                </button>
+            </div>
+        </div>
+    </section>
 
     <x-data-table id="facilities-grid" class="mb-10 workstation-table-shell" />
 </div>
@@ -108,6 +159,8 @@
         actionTarget: null,
         deleteTarget: null,
         grid: null,
+        defaultStatus: @json($initialFacilityStatus),
+        selectedStatus: @json($initialFacilityStatus),
     };
 
     const els = {};
@@ -122,6 +175,7 @@
         initialized = true;
         bindElements();
         bindEvents();
+        renderStatusFilter();
         initGrid();
         window.facilitiesPage = { toggleActionMenu };
         window.lucide?.createIcons();
@@ -129,6 +183,8 @@
 
     function bindElements() {
         els.createButton = document.getElementById('create-facility-button');
+        els.statusButtons = Array.from(document.querySelectorAll('[data-status]'));
+        els.resetFilters = document.getElementById('reset-facility-filters');
         els.grid = document.getElementById('facilities-grid');
         els.actionOverlay = document.getElementById('facility-action-overlay');
         els.actionMenu = document.getElementById('facility-action-menu');
@@ -151,6 +207,14 @@
 
     function bindEvents() {
         els.createButton?.addEventListener('click', () => openEditModal(0));
+        els.statusButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                state.selectedStatus = button.dataset.status || '';
+                renderStatusFilter();
+                reloadGrid();
+            });
+        });
+        els.resetFilters?.addEventListener('click', resetFilters);
         document.addEventListener('click', (event) => {
             if (els.actionOverlay && !els.actionMenu.contains(event.target)) {
                 closeActionMenu();
@@ -173,13 +237,67 @@
         });
     }
 
+    function renderStatusFilter() {
+        els.statusButtons.forEach((button) => {
+            const status = button.dataset.status || '';
+            const active = status === (state.selectedStatus || '');
+            button.className = 'rounded-[0.9rem] px-3 text-sm font-semibold transition';
+
+            if (active) {
+                if (status === 'ok') {
+                    button.classList.add('bg-emerald-50', 'text-emerald-700', 'shadow-[inset_0_0_0_1px_rgba(16,185,129,0.22)]');
+                } else if (status === 'failed') {
+                    button.classList.add('bg-rose-50', 'text-rose-700', 'shadow-[inset_0_0_0_1px_rgba(244,63,94,0.22)]');
+                } else {
+                    button.classList.add('bg-sky-50', 'text-sky-700', 'shadow-[inset_0_0_0_1px_rgba(14,165,233,0.18)]');
+                }
+                return;
+            }
+
+            button.classList.add('text-slate-600', 'hover:bg-slate-50', 'hover:text-slate-900');
+        });
+    }
+
     function csrfToken() {
         return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     }
 
+    function resetFilters() {
+        state.selectedStatus = state.defaultStatus || '';
+        renderStatusFilter();
+        reloadGrid();
+    }
+
+    function buildGridUrl(extra = {}) {
+        return Perfectlum.buildServerUrl('/api/facilities', {
+            type: state.selectedStatus || '',
+            ...extra,
+        });
+    }
+
+    function facilityMatchesSelectedStatus(item) {
+        if (!state.selectedStatus) {
+            return true;
+        }
+
+        const displaysCount = Number(item.displaysCount || 0);
+        const okDisplaysCount = Number(item.okDisplaysCount || 0);
+        const failedDisplaysCount = Number(item.failedDisplaysCount || 0);
+
+        if (state.selectedStatus === 'failed') {
+            return failedDisplaysCount > 0;
+        }
+
+        if (state.selectedStatus === 'ok') {
+            return displaysCount > 0 && failedDisplaysCount === 0 && okDisplaysCount === displaysCount;
+        }
+
+        return true;
+    }
+
     function mapRows(d) {
-        return d.data.map(r => [
-            { id: r.id, name: r.name },
+        return (d.data || []).filter(facilityMatchesSelectedStatus).map(r => [
+            { id: r.id, name: r.name, okDisplaysCount: r.okDisplaysCount, failedDisplaysCount: r.failedDisplaysCount },
             r.location,
             r.timezone,
             r.workgroupsCount,
@@ -196,13 +314,21 @@
             columns: [
                 {
                     name: 'Name',
-                    formatter: (c) => !canManageFacilities ? '' : gridjs.html(`
-                        <button
-                            type="button"
-                            onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'facility',id:${c.id}}}))"
-                            class="cursor-pointer font-medium text-sky-600 transition hover:text-sky-700 hover:underline">
-                            ${Perfectlum.escapeHtml(c.name)}
-                        </button>
+                    formatter: (c) => gridjs.html(`
+                        <div class="flex items-center gap-2.5">
+                            <span class="inline-flex h-2.5 w-2.5 shrink-0 rounded-full ${Number(c.failedDisplaysCount || 0) > 0 ? 'bg-rose-500 shadow-[0_0_0_4px_rgba(244,63,94,0.12)]' : (Number(c.okDisplaysCount || 0) > 0 ? 'bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]' : 'bg-slate-300 shadow-[0_0_0_4px_rgba(148,163,184,0.12)]')}"></span>
+                            <div class="min-w-0">
+                                <button
+                                    type="button"
+                                    onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'facility',id:${c.id}}}))"
+                                    class="cursor-pointer font-medium text-sky-600 transition hover:text-sky-700 hover:underline">
+                                    ${Perfectlum.escapeHtml(c.name)}
+                                </button>
+                                ${Number(c.failedDisplaysCount || 0) > 0
+                                    ? `<p class="mt-1 text-[11px] font-medium text-rose-600">${Perfectlum.escapeHtml(String(c.failedDisplaysCount))} display${Number(c.failedDisplaysCount) === 1 ? '' : 's'} need attention</p>`
+                                    : ''}
+                            </div>
+                        </div>
                     `),
                 },
                 { name: 'Location', formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
@@ -226,7 +352,7 @@
                 },
             ],
             server: {
-                url: '/api/facilities',
+                url: buildGridUrl(),
                 then: mapRows,
                 total: d => d.total,
             },
@@ -234,13 +360,13 @@
                 enabled: true,
                 limit: 10,
                 server: {
-                    url: (prev, pg, lim) => `${prev}${prev.includes('?') ? '&' : '?'}page=${pg + 1}&limit=${lim}`,
+                    url: (_, pg, lim) => buildGridUrl({ page: pg + 1, limit: lim }),
                 },
             },
             search: {
                 enabled: true,
                 server: {
-                    url: (prev, kw) => `${prev}${prev.includes('?') ? '&' : '?'}search=${encodeURIComponent(kw)}`,
+                    url: (_, kw) => buildGridUrl({ search: kw }),
                 },
             },
             sort: { multiColumn: false },
@@ -250,12 +376,17 @@
 
     function reloadGrid() {
         closeActionMenu();
-        if (!state.grid) {
+        state.grid = null;
+        if (!els.grid) {
             initGrid();
             return;
         }
 
-        state.grid.forceRender();
+        Perfectlum.remountGrid('facilities-grid', (freshGrid) => {
+            els.grid = freshGrid || document.getElementById('facilities-grid');
+            state.grid = null;
+            initGrid();
+        });
     }
 
     function toggleActionMenu(event, id, name) {

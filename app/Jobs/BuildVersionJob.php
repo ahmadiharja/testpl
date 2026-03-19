@@ -9,6 +9,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use App\Notifications\BuildVersionNotification;
+use App\Notifications\WorkspaceNotification;
 
 class BuildVersionJob implements ShouldQueue
 {
@@ -43,6 +44,15 @@ class BuildVersionJob implements ShouldQueue
         
         // send email to user
         $this->user->notify(new BuildVersionNotification($this->version, $this->comment));
+        $this->user->notify(new WorkspaceNotification([
+            'category' => 'Release Builder',
+            'title' => 'Release build is ready',
+            'body' => 'Version '.$this->version.' finished building successfully.',
+            'severity' => 'success',
+            'icon' => 'package-check',
+            'url' => url('site-settings?tab=release'),
+            'scope' => $this->version,
+        ]));
 
         return 'DONE';
     }

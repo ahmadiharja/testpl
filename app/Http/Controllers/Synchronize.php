@@ -24,6 +24,7 @@ use App\Models\QATask;
 use DB;
 use App\Notifications\DisplayStatusChangedNotification;
 use App\Notifications\TaskCompletedNotification;
+use App\Notifications\WorkspaceNotification;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use App\Events\TreeChanged;
@@ -759,10 +760,27 @@ class Synchronize extends Controller
             // Send task completed email with PDF report for OK and Failed tasks
             if (in_array($history['result'], [2, 3]) && !config('app.offline')) {
                 try {
-                    $alerts = Alert::where([['facility_id', $this->facility->id], ['actived', 1]])->get();
+                    $alerts = Alert::where([['facility_id', $this->facility->id], ['actived', 1]])->with('user')->get();
                     foreach ($alerts as $alert) {
                         $alert->notify(new TaskCompletedNotification($newHist));
                     }
+
+                    $alerts->pluck('user')
+                        ->filter()
+                        ->unique('id')
+                        ->each(function ($user) use ($newHist) {
+                            $resultFailed = (int) $newHist->result === 3;
+                            $displayLabel = $newHist->display?->treetext ?: 'display';
+                            $user->notify(new WorkspaceNotification([
+                                'category' => 'Task Update',
+                                'title' => $resultFailed ? 'Task completed with issues' : 'Task completed successfully',
+                                'body' => trim(($newHist->name ?: 'Task') . ' finished for ' . $displayLabel . '.'),
+                                'severity' => $resultFailed ? 'danger' : 'success',
+                                'icon' => $resultFailed ? 'clipboard-x' : 'clipboard-check',
+                                'url' => url('histories/' . $newHist->id),
+                                'scope' => $this->facility?->name,
+                            ]));
+                        });
                 } catch (\Exception $e) {
                     logger()->error('TaskCompletedNotification failed: ' . $e->getMessage());
                 }
@@ -783,12 +801,28 @@ class Synchronize extends Controller
                 $display->errors = json_encode($display->errors);
                 $display->save();
                 // send alert
-                $alerts = Alert::where([['facility_id', $this->facility->id], ['actived', 1]])->get();
+                $alerts = Alert::where([['facility_id', $this->facility->id], ['actived', 1]])->with('user')->get();
                 foreach ($alerts as $alert) {
                     if (!config('app.offline')) {
                         $alert->notify(new DisplayStatusChangedNotification($display, $oldStatus, $display->status, $history));
                     }
                 }
+
+                $alerts->pluck('user')
+                    ->filter()
+                    ->unique('id')
+                    ->each(function ($user) use ($display) {
+                        $failed = (int) $display->status === Display::STATUS_FAILED;
+                        $user->notify(new WorkspaceNotification([
+                            'category' => 'Display Health',
+                            'title' => $failed ? 'Display needs attention' : 'Display recovered',
+                            'body' => trim(($display->treetext ?: 'Display') . ($failed ? ' reported a failed status.' : ' returned to an OK state.')),
+                            'severity' => $failed ? 'danger' : 'success',
+                            'icon' => $failed ? 'monitor-warning' : 'monitor-check',
+                            'url' => url('display-settings/' . $display->id),
+                            'scope' => $this->facility?->name,
+                        ]));
+                    });
             }
         }
     }

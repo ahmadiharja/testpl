@@ -4,6 +4,7 @@
     $type = request('type', '');
     $role = session('role');
     $canManageDisplays = in_array($role, ['super', 'admin'], true);
+    $initialDisplayStatus = in_array($type, ['ok', 'failed'], true) ? $type : '';
 @endphp
 
 <div class="flex flex-col gap-6 pb-8">
@@ -69,6 +70,42 @@
                         <p id="display-workstation-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="display-workstation-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                     </div>
+                </div>
+            </div>
+
+            <div class="min-w-0 flex-1 space-y-2 xl:w-[280px] xl:flex-none">
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Status</label>
+                <div class="grid h-12 grid-cols-3 rounded-2xl border border-slate-200 bg-white p-1">
+                    <button
+                        id="display-status-all"
+                        type="button"
+                        data-status=""
+                        class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
+                        <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
+                            <i data-lucide="layers-3" class="h-4 w-4"></i>
+                            <span>All</span>
+                        </span>
+                    </button>
+                    <button
+                        id="display-status-ok"
+                        type="button"
+                        data-status="ok"
+                        class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
+                        <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
+                            <i data-lucide="badge-check" class="h-4 w-4"></i>
+                            <span>OK</span>
+                        </span>
+                    </button>
+                    <button
+                        id="display-status-failed"
+                        type="button"
+                        data-status="failed"
+                        class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
+                        <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
+                            <i data-lucide="triangle-alert" class="h-4 w-4"></i>
+                            <span>Not OK</span>
+                        </span>
+                    </button>
                 </div>
             </div>
 
@@ -276,6 +313,8 @@
         selectedFacilityId: '',
         selectedWorkgroupId: '',
         selectedWorkstationId: '',
+        defaultStatus: @json($initialDisplayStatus),
+        selectedStatus: @json($initialDisplayStatus),
         facilitySearch: '',
         workgroupSearch: '',
         workstationSearch: '',
@@ -341,6 +380,12 @@
         els.workstationHint = document.getElementById('display-workstation-hint');
         els.workstationOptions = document.getElementById('display-workstation-options');
 
+        els.statusButtons = [
+            document.getElementById('display-status-all'),
+            document.getElementById('display-status-ok'),
+            document.getElementById('display-status-failed'),
+        ].filter(Boolean);
+
         els.resetFilters = document.getElementById('reset-display-filters');
         els.grid = document.getElementById('displays-grid');
 
@@ -373,6 +418,13 @@
         els.facilitySearch?.addEventListener('input', (event) => { state.facilitySearch = event.target.value || ''; renderFacilityOptions(); });
         els.workgroupSearch?.addEventListener('input', (event) => { state.workgroupSearch = event.target.value || ''; renderWorkgroupOptions(); });
         els.workstationSearch?.addEventListener('input', (event) => { state.workstationSearch = event.target.value || ''; renderWorkstationOptions(); });
+        els.statusButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                state.selectedStatus = button.dataset.status || '';
+                renderStatusFilter();
+                reloadGrid();
+            });
+        });
         els.resetFilters?.addEventListener('click', resetFilters);
 
         document.addEventListener('click', (event) => {
@@ -442,6 +494,30 @@
         renderFacilityOptions();
         renderWorkgroupOptions();
         renderWorkstationOptions();
+        renderStatusFilter();
+    }
+
+    function renderStatusFilter() {
+        els.statusButtons.forEach((button) => {
+            const status = button.dataset.status || '';
+            const active = status === (state.selectedStatus || '');
+
+            const activeClass = status === 'ok'
+                ? 'rounded-[0.9rem] bg-white px-3 text-sm font-semibold text-emerald-700 shadow-[0_10px_24px_-16px_rgba(16,185,129,0.5)] ring-1 ring-emerald-200 transition'
+                : (status === 'failed'
+                    ? 'rounded-[0.9rem] bg-white px-3 text-sm font-semibold text-rose-700 shadow-[0_10px_24px_-16px_rgba(244,63,94,0.45)] ring-1 ring-rose-200 transition'
+                    : 'rounded-[0.9rem] bg-white px-3 text-sm font-semibold text-sky-700 shadow-[0_10px_24px_-16px_rgba(14,165,233,0.45)] ring-1 ring-sky-200 transition');
+
+            const inactiveClass = status === 'ok'
+                ? 'rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition hover:bg-white/95 hover:text-emerald-700'
+                : (status === 'failed'
+                    ? 'rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition hover:bg-white/95 hover:text-rose-700'
+                    : 'rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition hover:bg-white/95 hover:text-sky-700');
+
+            button.className = active ? activeClass : inactiveClass;
+        });
+
+        window.lucide?.createIcons();
     }
 
     function renderFacilityOptions() {
@@ -541,6 +617,7 @@
         state.selectedFacilityId = state.config.canChooseFacility ? '' : (getFacilityOptions()[0] ? String(getFacilityOptions()[0].id) : '');
         state.selectedWorkgroupId = '';
         state.selectedWorkstationId = '';
+        state.selectedStatus = state.defaultStatus || '';
         state.facilitySearch = '';
         state.workgroupSearch = '';
         state.workstationSearch = '';
@@ -553,11 +630,8 @@
     }
 
     function buildGridUrl(extra = {}) {
-        let baseUrl = '/api/displays';
-        @if($type)
-        baseUrl = Perfectlum.buildServerUrl('/api/displays', { type: '{{ $type }}' });
-        @endif
-        return Perfectlum.buildServerUrl(baseUrl, {
+        return Perfectlum.buildServerUrl('/api/displays', {
+            type: state.selectedStatus || '',
             facility_id: state.selectedFacilityId || '',
             workgroup_id: state.selectedWorkgroupId || '',
             workstation_id: state.selectedWorkstationId || '',
@@ -651,31 +725,17 @@
 
     function reloadGrid() {
         closeActionMenu();
-        if (!state.grid) {
+        state.grid = null;
+        if (!els.grid) {
             initGrid();
             return;
         }
 
-        state.grid.updateConfig({
-            server: {
-                url: buildGridUrl(),
-                then: mapRows,
-                total: d => d.total,
-            },
-            pagination: {
-                enabled: true,
-                limit: 10,
-                server: {
-                    url: (_, pg, lim) => buildGridUrl({ page: pg + 1, limit: lim }),
-                },
-            },
-            search: {
-                enabled: true,
-                server: {
-                    url: (_, kw) => buildGridUrl({ search: kw }),
-                },
-            },
-        }).forceRender();
+        Perfectlum.remountGrid('displays-grid', (freshGrid) => {
+            els.grid = freshGrid || document.getElementById('displays-grid');
+            state.grid = null;
+            initGrid();
+        });
     }
 
     function toggleActionMenu(event, id, name) {

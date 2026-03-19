@@ -4,12 +4,12 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use DB;
-use App\Workstation;
 use Carbon\Carbon;
 use App\Notifications\DisconnectedNotification;
-use App\User;
-use App\Alert;
-use App\ErrorLimit;
+use App\Notifications\WorkspaceNotification;
+use App\Models\Alert;
+use App\Models\ErrorLimit;
+use App\Models\Workstation;
 use Illuminate\Support\Facades\Notification;
 
 class DisconnectedAlertCron extends Command
@@ -58,11 +58,35 @@ class DisconnectedAlertCron extends Command
             $this->info($ws->name.'-'.$ws->last_connected);
             
         }
-        $alerts = Alert::whereIn('facility_id', array_keys($list))->get();
+        $alerts = Alert::with(['user', 'facility'])->whereIn('facility_id', array_keys($list))->get();
         $ws_sent = [];
+        $dbSent = [];
         foreach ($alerts as $alert) {
             Notification::route('mail', $alert->email)
             ->notify(new DisconnectedNotification($list[$alert->facility_id], $daysNotConnected));
+
+            if ($alert->user && !isset($dbSent[$alert->facility_id . ':' . $alert->user->id])) {
+                $count = count($list[$alert->facility_id] ?? []);
+                $facilityName = $alert->facility?->name ?: 'Facility';
+
+                if ($count > 0) {
+                    $alert->user->notify(new WorkspaceNotification([
+                        'category' => 'Workstation Health',
+                        'title' => 'Workstations disconnected',
+                        'body' => $count . ' workstation' . ($count === 1 ? '' : 's') . ' in ' . $facilityName . ' have not connected for ' . $daysNotConnected . '+ days.',
+                        'severity' => 'warning',
+                        'icon' => 'plug-zap',
+                        'url' => url('workstations'),
+                        'scope' => $facilityName,
+                        'meta' => [
+                            'daysNotConnected' => $daysNotConnected,
+                            'workstationCount' => $count,
+                        ],
+                    ]));
+                }
+
+                $dbSent[$alert->facility_id . ':' . $alert->user->id] = true;
+            }
             foreach ($list[$alert->facility_id] as $ws) {
                 $ws_sent[] = $ws->id;
             }

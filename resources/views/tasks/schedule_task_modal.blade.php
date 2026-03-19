@@ -1,5 +1,5 @@
-<div id="task-editor-overlay" class="fixed inset-0 z-[80] hidden bg-slate-950/40"></div>
-<div id="task-editor-panel" class="fixed inset-y-0 right-0 z-[81] hidden w-full max-w-2xl overflow-y-auto bg-white shadow-2xl">
+<div id="task-editor-overlay" class="fixed inset-0 z-[110] hidden bg-slate-950/40"></div>
+<div id="task-editor-panel" class="fixed inset-y-0 right-0 z-[111] hidden w-full max-w-2xl overflow-y-auto bg-white shadow-2xl">
     <div class="sticky top-0 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
         <div>
             <h3 class="text-lg font-semibold text-slate-900">Schedule Task</h3>

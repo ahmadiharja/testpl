@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Monolog\Handler\StreamHandler;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\DailyEmailNotification;
+use App\Notifications\WorkspaceNotification;
 
 class DailyEmailCron extends Command
 {
@@ -198,6 +199,72 @@ class DailyEmailCron extends Command
         return $res;
     }
 
+    private function getTaskSignalCounts($facility): array
+    {
+        $facilityCond = $facility == 0 || $facility == '' ? '1=1' : 'f.id=' . intval($facility);
+
+        $dueTodayTasks = DB::scalar("
+            SELECT COUNT(*) FROM tasks
+            INNER JOIN displays ON displays.id = tasks.display_id
+            INNER JOIN workstations ON workstations.id = displays.workstation_id
+            INNER JOIN workgroups ON workgroups.id = workstations.workgroup_id
+            INNER JOIN facilities f ON f.id = workgroups.facility_id
+            WHERE {$facilityCond}
+              AND tasks.deleted = 0
+              AND tasks.nextrun > 0
+              AND displays.connected = 1
+              AND displays.deleted_at IS NULL
+              AND DATE(FROM_UNIXTIME(tasks.nextrun)) = CURRENT_DATE()
+        ");
+
+        $overdueTasks = DB::scalar("
+            SELECT COUNT(*) FROM tasks
+            INNER JOIN displays ON displays.id = tasks.display_id
+            INNER JOIN workstations ON workstations.id = displays.workstation_id
+            INNER JOIN workgroups ON workgroups.id = workstations.workgroup_id
+            INNER JOIN facilities f ON f.id = workgroups.facility_id
+            WHERE {$facilityCond}
+              AND tasks.deleted = 0
+              AND tasks.nextrun > 0
+              AND displays.connected = 1
+              AND displays.deleted_at IS NULL
+              AND DATE(FROM_UNIXTIME(tasks.nextrun)) < CURRENT_DATE()
+        ");
+
+        $dueTodayQa = DB::scalar("
+            SELECT COUNT(*) FROM qa_tasks
+            INNER JOIN displays ON displays.id = qa_tasks.display_id
+            INNER JOIN workstations ON workstations.id = displays.workstation_id
+            INNER JOIN workgroups ON workgroups.id = workstations.workgroup_id
+            INNER JOIN facilities f ON f.id = workgroups.facility_id
+            WHERE {$facilityCond}
+              AND qa_tasks.nextdate > 0
+              AND qa_tasks.nextdate < 4294967295
+              AND displays.connected = 1
+              AND displays.deleted_at IS NULL
+              AND DATE(FROM_UNIXTIME(qa_tasks.nextdate)) = CURRENT_DATE()
+        ");
+
+        $overdueQa = DB::scalar("
+            SELECT COUNT(*) FROM qa_tasks
+            INNER JOIN displays ON displays.id = qa_tasks.display_id
+            INNER JOIN workstations ON workstations.id = displays.workstation_id
+            INNER JOIN workgroups ON workgroups.id = workstations.workgroup_id
+            INNER JOIN facilities f ON f.id = workgroups.facility_id
+            WHERE {$facilityCond}
+              AND qa_tasks.nextdate > 0
+              AND qa_tasks.nextdate < 4294967295
+              AND displays.connected = 1
+              AND displays.deleted_at IS NULL
+              AND DATE(FROM_UNIXTIME(qa_tasks.nextdate)) < CURRENT_DATE()
+        ");
+
+        return [
+            'dueToday' => intval($dueTodayTasks) + intval($dueTodayQa),
+            'overdue' => intval($overdueTasks) + intval($overdueQa),
+        ];
+    }
+
     /**
      * Execute the console command.
      *
@@ -209,16 +276,54 @@ class DailyEmailCron extends Command
         $filename = sprintf('%s/logs/sync_%s_%s.log', storage_path(), 'cron', date('Ymd'));
         $this->logger->pushHandler(new StreamHandler($filename, Logger::INFO));
 
-        $alerts = Alert::where('daily_report', 1)->get();
+        $alerts = Alert::with(['user', 'facility'])->where('daily_report', 1)->get();
         $this->logger->info('>>: daily email'. json_encode($alerts));
-        // $ws_sent = [];
+        $dbSent = [];
         foreach ($alerts as $alert) {
             $this->logger->info('>>: Facility'. json_encode($alert->facility->name));
             $body = $this->getBody($alert->facility->id);
             $this->logger->info('>>: email - body'. $alert->email. ' - ' .$body);
             Notification::route('mail', $alert->email)
                 ->notify(new DailyEmailNotification($alert->facility->name, $body));
-            
+
+            if ($alert->user && !isset($dbSent[$alert->facility_id . ':' . $alert->user->id])) {
+                $stats = $this->getTaskSignalCounts($alert->facility->id);
+                $facilityName = $alert->facility?->name ?: 'Facility';
+
+                if ($stats['overdue'] > 0) {
+                    $overdueVerb = $stats['overdue'] === 1 ? 'is' : 'are';
+                    $alert->user->notify(new WorkspaceNotification([
+                        'category' => 'Task Schedule',
+                        'title' => 'Overdue tasks require attention',
+                        'body' => $stats['overdue'] . ' scheduled item' . ($stats['overdue'] === 1 ? '' : 's') . ' ' . $overdueVerb . ' overdue in ' . $facilityName . '.',
+                        'severity' => 'danger',
+                        'icon' => 'calendar-clock',
+                        'url' => url('scheduler'),
+                        'scope' => $facilityName,
+                        'meta' => [
+                            'overdueCount' => $stats['overdue'],
+                        ],
+                    ]));
+                }
+
+                if ($stats['dueToday'] > 0) {
+                    $dueTodayVerb = $stats['dueToday'] === 1 ? 'is' : 'are';
+                    $alert->user->notify(new WorkspaceNotification([
+                        'category' => 'Task Schedule',
+                        'title' => 'Tasks are due today',
+                        'body' => $stats['dueToday'] . ' scheduled item' . ($stats['dueToday'] === 1 ? '' : 's') . ' ' . $dueTodayVerb . ' due today in ' . $facilityName . '.',
+                        'severity' => 'warning',
+                        'icon' => 'calendar-clock',
+                        'url' => url('scheduler'),
+                        'scope' => $facilityName,
+                        'meta' => [
+                            'dueTodayCount' => $stats['dueToday'],
+                        ],
+                    ]));
+                }
+
+                $dbSent[$alert->facility_id . ':' . $alert->user->id] = true;
+            }
         }
     }
 }

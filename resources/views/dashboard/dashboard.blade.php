@@ -144,7 +144,7 @@
                     View Network <i data-lucide="arrow-right" class="w-3.5 h-3.5 transition-transform group-hover:translate-x-1"></i>
                 </a>
             </x-slot>
-            <div class="bento-card overflow-hidden flex-1 min-h-[22rem]">
+            <div class="workstation-table-shell flex-1 min-h-[22rem] overflow-hidden">
                 @if($d_fail == 0)
                     <div class="flex flex-col items-center justify-center py-24 opacity-60">
                         <div class="w-24 h-24 rounded-[2rem] flex items-center justify-center mb-6 shadow-sm"
@@ -171,7 +171,7 @@
                     <i data-lucide="refresh-cw" class="w-3.5 h-3.5 transition-transform group-hover:rotate-180 duration-500"></i>
                 </button>
             </x-slot>
-            <div class="bento-card flex-1 flex flex-col overflow-hidden min-h-[22rem]" style="min-height:0">
+            <div class="workstation-table-shell flex-1 flex min-h-[22rem] flex-col overflow-hidden" style="min-height:0">
                 <div id="latest-performed-grid" class="w-full flex-1 overflow-y-auto" style="max-height:420px; background:transparent;"></div>
             </div>
         </x-dashboard-section>
@@ -187,7 +187,7 @@
                 All Tasks <i data-lucide="arrow-right" class="w-3.5 h-3.5 transition-transform group-hover:translate-x-1"></i>
             </a>
         </x-slot>
-        <div class="bento-card overflow-hidden p-0">
+        <div class="workstation-table-shell overflow-hidden p-0">
             <div id="due-tasks-grid" class="w-full" x-data="{
                 init() {
                     const checkGrids = () => {

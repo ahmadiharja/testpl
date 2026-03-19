@@ -842,6 +842,7 @@ class DashboardController extends Controller
 
         $total = $query->count();
         $rows = (clone $query)
+            ->orderByDesc('tasks.nextrun')
             ->orderByDesc('tasks.id')
             ->offset($offset)
             ->limit($limit)

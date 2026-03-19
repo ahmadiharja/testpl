@@ -37,5 +37,3 @@ Instead, the codebase relies entirely on **Role-based checks**. Throughout the v
 When adding new features or modifying the UI (such as separating views for `perfectchroma` and `perfectlum`), you do not need to seed granular permissions. You solely need to ensure that the current user's role is retrieved and checked (e.g., verifying if they are `super`, `admin`, or `user`) to show or hide the appropriate Action buttons and Data Table columns.
 
 
-PerfectChroma (Dark)	chroma_admin	chroma@test.com	123456	Langsung masuk Dashboard (Gelap)
-Platform Ganda (Keduanya)	dual_admin	dual@test.com	123456	Masuk ke Halaman "Choose Platform"

@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('users') || Schema::hasColumn('users', 'platform')) {
+            return;
+        }
+
         Schema::table('users', function (Blueprint $table) {
             $table->string('platform')->default('perfectlum')->after('email')->comment('perfectlum, perfectchroma, or both');
         });

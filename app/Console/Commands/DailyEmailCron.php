@@ -48,7 +48,7 @@ class DailyEmailCron extends Command
         $results = DB::select("SELECT count(wd.id) AS di_amount FROM displays AS wd
         INNER JOIN workstations AS ws ON wd.workstation_id = ws.id 
         INNER JOIN workgroups AS wg ON ws.workgroup_id = wg.id 
-        INNER JOIN facilities AS f ON wg.facility_id = f.id where ${facility_cond} 
+        INNER JOIN facilities AS f ON wg.facility_id = f.id where {$facility_cond} 
         AND wd.status=1 AND wd.connected=1 
         AND wd.deleted_at IS NULL");
      

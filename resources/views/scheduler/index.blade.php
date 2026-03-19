@@ -653,7 +653,7 @@
                     },
                 ],
                 server: {
-                    url: '/api/tasks?sort_mode=latest',
+                    url: '/api/tasks?sort_mode=due_desc',
                     then: d => d.data.map(r => [
                         { id: r.id, displayId: r.displayId, displayName: r.displayName, wsName: r.wsName, dueColor: r.dueColor, statusColor: r.statusColor },
                         r.taskName,

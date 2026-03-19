@@ -754,9 +754,14 @@ class DashboardController extends Controller
             ]);
 
         $allRows = $taskRows->get()->merge($qaRows->get());
-        $allRows = $sortMode === 'latest'
-            ? $allRows->sortByDesc('id')
-            : $allRows->sortBy('due_at');
+        $allRows = match ($sortMode) {
+            'latest' => $allRows->sortByDesc('id'),
+            'due_desc' => $allRows->sort(function ($a, $b) {
+                $dueCompare = ((int) $b->due_at) <=> ((int) $a->due_at);
+                return $dueCompare !== 0 ? $dueCompare : ($b->id <=> $a->id);
+            }),
+            default => $allRows->sortBy('due_at'),
+        };
         $total   = $allRows->count();
         $rows    = $allRows->slice($offset, $limit)->values();
 

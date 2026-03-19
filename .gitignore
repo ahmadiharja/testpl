@@ -11,6 +11,11 @@
 /storage/*.key
 /storage/logs/*.log
 /vendor
+/bootstrap/cache/*.php
+/storage/app/tmp_settings_script.txt
+/storage/app/updates/*
+/public/assets/images/profile-images/*
+/!public/assets/images/profile-images/.gitkeep
 /Homestead.json
 /Homestead.yaml
 /auth.json
@@ -19,6 +24,8 @@
 /.fleet
 /.idea
 /.vscode
+**/.DS_Store
+**/.gitignore.bak
 
 # Local debug / scratch files
 /clean_dt_scripts.php

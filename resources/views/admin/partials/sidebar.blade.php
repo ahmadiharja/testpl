@@ -22,15 +22,22 @@
        :class="[sidebarCollapsed ? 'w-[92px]' : 'w-[300px]', theme === 'perfectlum' ? 'border-slate-200 bg-white/95' : 'border-white/5 bg-[#0A0A0B]/95']">
     <div class="flex h-full flex-col px-4 pb-6 pt-6">
         <div class="mb-8 flex items-center justify-between gap-3" :class="sidebarCollapsed ? 'px-1' : 'px-3'">
-            <button type="button" class="flex min-w-0 items-center gap-3 text-left" @click="navigate('Dashboard')">
-                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 text-white shadow-lg shadow-sky-500/20">
-                    <i data-lucide="cpu" class="h-5 w-5"></i>
-                </div>
-                <div x-show="!sidebarCollapsed" x-cloak class="min-w-0">
-                    <p class="truncate text-[15px] font-bold tracking-tight" :class="theme === 'perfectlum' ? 'text-slate-900' : 'text-white'">PerfectLum</p>
-                    <p class="truncate text-[11px] font-medium text-slate-400">Remote Calibration Console</p>
-                </div>
-            </button>
+            <a href="{{ url('dashboard') }}" class="flex min-w-0 items-center gap-3 text-left" :class="sidebarCollapsed ? 'justify-center' : ''">
+                <img
+                    x-show="sidebarCollapsed"
+                    x-cloak
+                    src="{{ asset('assets/images/perfectlum_circle.png') }}"
+                    alt="PerfectLum"
+                    class="h-11 w-11 shrink-0 object-contain"
+                >
+                <img
+                    x-show="!sidebarCollapsed"
+                    x-cloak
+                    src="{{ asset('assets/images/perfectlum-logo.png') }}"
+                    alt="PerfectLum"
+                    class="h-11 w-auto max-w-[180px] shrink-0 object-contain"
+                >
+            </a>
 
             <button @click="sidebarCollapsed = !sidebarCollapsed"
                     type="button"

@@ -620,8 +620,22 @@
                         formatter: (c) => gridjs.html(`
                             <div>
                                 <a href="/display-settings/${c.displayId}" class="font-semibold text-sky-600 hover:text-sky-700">${Perfectlum.escapeHtml(c.displayName)}</a>
-                                <div class="mt-0.5 text-[11px] text-slate-400">${Perfectlum.escapeHtml(c.wsName)}</div>
                             </div>`)
+                    },
+                    {
+                        name: 'Workstation',
+                        width: '160px',
+                        formatter: (c) => gridjs.html(`<span class="font-semibold text-sky-600">${Perfectlum.escapeHtml(c || '-')}</span>`)
+                    },
+                    {
+                        name: 'Workgroup',
+                        width: '160px',
+                        formatter: (c) => gridjs.html(`<span class="font-semibold text-sky-600">${Perfectlum.escapeHtml(c || '-')}</span>`)
+                    },
+                    {
+                        name: 'Facility',
+                        width: '160px',
+                        formatter: (c) => gridjs.html(`<span class="font-semibold text-sky-600">${Perfectlum.escapeHtml(c || '-')}</span>`)
                     },
                     { name: 'Task', width: '160px', formatter: (c) => gridjs.html(Perfectlum.badge(c || '-', 'info')) },
                     { name: 'Schedule', width: '140px', formatter: (c) => gridjs.html(Perfectlum.badge(c || '-', 'warning')) },
@@ -655,7 +669,10 @@
                 server: {
                     url: '/api/tasks?sort_mode=due_desc',
                     then: d => d.data.map(r => [
-                        { id: r.id, displayId: r.displayId, displayName: r.displayName, wsName: r.wsName, dueColor: r.dueColor, statusColor: r.statusColor },
+                        { id: r.id, displayId: r.displayId, displayName: r.displayName, dueColor: r.dueColor, statusColor: r.statusColor },
+                        r.wsName,
+                        r.wgName,
+                        r.facName,
                         r.taskName,
                         r.scheduleName,
                         r.dueAt,

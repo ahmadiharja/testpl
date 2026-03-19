@@ -516,7 +516,7 @@ class DashboardController extends Controller
             }));
 
         $total = $query->count();
-        $rows  = (clone $query)->orderBy('workstations.name')->offset($offset)->limit($limit)->get();
+        $rows  = (clone $query)->orderBy('workstations.id')->offset($offset)->limit($limit)->get();
 
         $data = $rows->map(function($r) use ($role) {
             $lc = $r->last_connected ? \Carbon\Carbon::parse($r->last_connected) : null;

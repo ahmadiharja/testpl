@@ -21,7 +21,7 @@
 <aside class="h-screen shrink-0 overflow-hidden border-r transition-all duration-500"
        :class="[sidebarCollapsed ? 'w-[92px]' : 'w-[300px]', theme === 'perfectlum' ? 'border-slate-200 bg-white/95' : 'border-white/5 bg-[#0A0A0B]/95']">
     <div class="flex h-full flex-col px-4 pb-6 pt-6">
-        <div class="mb-8 flex items-center justify-between gap-3" :class="sidebarCollapsed ? 'px-1' : 'px-3'">
+        <div class="mb-8 flex items-center justify-between gap-3" :class="sidebarCollapsed ? 'px-1 justify-center' : 'px-3'">
             <a href="{{ url('dashboard') }}" class="flex min-w-0 items-center gap-3 text-left" :class="sidebarCollapsed ? 'justify-center' : ''">
                 <img
                     x-show="sidebarCollapsed"
@@ -38,13 +38,6 @@
                     class="h-11 w-auto max-w-[180px] shrink-0 object-contain"
                 >
             </a>
-
-            <button @click="sidebarCollapsed = !sidebarCollapsed"
-                    type="button"
-                    class="hidden h-9 w-9 items-center justify-center rounded-xl border transition lg:inline-flex"
-                    :class="theme === 'perfectlum' ? 'border-slate-200 bg-slate-50 text-slate-400 hover:bg-slate-100' : 'border-white/10 bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'">
-                <i data-lucide="panel-left-close" class="h-4 w-4 transition-transform" :class="sidebarCollapsed ? 'rotate-180' : ''"></i>
-            </button>
         </div>
 
         <div class="flex-1 overflow-y-auto px-1">
@@ -105,6 +98,22 @@
                     @endforeach
                 </div>
             </div>
+        </div>
+
+        <div class="mt-4 px-1">
+            <button @click="sidebarCollapsed = !sidebarCollapsed"
+                    type="button"
+                    class="hidden w-full items-center rounded-2xl border transition lg:inline-flex"
+                    :class="[
+                        sidebarCollapsed ? 'mx-auto h-12 w-12 justify-center' : 'gap-3 px-4 py-3',
+                        theme === 'perfectlum'
+                            ? 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                            : 'border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
+                    ]"
+                    :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+                <i data-lucide="panel-left-close" class="h-4 w-4 shrink-0 transition-transform" :class="sidebarCollapsed ? 'rotate-180' : ''"></i>
+                <span x-show="!sidebarCollapsed" x-cloak class="text-[13px] font-semibold tracking-wide" x-text="sidebarCollapsed ? 'Expand' : 'Collapse'"></span>
+            </button>
         </div>
 
         <div class="mt-6 rounded-[1.5rem] border p-3 transition-colors duration-300"

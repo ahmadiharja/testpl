@@ -100,21 +100,15 @@
             </div>
         </div>
 
-        <div class="mt-6 px-2" :class="sidebarCollapsed ? 'flex justify-center' : ''">
-            <div class="rounded-[1.25rem] border px-4 py-3 text-center transition-colors duration-300"
-                 :class="theme === 'perfectlum' ? 'border-slate-200 bg-slate-50/90' : 'border-white/5 bg-white/[0.03]'">
-                <p x-show="!sidebarCollapsed"
-                   x-cloak
-                   class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                    Powered by
-                </p>
-                <img
-                    src="{{ asset('assets/images/qubyx-black.png') }}"
-                    alt="Qubyx"
-                    class="mx-auto mt-2 h-6 w-auto object-contain"
-                    :class="sidebarCollapsed ? 'mt-0 h-7' : 'mt-2'"
-                >
-            </div>
+        <div class="mt-6 px-3" x-show="!sidebarCollapsed" x-cloak>
+            <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                Powered by
+            </p>
+            <img
+                src="{{ asset('assets/images/qubyx-black.png') }}"
+                alt="Qubyx"
+                class="mt-2 h-6 w-auto object-contain"
+            >
         </div>
     </div>
 </aside>

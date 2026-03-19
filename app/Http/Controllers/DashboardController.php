@@ -579,7 +579,7 @@ class DashboardController extends Controller
             }));
 
         $total = $query->count();
-        $rows  = (clone $query)->orderBy('workgroups.name')->offset($offset)->limit($limit)->get();
+        $rows  = (clone $query)->orderBy('workgroups.id')->offset($offset)->limit($limit)->get();
 
         $data = $rows->map(fn($r) => [
             'id'                => $r->id,

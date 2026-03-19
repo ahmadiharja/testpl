@@ -398,7 +398,7 @@ class DashboardController extends Controller
         $type    = $request->get('type');
         $status  = $request->get('status');
         $search  = $request->get('search', '');
-        $sort    = $request->get('sort', 'manufacturer');
+        $sort    = $request->get('sort', 'id');
         $order   = $request->get('order', 'asc');
         $limit   = (int)$request->get('limit', 25);
         $page    = (int)$request->get('page', 1);
@@ -442,9 +442,11 @@ class DashboardController extends Controller
             }));
 
         $sortColumn = match ($sort) {
+            'id' => 'displays.id',
             'status' => 'displays.status',
             'updated_at' => 'displays.updated_at',
-            default => 'displays.manufacturer',
+            'manufacturer' => 'displays.manufacturer',
+            default => 'displays.id',
         };
 
         $total = $query->count();

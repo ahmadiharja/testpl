@@ -5,10 +5,39 @@
     $canManageFacilities = in_array($role, ['super', 'admin'], true);
     $canDeleteFacilities = $role === 'super';
     $initialFacilityStatus = in_array(request('type'), ['ok', 'failed'], true) ? request('type') : '';
+    $facilityText = [
+        'display' => __('display'),
+        'displays' => __('displays'),
+        'needAttention' => __('need attention'),
+        'name' => __('Name'),
+        'location' => __('Location'),
+        'timezone' => __('Timezone'),
+        'workgroups' => __('Workgroups'),
+        'users' => __('Users'),
+        'displaysLabel' => __('Displays'),
+        'actions' => __('Actions'),
+        'searchFacilities' => __('Search facilities...'),
+        'previous' => __('Previous'),
+        'next' => __('Next'),
+        'showing' => __('Showing'),
+        'results' => __('results'),
+        'loading' => __('Loading...'),
+        'noMatchingRecordsFound' => __('No matching records found'),
+        'unableToLoadData' => __('Unable to load data'),
+        'addFacility' => __('Add Facility'),
+        'editFacility' => __('Edit Facility'),
+        'createFacility' => __('Create a new facility'),
+        'updateFacilityDetails' => __('Update facility details'),
+        'unableToLoadFacilityForm' => __('Unable to load facility form.'),
+        'unableToSaveFacility' => __('Unable to save facility.'),
+        'deleteFacility' => __('Delete Facility'),
+        'deleting' => __('Deleting...'),
+        'unableToDeleteFacility' => __('Unable to delete facility.'),
+    ];
 @endphp
 
 <div class="flex flex-col gap-6 pb-8">
-    <x-page-header title="All Facilities" description="Manage all geographical or organizational facility nodes." icon="building-2">
+    <x-page-header title="{{ __('All Facilities') }}" description="{{ __('Manage all geographical or organizational facility nodes.') }}" icon="building-2">
         @if($role === 'super')
             <x-slot name="actions">
                 <button
@@ -16,7 +45,7 @@
                     type="button"
                     class="inline-flex h-12 items-center gap-2 rounded-2xl bg-sky-500 px-4 text-sm font-semibold text-white transition hover:bg-sky-400">
                     <i data-lucide="plus" class="h-4 w-4"></i>
-                    Add Facility
+                    {{ __('Add Facility') }}
                 </button>
             </x-slot>
         @endif
@@ -25,7 +54,7 @@
     <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_-32px_rgba(15,23,42,0.18)]">
         <div class="grid gap-4 lg:grid-cols-[minmax(0,280px)_1fr]">
             <div class="space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Status</label>
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Status') }}</label>
                 <div class="grid h-12 grid-cols-3 rounded-2xl border border-slate-200 bg-white p-1">
                     <button
                         id="facility-status-all"
@@ -34,7 +63,7 @@
                         class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
                         <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <i data-lucide="layers-3" class="h-4 w-4"></i>
-                            <span>All</span>
+                            <span>{{ __('All') }}</span>
                         </span>
                     </button>
                     <button
@@ -44,7 +73,7 @@
                         class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
                         <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <i data-lucide="badge-check" class="h-4 w-4"></i>
-                            <span>OK</span>
+                            <span>{{ __('OK') }}</span>
                         </span>
                     </button>
                     <button
@@ -54,7 +83,7 @@
                         class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
                         <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <i data-lucide="triangle-alert" class="h-4 w-4"></i>
-                            <span>Not OK</span>
+                            <span>{{ __('Not OK') }}</span>
                         </span>
                     </button>
                 </div>
@@ -66,7 +95,7 @@
                     type="button"
                     class="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900">
                     <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
-                    Reset Filters
+                    {{ __('Reset Filters') }}
                 </button>
             </div>
         </div>
@@ -85,7 +114,7 @@
                 type="button"
                 class="flex w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-sky-50 hover:text-sky-700">
                 <i data-lucide="pencil-line" class="h-4 w-4"></i>
-                Edit Facility
+                {{ __('Edit Facility') }}
             </button>
         @endif
         @if($canDeleteFacilities)
@@ -94,7 +123,7 @@
                 type="button"
                 class="flex w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
                 <i data-lucide="trash-2" class="h-4 w-4"></i>
-                Delete Facility
+                {{ __('Delete Facility') }}
             </button>
         @endif
     </div>
@@ -104,8 +133,8 @@
     <div class="w-full max-w-2xl rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]">
         <div class="flex items-start justify-between border-b border-slate-200 px-6 py-5">
             <div>
-                <p id="facility-edit-kicker" class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Edit Facility</p>
-                <h3 id="facility-edit-title" class="mt-2 text-2xl font-semibold text-slate-900">Update facility details</h3>
+                <p id="facility-edit-kicker" class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Edit Facility') }}</p>
+                <h3 id="facility-edit-title" class="mt-2 text-2xl font-semibold text-slate-900">{{ __('Update facility details') }}</h3>
             </div>
             <button id="facility-edit-close" type="button" class="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700">
                 <i data-lucide="x" class="h-5 w-5"></i>
@@ -114,7 +143,7 @@
 
         <div class="px-6 py-6">
             <div id="facility-edit-loading" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-                Loading facility form...
+                {{ __('Loading facility form...') }}
             </div>
             <div id="facility-edit-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700"></div>
             <div id="facility-edit-form"></div>
@@ -125,11 +154,11 @@
 <div id="facility-delete-modal" class="fixed inset-0 z-[1300] hidden items-center justify-center bg-slate-950/40 p-6">
     <div class="w-full max-w-lg rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]">
         <div class="border-b border-slate-200 px-6 py-5">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-rose-400">Delete Facility</p>
-            <h3 class="mt-2 text-2xl font-semibold text-slate-900">Delete this facility?</h3>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-rose-400">{{ __('Delete Facility') }}</p>
+            <h3 class="mt-2 text-2xl font-semibold text-slate-900">{{ __('Delete this facility?') }}</h3>
             <p class="mt-3 text-sm text-slate-500">
-                This action will permanently remove <span id="facility-delete-name" class="font-semibold text-slate-700"></span>.
-                Facilities that still have workstations attached cannot be deleted.
+                {{ __('This action will permanently remove') }} <span id="facility-delete-name" class="font-semibold text-slate-700"></span>.
+                {{ __('Facilities that still have workstations attached cannot be deleted.') }}
             </p>
         </div>
 
@@ -138,13 +167,13 @@
                 id="facility-delete-cancel"
                 type="button"
                 class="inline-flex h-11 items-center rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
-                Cancel
+                {{ __('Cancel') }}
             </button>
             <button
                 id="facility-delete-confirm"
                 type="button"
                 class="inline-flex h-11 items-center rounded-2xl bg-rose-500 px-4 text-sm font-semibold text-white transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-60">
-                Delete Facility
+                {{ __('Delete Facility') }}
             </button>
         </div>
     </div>
@@ -152,6 +181,7 @@
 
 <script>
 (function () {
+    const text = @json($facilityText);
     const canManageFacilities = @json($canManageFacilities);
     const canDeleteFacilities = @json($canDeleteFacilities);
     let initialized = false;
@@ -313,7 +343,7 @@
         state.grid = Perfectlum.createGrid(els.grid, {
             columns: [
                 {
-                    name: 'Name',
+                    name: text.name,
                     formatter: (c) => gridjs.html(`
                         <div class="flex items-center gap-2.5">
                             <span class="inline-flex h-2.5 w-2.5 shrink-0 rounded-full ${Number(c.failedDisplaysCount || 0) > 0 ? 'bg-rose-500 shadow-[0_0_0_4px_rgba(244,63,94,0.12)]' : (Number(c.okDisplaysCount || 0) > 0 ? 'bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]' : 'bg-slate-300 shadow-[0_0_0_4px_rgba(148,163,184,0.12)]')}"></span>
@@ -325,19 +355,19 @@
                                     ${Perfectlum.escapeHtml(c.name)}
                                 </button>
                                 ${Number(c.failedDisplaysCount || 0) > 0
-                                    ? `<p class="mt-1 text-[11px] font-medium text-rose-600">${Perfectlum.escapeHtml(String(c.failedDisplaysCount))} display${Number(c.failedDisplaysCount) === 1 ? '' : 's'} need attention</p>`
+                                    ? `<p class="mt-1 text-[11px] font-medium text-rose-600">${Perfectlum.escapeHtml(String(c.failedDisplaysCount))} ${Perfectlum.escapeHtml(Number(c.failedDisplaysCount) === 1 ? text.display : text.displays)} ${Perfectlum.escapeHtml(text.needAttention)}</p>`
                                     : ''}
                             </div>
                         </div>
                     `),
                 },
-                { name: 'Location', formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
-                { name: 'Timezone', formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
-                { name: 'Workgroups', sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
-                { name: 'Users', sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
-                { name: 'Displays', sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
+                { name: text.location, formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
+                { name: text.timezone, formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
+                { name: text.workgroups, sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
+                { name: text.users, sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
+                { name: text.displaysLabel, sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
                 {
-                    name: 'Actions',
+                    name: text.actions,
                     sort: false,
                     width: '112px',
                     formatter: (c) => gridjs.html(`
@@ -370,7 +400,18 @@
                 },
             },
             sort: { multiColumn: false },
-            language: { search: { placeholder: 'Search facilities...' } },
+            language: {
+                search: { placeholder: text.searchFacilities },
+                pagination: {
+                    previous: text.previous,
+                    next: text.next,
+                    showing: text.showing,
+                    results: () => text.results,
+                },
+                loading: text.loading,
+                noRecordsFound: text.noMatchingRecordsFound,
+                error: text.unableToLoadData,
+            },
         });
     }
 
@@ -423,8 +464,8 @@
         els.editError.classList.add('hidden');
         els.editError.textContent = '';
         els.editForm.innerHTML = '';
-        if (els.editKicker) els.editKicker.textContent = id === 0 ? 'Add Facility' : 'Edit Facility';
-        if (els.editTitle) els.editTitle.textContent = id === 0 ? 'Create a new facility' : 'Update facility details';
+        if (els.editKicker) els.editKicker.textContent = id === 0 ? text.addFacility : text.editFacility;
+        if (els.editTitle) els.editTitle.textContent = id === 0 ? text.createFacility : text.updateFacilityDetails;
 
         try {
             const formData = new FormData();
@@ -435,7 +476,7 @@
             bindEditForm();
             window.lucide?.createIcons();
         } catch (error) {
-            els.editError.textContent = error.message || 'Unable to load facility form.';
+            els.editError.textContent = error.message || text.unableToLoadFacilityForm;
             els.editError.classList.remove('hidden');
         } finally {
             els.editLoading.classList.add('hidden');
@@ -459,7 +500,7 @@
                 closeEditModal();
                 reloadGrid();
             } catch (error) {
-                els.editError.textContent = error.message || 'Unable to save facility.';
+                els.editError.textContent = error.message || text.unableToSaveFacility;
                 els.editError.classList.remove('hidden');
             } finally {
                 form.dataset.submitting = '0';
@@ -490,13 +531,13 @@
         els.deleteModal.classList.add('hidden');
         els.deleteModal.classList.remove('flex');
         els.deleteConfirm.disabled = false;
-        els.deleteConfirm.textContent = 'Delete Facility';
+        els.deleteConfirm.textContent = text.deleteFacility;
     }
 
     async function confirmDelete() {
         if (!state.deleteTarget?.id || els.deleteConfirm.disabled) return;
         els.deleteConfirm.disabled = true;
-        els.deleteConfirm.textContent = 'Deleting...';
+        els.deleteConfirm.textContent = text.deleting;
 
         try {
             const formData = new FormData();
@@ -504,14 +545,14 @@
             formData.append('id', state.deleteTarget.id);
             const payload = await Perfectlum.postForm('/delete-facility', formData);
             if (!payload.success) {
-                throw new Error(payload.msg || 'Unable to delete facility.');
+                throw new Error(payload.msg || text.unableToDeleteFacility);
             }
             closeDeleteModal();
             reloadGrid();
         } catch (error) {
-            window.alert(error.message || 'Unable to delete facility.');
+            window.alert(error.message || text.unableToDeleteFacility);
             els.deleteConfirm.disabled = false;
-            els.deleteConfirm.textContent = 'Delete Facility';
+            els.deleteConfirm.textContent = text.deleteFacility;
         }
     }
 

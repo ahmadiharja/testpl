@@ -1,5 +1,36 @@
 @include('common.navigations.header')
 
+@php
+    $schedulerText = [
+        'pleaseSelect' => __('Please select'),
+        'selectFacilityFirst' => __('Select facility first'),
+        'selectWorkgroupFirst' => __('Select workgroup first'),
+        'selectWorkstationFirst' => __('Select workstation first'),
+        'noFacilitiesFound' => __('No facilities found'),
+        'noWorkgroupsFound' => __('No workgroups found'),
+        'noWorkstationsFound' => __('No workstations found'),
+        'noDisplaysFound' => __('No displays found'),
+        'allDisplaysInScope' => __('All displays in scope'),
+        'display' => __('Display'),
+        'displays' => __('Displays'),
+        'workstation' => __('Workstation'),
+        'workgroup' => __('Workgroup'),
+        'facility' => __('Facility'),
+        'selected' => __('selected'),
+        'scheduleTask' => __('Schedule Task'),
+        'deleteTask' => __('Delete Task'),
+        'failedToDeleteTask' => __('Failed to delete task.'),
+        'taskDeletedSuccessfully' => __('Task deleted successfully.'),
+        'noActions' => __('No actions'),
+        'searchSchedulerTasks' => __('Search scheduler tasks...'),
+        'task' => __('Task'),
+        'schedule' => __('Schedule'),
+        'dueDate' => __('Due Date'),
+        'status' => __('Status'),
+        'actions' => __('Actions'),
+    ];
+@endphp
+
 <div class="space-y-6" x-data="schedulerPage()">
     <section class="rounded-[2rem] border border-slate-200 bg-white px-7 py-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
         <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
@@ -8,10 +39,10 @@
                     <i data-lucide="calendar-days" class="h-6 w-6"></i>
                 </div>
                 <div class="space-y-2">
-                    <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Admin Workspace</p>
-                    <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Task Scheduler</h1>
+                    <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{{ __('Admin Workspace') }}</p>
+                    <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">{{ __('Task Scheduler') }}</h1>
                     <p class="max-w-3xl text-sm text-slate-500">
-                        Manage automated and manual verification sequences across calibration and QA tasks.
+                        {{ __('Manage automated and manual verification sequences across calibration and QA tasks.') }}
                     </p>
                 </div>
             </div>
@@ -20,7 +51,7 @@
                 <a href="{{ url('reports/all-tasks') }}" target="_blank"
                     class="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
                     <i data-lucide="download" class="h-4 w-4"></i>
-                    Export Report
+                    {{ __('Export Report') }}
                 </a>
             </div>
         </div>
@@ -33,13 +64,13 @@
                     @click="activeTab = 'tasks'"
                     class="rounded-t-2xl px-4 py-3 text-sm font-semibold transition"
                     :class="activeTab === 'tasks' ? 'border-b-2 border-sky-500 text-sky-600' : 'text-slate-500 hover:text-slate-700'">
-                    Schedule Tasks
+                    {{ __('Schedule Tasks') }}
                 </button>
                 <button type="button"
                     @click="activeTab = 'calendar'; initCalendarIfNeeded()"
                     class="rounded-t-2xl px-4 py-3 text-sm font-semibold transition"
                     :class="activeTab === 'calendar' ? 'border-b-2 border-sky-500 text-sky-600' : 'text-slate-500 hover:text-slate-700'">
-                    Calendar
+                    {{ __('Calendar') }}
                 </button>
             </div>
         </div>
@@ -49,20 +80,20 @@
             <div class="mb-6 rounded-[1.75rem] border border-slate-200 bg-slate-50/70 p-5 shadow-[0_12px_34px_rgba(15,23,42,0.05)]"
                 x-data="{ openScheduleDisplays: false }">
                 <div class="mb-4">
-                    <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Create Schedule</p>
-                    <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">Schedule tasks by hierarchy</h2>
-                    <p class="mt-1 text-sm text-slate-500">Pick a facility, workgroup, workstation, and optional displays, then continue to the schedule editor.</p>
+                    <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{{ __('Create Schedule') }}</p>
+                    <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">{{ __('Schedule tasks by hierarchy') }}</h2>
+                    <p class="mt-1 text-sm text-slate-500">{{ __('Pick a facility, workgroup, workstation, and optional displays, then continue to the schedule editor.') }}</p>
                 </div>
 
                 <form id="scheduler-create-form" onsubmit="event.preventDefault(); window.create_task(this)">
                     @csrf
                     <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
                         <label class="block">
-                            <span class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Facility</span>
+                            <span class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Facility') }}</span>
                             <select name="facility2" id="schedule_facility_field"
                                 onchange="fetch_schedule_workgroups(this)"
                                 class="hidden">
-                                <option value="">Please select</option>
+                                <option value="">{{ __('Please select') }}</option>
                                 @if(($role ?? 'user') !== 'super')
                                     @foreach($facilities as $fc)
                                         <option value="{{ $fc['id'] }}">{{ $fc['name'] }}</option>
@@ -76,11 +107,11 @@
                             <div class="relative">
                                 <button type="button" id="schedule-facility-trigger"
                                     class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                                    <span id="schedule-facility-label" class="truncate">Please select</span>
+                                    <span id="schedule-facility-label" class="truncate">{{ __('Please select') }}</span>
                                     <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                                 </button>
                                 <div id="schedule-facility-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                                    <input id="schedule-facility-search" type="text" placeholder="Search facilities..." class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                                    <input id="schedule-facility-search" type="text" placeholder="{{ __('Search facilities...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                                     <p id="schedule-facility-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                                     <div id="schedule-facility-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                                 </div>
@@ -88,20 +119,20 @@
                         </label>
 
                         <label class="block">
-                            <span class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Workgroup</span>
+                            <span class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Workgroup') }}</span>
                             <select name="workgroup2" id="schedule_workgroups_field"
                                 onchange="fetch_schedule_workstations(this)"
                                 class="hidden">
-                                <option value="">Select facility first</option>
+                                <option value="">{{ __('Select facility first') }}</option>
                             </select>
                             <div class="relative">
                                 <button type="button" id="schedule-workgroup-trigger"
                                     class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
-                                    <span id="schedule-workgroup-label" class="truncate">Select facility first</span>
+                                    <span id="schedule-workgroup-label" class="truncate">{{ __('Select facility first') }}</span>
                                     <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                                 </button>
                                 <div id="schedule-workgroup-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                                    <input id="schedule-workgroup-search" type="text" placeholder="Search workgroups..." class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                                    <input id="schedule-workgroup-search" type="text" placeholder="{{ __('Search workgroups...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                                     <p id="schedule-workgroup-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                                     <div id="schedule-workgroup-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                                 </div>
@@ -109,20 +140,20 @@
                         </label>
 
                         <label class="block">
-                            <span class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Workstation</span>
+                            <span class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Workstation') }}</span>
                             <select name="workstation2" id="schedule_workstations_field"
                                 onchange="fetch_schedule_displays(this)"
                                 class="hidden">
-                                <option value="">Select workgroup first</option>
+                                <option value="">{{ __('Select workgroup first') }}</option>
                             </select>
                             <div class="relative">
                                 <button type="button" id="schedule-workstation-trigger"
                                     class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
-                                    <span id="schedule-workstation-label" class="truncate">Select workgroup first</span>
+                                    <span id="schedule-workstation-label" class="truncate">{{ __('Select workgroup first') }}</span>
                                     <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                                 </button>
                                 <div id="schedule-workstation-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                                    <input id="schedule-workstation-search" type="text" placeholder="Search workstations..." class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                                    <input id="schedule-workstation-search" type="text" placeholder="{{ __('Search workstations...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                                     <p id="schedule-workstation-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                                     <div id="schedule-workstation-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                                 </div>
@@ -130,13 +161,13 @@
                         </label>
 
                         <div class="relative">
-                            <span class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Displays</span>
+                            <span class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Displays') }}</span>
                             <button type="button"
                                 @click="openScheduleDisplays = !openScheduleDisplays"
                                 @click.away="openScheduleDisplays = false"
                                 id="schedule_displays_dropdown"
                                 class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                                <span id="schedule_displays_label" class="truncate">Select workstation first</span>
+                                <span id="schedule_displays_label" class="truncate">{{ __('Select workstation first') }}</span>
                                 <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400 transition-transform duration-200" :class="openScheduleDisplays ? 'rotate-180' : ''"></i>
                             </button>
                             <div x-show="openScheduleDisplays" x-cloak
@@ -144,10 +175,10 @@
                                 class="absolute left-0 right-0 z-40 mt-2 max-h-72 overflow-auto rounded-[1.25rem] border border-slate-200 bg-white p-2 shadow-[0_20px_45px_rgba(15,23,42,0.14)]"
                                 style="display:none;">
                                 <div class="border-b border-slate-100 p-1 pb-3">
-                                    <input id="schedule-displays-search" type="text" placeholder="Search displays..." class="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                                    <input id="schedule-displays-search" type="text" placeholder="{{ __('Search displays...') }}" class="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                                 </div>
                                 <div id="schedule-displays-options" class="pt-2">
-                                    <div class="px-3 py-2 text-sm text-slate-500">Select workstation first</div>
+                                    <div class="px-3 py-2 text-sm text-slate-500">{{ __('Select workstation first') }}</div>
                                 </div>
                             </div>
                         </div>
@@ -156,7 +187,7 @@
                             <button type="submit"
                                 class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-sky-500 px-6 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(14,165,233,0.24)] transition hover:bg-sky-400">
                                 <i data-lucide="plus" class="h-4 w-4"></i>
-                                Add Schedule
+                                {{ __('Add Schedule') }}
                             </button>
                         </div>
                     </div>
@@ -166,9 +197,9 @@
 
             <div class="mb-4 flex items-center justify-between gap-4">
                 <div>
-                    <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Scheduled Tasks</p>
-                    <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">All calibration and QA schedules</h2>
-                    <p class="mt-1 text-sm text-slate-500">Newest created tasks are shown first to make recent scheduling actions easier to verify.</p>
+                    <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{{ __('Scheduled Tasks') }}</p>
+                    <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">{{ __('All calibration and QA schedules') }}</h2>
+                    <p class="mt-1 text-sm text-slate-500">{{ __('Newest created tasks are shown first to make recent scheduling actions easier to verify.') }}</p>
                 </div>
             </div>
 
@@ -179,9 +210,9 @@
 
         <div x-show="activeTab === 'calendar'" x-cloak class="space-y-4">
             <div>
-                <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Calendar</p>
-                <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">Task calendar overview</h2>
-                <p class="mt-1 text-sm text-slate-500">Browse scheduled calibration and QA activity in a monthly, weekly, or daily view.</p>
+                <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{{ __('Calendar') }}</p>
+                <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">{{ __('Task calendar overview') }}</h2>
+                <p class="mt-1 text-sm text-slate-500">{{ __('Browse scheduled calibration and QA activity in a monthly, weekly, or daily view.') }}</p>
             </div>
 
             <div class="scheduler-calendar-shell overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-[0_16px_44px_rgba(15,23,42,0.06)]">
@@ -199,28 +230,28 @@
         <div @click.away="open = false"
             class="w-full max-w-xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.18)]">
             <div class="border-b border-slate-200 px-6 py-5">
-                <p class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Task Detail</p>
+                <p class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">{{ __('Task Detail') }}</p>
                 <h3 class="mt-2 text-2xl font-bold tracking-tight text-slate-900" x-text="event?.title || '-'"></h3>
                 <p class="mt-1 text-sm text-slate-500" x-text="event?.subtitle || '-'"></p>
             </div>
             <div class="grid grid-cols-1 gap-4 px-6 py-5 md:grid-cols-2">
                 <div class="rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-4">
-                    <p class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">When</p>
+                    <p class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('When') }}</p>
                     <p class="mt-2 text-sm font-semibold text-slate-900" x-text="event?.dateLabel || '-'"></p>
                 </div>
                 <div class="rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-4">
-                    <p class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Task Type</p>
+                    <p class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Task Type') }}</p>
                     <p class="mt-2 text-sm font-semibold text-slate-900" x-text="event?.badgeLabel || '-'"></p>
                 </div>
                 <div class="rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-4 md:col-span-2">
-                    <p class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Location</p>
+                    <p class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Location') }}</p>
                     <p class="mt-2 text-sm font-semibold text-slate-900" x-text="event?.locationLabel || '-'"></p>
                 </div>
             </div>
             <div class="flex justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4">
                 <button type="button" @click="open = false"
                     class="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
-                    Close
+                    {{ __('Close') }}
                 </button>
             </div>
         </div>
@@ -251,6 +282,7 @@
     }
 
     (function () {
+        const text = @json($schedulerText);
         const scheduleHierarchyState = {
             activeDropdown: null,
             facilitySearch: '',
@@ -272,19 +304,19 @@
             }
 
             if (!regularItems.length) {
-                label.textContent = 'No displays found';
+                label.textContent = text.noDisplaysFound;
                 return;
             }
 
             const selectedRegular = regularItems.filter((item) => item.checked);
             if (!selectedRegular.length || selectedRegular.length === regularItems.length) {
-                label.textContent = 'All displays in scope';
+                label.textContent = text.allDisplaysInScope;
                 return;
             }
 
             label.textContent = selectedRegular.length === 1
                 ? selectedRegular[0].dataset.label
-                : `${selectedRegular.length} displays selected`;
+                : `${selectedRegular.length} ${text.displays} ${text.selected}`;
         }
 
         function resetScheduleDisplays(message) {
@@ -331,11 +363,11 @@
                 (value) => {
                     const select = document.getElementById('schedule_facility_field');
                     select.value = value;
-                    document.getElementById('schedule-facility-label').textContent = select.options[select.selectedIndex]?.textContent || 'Please select';
+                    document.getElementById('schedule-facility-label').textContent = select.options[select.selectedIndex]?.textContent || text.pleaseSelect;
                     fetch_schedule_workgroups(select);
                     closeScheduleDropdowns();
                 },
-                'No facilities found'
+                text.noFacilitiesFound
             );
         }
 
@@ -348,11 +380,11 @@
                 (value) => {
                     const select = document.getElementById('schedule_workgroups_field');
                     select.value = value;
-                    document.getElementById('schedule-workgroup-label').textContent = select.options[select.selectedIndex]?.textContent || 'Select workgroup';
+                    document.getElementById('schedule-workgroup-label').textContent = select.options[select.selectedIndex]?.textContent || text.workgroup;
                     fetch_schedule_workstations(select);
                     closeScheduleDropdowns();
                 },
-                'No workgroups found'
+                text.noWorkgroupsFound
             );
         }
 
@@ -365,11 +397,11 @@
                 (value) => {
                     const select = document.getElementById('schedule_workstations_field');
                     select.value = value;
-                    document.getElementById('schedule-workstation-label').textContent = select.options[select.selectedIndex]?.textContent || 'Select workstation';
+                    document.getElementById('schedule-workstation-label').textContent = select.options[select.selectedIndex]?.textContent || text.workstation;
                     fetch_schedule_displays(select);
                     closeScheduleDropdowns();
                 },
-                'No workstations found'
+                text.noWorkstationsFound
             );
         }
 
@@ -389,16 +421,16 @@
                     const workgroups = document.getElementById('schedule_workgroups_field');
                     const workstations = document.getElementById('schedule_workstations_field');
                     if (workgroups) workgroups.innerHTML = data.content;
-                    if (workstations) workstations.innerHTML = '<option value="">Select workgroup first</option>';
-                    document.getElementById('schedule-workgroup-label').textContent = 'Select workgroup';
-                    document.getElementById('schedule-workstation-label').textContent = 'Select workgroup first';
+                    if (workstations) workstations.innerHTML = `<option value="">${text.selectWorkgroupFirst}</option>`;
+                    document.getElementById('schedule-workgroup-label').textContent = text.workgroup;
+                    document.getElementById('schedule-workstation-label').textContent = text.selectWorkgroupFirst;
                     scheduleHierarchyState.workgroupSearch = '';
                     scheduleHierarchyState.workstationSearch = '';
                     const workgroupSearch = document.getElementById('schedule-workgroup-search');
                     const workstationSearch = document.getElementById('schedule-workstation-search');
                     if (workgroupSearch) workgroupSearch.value = '';
                     if (workstationSearch) workstationSearch.value = '';
-                    resetScheduleDisplays('Select workstation first');
+                    resetScheduleDisplays(text.selectWorkstationFirst);
                     refreshScheduleWorkgroupOptions();
                 });
         };
@@ -418,11 +450,11 @@
                     if (!data.success) return;
                     const workstations = document.getElementById('schedule_workstations_field');
                     if (workstations) workstations.innerHTML = data.content;
-                    document.getElementById('schedule-workstation-label').textContent = 'Select workstation';
+                    document.getElementById('schedule-workstation-label').textContent = text.workstation;
                     scheduleHierarchyState.workstationSearch = '';
                     const workstationSearch = document.getElementById('schedule-workstation-search');
                     if (workstationSearch) workstationSearch.value = '';
-                    resetScheduleDisplays('Select workstation first');
+                    resetScheduleDisplays(text.selectWorkstationFirst);
                     refreshScheduleWorkstationOptions();
                 });
         };
@@ -446,7 +478,7 @@
 
                     let content = data.content || '';
                     if (!content.trim()) {
-                        resetScheduleDisplays('No displays found');
+                        resetScheduleDisplays(text.noDisplaysFound);
                         return;
                     }
 
@@ -465,7 +497,7 @@
                             input.dataset.selectAll = '1';
                         } else {
                             const labelEl = input.parentElement?.querySelector('label');
-                            input.dataset.label = (labelEl?.textContent || 'Display').trim();
+                            input.dataset.label = (labelEl?.textContent || text.display).trim();
                         }
 
                         input.addEventListener('change', function () {
@@ -512,7 +544,7 @@
 
         function renderSchedulerTaskActions(row) {
             if (!canManageTasks) {
-                return '<span class="text-xs text-slate-400">No actions</span>';
+                return `<span class="text-xs text-slate-400">${Perfectlum.escapeHtml(text.noActions)}</span>`;
             }
 
             return `
@@ -525,11 +557,11 @@
                     <div data-scheduler-task-menu="${row.id}" class="absolute right-0 top-full z-20 mt-2 hidden w-44 overflow-hidden rounded-2xl border border-slate-200 bg-white py-1 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
                         <button type="button" data-scheduler-task-edit="${row.id}" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50">
                             <i data-lucide="calendar-clock" class="h-4 w-4 text-sky-500"></i>
-                            Schedule Task
+                            ${Perfectlum.escapeHtml(text.scheduleTask)}
                         </button>
                         <button type="button" data-scheduler-task-delete="${row.id}" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
                             <i data-lucide="trash-2" class="h-4 w-4"></i>
-                            Delete Task
+                            ${Perfectlum.escapeHtml(text.deleteTask)}
                         </button>
                     </div>
                 </div>
@@ -544,14 +576,14 @@
             try {
                 const payload = await Perfectlum.postForm(@json(url('delete-task')), formData);
                 if (!payload.success) {
-                    notify('failed', payload.msg || 'Failed to delete task.');
+                    notify('failed', payload.msg || text.failedToDeleteTask);
                     return;
                 }
 
-                notify('success', payload.msg || 'Task deleted successfully.');
+                notify('success', payload.msg || text.taskDeletedSuccessfully);
                 reloadSchedulerGrid();
             } catch (error) {
-                notify('failed', 'Failed to delete task.');
+                notify('failed', text.failedToDeleteTask);
             }
         }
 
@@ -611,7 +643,7 @@
             Perfectlum.createGrid(el, {
                 columns: [
                     {
-                        name: 'Display',
+                        name: text.display,
                         sort: false,
                         formatter: (c) => gridjs.html(`
                             <div>
@@ -619,24 +651,24 @@
                             </div>`)
                     },
                     {
-                        name: 'Workstation',
+                        name: text.workstation,
                         width: '160px',
                         formatter: (c) => gridjs.html(`<span class="font-semibold text-sky-600">${Perfectlum.escapeHtml(c || '-')}</span>`)
                     },
                     {
-                        name: 'Workgroup',
+                        name: text.workgroup,
                         width: '160px',
                         formatter: (c) => gridjs.html(`<span class="font-semibold text-sky-600">${Perfectlum.escapeHtml(c || '-')}</span>`)
                     },
                     {
-                        name: 'Facility',
+                        name: text.facility,
                         width: '160px',
                         formatter: (c) => gridjs.html(`<span class="font-semibold text-sky-600">${Perfectlum.escapeHtml(c || '-')}</span>`)
                     },
-                    { name: 'Task', width: '160px', formatter: (c) => gridjs.html(Perfectlum.badge(c || '-', 'info')) },
-                    { name: 'Schedule', width: '140px', formatter: (c) => gridjs.html(Perfectlum.badge(c || '-', 'warning')) },
+                    { name: text.task, width: '160px', formatter: (c) => gridjs.html(Perfectlum.badge(c || '-', 'info')) },
+                    { name: text.schedule, width: '140px', formatter: (c) => gridjs.html(Perfectlum.badge(c || '-', 'warning')) },
                     {
-                        name: 'Due Date',
+                        name: text.dueDate,
                         width: '160px',
                         formatter: (c, row) => {
                             const color = row.cells[0].data.dueColor;
@@ -645,7 +677,7 @@
                         }
                     },
                     {
-                        name: 'Status',
+                        name: text.status,
                         width: '100px',
                         formatter: (c, row) => {
                             const ok = row.cells[0].data.statusColor === 'success';
@@ -656,7 +688,7 @@
                         }
                     },
                     {
-                        name: 'Actions',
+                        name: text.actions,
                         sort: false,
                         width: '112px',
                         formatter: (_, row) => gridjs.html(renderSchedulerTaskActions(row.cells[0].data))
@@ -702,7 +734,7 @@
                     td: 'border-b border-slate-100 bg-transparent px-7 py-4 align-middle',
                     pagination: 'flex items-center justify-between px-7 py-4 text-xs font-medium text-slate-500'
                 },
-                language: { search: { placeholder: 'Search scheduler tasks...' } }
+                language: { search: { placeholder: text.searchSchedulerTasks } }
             });
         }
 

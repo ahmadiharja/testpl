@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AMU - Create an account</title>
+    <title>{{ __('Login') }} | {{ $settings['Site name'] ?? 'PerfectLum' }}</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -127,7 +127,7 @@
                     </div>
 
                     <a href="#" class="text-xs bg-white/10 hover:bg-white/20 backdrop-blur border border-white/20 transition-colors text-white py-2 px-4 rounded-full flex items-center gap-1 backdrop-filter">
-                        Back to website <span class="text-[10px]">&rarr;</span>
+                        {{ __('Back to website') }} <span class="text-[10px]">&rarr;</span>
                     </a>
                 </div>
 
@@ -154,21 +154,21 @@
 
             <!-- ======================= LOGIN VIEW ======================= -->
             <div x-show="mode === 'login'" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0" style="display: none;">
-                <h1 class="text-4xl font-semibold text-white mb-2">Welcome back</h1>
+                <h1 class="text-4xl font-semibold text-white mb-2">{{ __('Welcome back') }}</h1>
                 <p class="text-muted text-sm mb-10">
-                    Don't have an account? 
-                    <button @click="mode = 'register'" class="text-[#E2E1E6] hover:text-white underline decoration-[#8a8899] underline-offset-2 transition-colors">Sign up</button>
+                    {{ __("Don't have an account?") }}
+                    <button @click="mode = 'register'" class="text-[#E2E1E6] hover:text-white underline decoration-[#8a8899] underline-offset-2 transition-colors">{{ __('Sign up') }}</button>
                 </p>
 
                 <form method="POST" action="{{ url('login') }}" class="space-y-5" @submit.prevent="checkLogin">
                     @csrf
                     
                     <div>
-                        <input name="email" type="text" placeholder="Email / Username" class="w-full input-bg border text-sm rounded-lg px-4 py-3.5 text-white placeholder-[#8a8899] transition-all" required autofocus>
+                        <input name="email" type="text" placeholder="{{ __('Email / Username') }}" class="w-full input-bg border text-sm rounded-lg px-4 py-3.5 text-white placeholder-[#8a8899] transition-all" required autofocus>
                     </div>
 
                     <div class="relative" x-data="{ showPassword: false }">
-                        <input name="password" :type="showPassword ? 'text' : 'password'" placeholder="Enter your password" class="w-full input-bg border text-sm rounded-lg pl-4 pr-12 py-3.5 text-white placeholder-[#8a8899] transition-all" required>
+                        <input name="password" :type="showPassword ? 'text' : 'password'" placeholder="{{ __('Enter your password') }}" class="w-full input-bg border text-sm rounded-lg pl-4 pr-12 py-3.5 text-white placeholder-[#8a8899] transition-all" required>
                         <button type="button" @click="showPassword = !showPassword" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-muted hover:text-white transition-colors">
                             <svg x-show="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                             <svg x-show="showPassword" class="w-5 h-5" style="display: none;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"></path></svg>
@@ -178,9 +178,9 @@
                     <div class="flex items-center justify-between mt-4">
                         <label class="flex items-center space-x-5 cursor-pointer group">
                             <input name="remember" value="1" type="checkbox" class="custom-checkbox w-4 h-4 rounded appearance-none group-hover:ring-2 ring-white/20 transition-all">
-                            <span class="text-sm font-medium text-muted mt-0.5">Remember me</span>
+                            <span class="text-sm font-medium text-muted mt-0.5">{{ __('Remember me') }}</span>
                         </label>
-                        <a href="{{ url('forgot-password') }}" class="text-sm text-muted hover:text-white transition-colors underline decoration-transparent hover:decoration-[#8a8899] underline-offset-2">Forgot password?</a>
+                        <a href="{{ url('forgot-password') }}" class="text-sm text-muted hover:text-white transition-colors underline decoration-transparent hover:decoration-[#8a8899] underline-offset-2">{{ __('Forgot password?') }}</a>
                     </div>
                     
                     <!-- Alert Messages Area -->
@@ -188,7 +188,7 @@
                     <div id="login_success" class="hidden bg-green-500/10 border border-green-500/50 text-green-500 text-sm rounded-lg p-3 mt-2"></div>
 
                     <button id="submit_btn" type="submit" class="btn-primary w-full text-white font-medium text-sm rounded-lg py-3.5 mt-2 transition-transform active:scale-[0.98]">
-                        Log in
+                        {{ __('Log in') }}
                     </button>
                     
                 </form>
@@ -198,25 +198,25 @@
 
             <!-- ======================= REGISTER VIEW ======================= -->
             <div x-show="mode === 'register'" x-transition:enter="transition ease-out duration-300 transform delay-150" x-transition:enter-start="opacity-0 -translate-x-4" x-transition:enter-end="opacity-100 translate-x-0" style="display: none;">
-                <h1 class="text-4xl font-semibold text-white mb-2 tracking-tight">Create an account</h1>
+                <h1 class="text-4xl font-semibold text-white mb-2 tracking-tight">{{ __('Create an account') }}</h1>
                 <p class="text-muted text-sm mb-10">
-                    Already have an account? 
-                    <button @click="mode = 'login'" class="text-[#E2E1E6] hover:text-white underline decoration-[#8a8899] underline-offset-2 transition-colors">Log in</button>
+                    {{ __('Already have an account?') }}
+                    <button @click="mode = 'login'" class="text-[#E2E1E6] hover:text-white underline decoration-[#8a8899] underline-offset-2 transition-colors">{{ __('Log in') }}</button>
                 </p>
 
                 <form @submit.prevent="" class="space-y-4">
                     
                     <div class="grid grid-cols-2 gap-4">
-                        <input type="text" placeholder="First name" class="w-full input-bg border text-sm rounded-lg px-4 py-3.5 text-white placeholder-[#8a8899] transition-all" required autofocus>
-                        <input type="text" placeholder="Last name" class="w-full input-bg border text-sm rounded-lg px-4 py-3.5 text-white placeholder-[#8a8899] transition-all" required>
+                        <input type="text" placeholder="{{ __('First name') }}" class="w-full input-bg border text-sm rounded-lg px-4 py-3.5 text-white placeholder-[#8a8899] transition-all" required autofocus>
+                        <input type="text" placeholder="{{ __('Last name') }}" class="w-full input-bg border text-sm rounded-lg px-4 py-3.5 text-white placeholder-[#8a8899] transition-all" required>
                     </div>
 
                     <div>
-                        <input type="email" placeholder="Email" class="w-full input-bg border text-sm rounded-lg px-4 py-3.5 text-white placeholder-[#8a8899] transition-all" required>
+                        <input type="email" placeholder="{{ __('Email') }}" class="w-full input-bg border text-sm rounded-lg px-4 py-3.5 text-white placeholder-[#8a8899] transition-all" required>
                     </div>
 
                     <div class="relative">
-                        <input type="password" placeholder="Enter your password" class="w-full input-bg border text-sm rounded-lg pl-4 pr-12 py-3.5 text-white placeholder-[#8a8899] transition-all" required>
+                        <input type="password" placeholder="{{ __('Enter your password') }}" class="w-full input-bg border text-sm rounded-lg pl-4 pr-12 py-3.5 text-white placeholder-[#8a8899] transition-all" required>
                         <button type="button" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-muted hover:text-white transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                         </button>
@@ -225,12 +225,12 @@
                     <div class="flex items-start mt-4 mb-2">
                         <label class="flex items-center space-x-5 cursor-pointer group mt-1">
                             <input type="checkbox" required class="custom-checkbox flex-shrink-0 w-4 h-4 rounded appearance-none group-hover:ring-2 ring-white/20 transition-all">
-                            <span class="text-sm font-medium text-muted">I agree to the <a href="#" class="underline decoration-[#8a8899] hover:text-white transition-colors">Terms & Conditions</a></span>
+                            <span class="text-sm font-medium text-muted">{{ __('I agree to the') }} <a href="#" class="underline decoration-[#8a8899] hover:text-white transition-colors">{{ __('Terms & Conditions') }}</a></span>
                         </label>
                     </div>
                     
                     <button type="submit" class="btn-primary w-full text-white font-medium text-sm rounded-lg py-3.5 mt-2 transition-transform active:scale-[0.98]">
-                        Create account
+                        {{ __('Create account') }}
                     </button>
                     
                 </form>
@@ -258,7 +258,7 @@
 
                     submitBtn.disabled = true;
                     submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                    submitBtn.innerText = 'Please wait...';
+                    submitBtn.innerText = @js(__('Please wait...'));
 
                     try {
                         const data = await Perfectlum.postForm(form.action, formData);
@@ -277,7 +277,7 @@
                     } finally {
                         submitBtn.disabled = false;
                         submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                        submitBtn.innerText = 'Log in';
+                        submitBtn.innerText = @js(__('Log in'));
                     }
                 }
             }));

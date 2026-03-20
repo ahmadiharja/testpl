@@ -1,14 +1,51 @@
+@php
+    $userText = [
+        'allFacilities' => __('All facilities'),
+        'searchFacilities' => __('Search facilities...'),
+        'resetFilters' => __('Reset Filters'),
+        'editUser' => __('Edit User'),
+        'deleteUser' => __('Delete User'),
+        'updateUserDetails' => __('Update user details'),
+        'adjustUserDetails' => __('Adjust account, role, and facility assignment without leaving the table.'),
+        'loadingUserForm' => __('Loading user form...'),
+        'username' => __('Username'),
+        'fullName' => __('Full Name'),
+        'email' => __('Email'),
+        'userLevel' => __('User Level'),
+        'password' => __('Password'),
+        'confirmPassword' => __('Confirm Password'),
+        'facility' => __('Facility'),
+        'enableUserAccount' => __('Enable user account'),
+        'cancel' => __('Cancel'),
+        'saveChanges' => __('Save Changes'),
+        'deleteThisUser' => __('Delete this user?'),
+        'unableToLoadUserForm' => __('Unable to load user form.'),
+        'createNewUser' => __('Create a new user'),
+        'createUserSubtitle' => __('Create a new account and assign its facility scope and role.'),
+        'selectUserLevel' => __('Select user level'),
+        'selectFacility' => __('Select facility'),
+        'searchUsers' => __('Search users...'),
+        'active' => __('Active'),
+        'disabled' => __('Disabled'),
+        'saving' => __('Saving...'),
+        'deleting' => __('Deleting...'),
+        'unableToSaveUser' => __('Unable to save user.'),
+        'unableToDeleteUser' => __('Unable to delete user.'),
+        'optionCount' => __('options'),
+        'noOptionsFound' => __('No options found'),
+    ];
+@endphp
 @include('common.navigations.header')
 
 <div class="flex flex-col gap-6 pb-8">
-    <x-page-header title="User Management" description="Manage user accounts, facility scope, and role assignments." icon="users">
+    <x-page-header title="{{ __('User Management') }}" description="{{ __('Manage user accounts, facility scope, and role assignments.') }}" icon="users">
         <x-slot name="actions">
             <button
                 id="create-user-button"
                 type="button"
                 class="inline-flex h-12 items-center gap-2 rounded-2xl bg-sky-500 px-4 text-sm font-semibold text-white transition hover:bg-sky-400">
                 <i data-lucide="user-plus" class="h-4 w-4"></i>
-                Add User
+                {{ __('Add User') }}
             </button>
         </x-slot>
     </x-page-header>
@@ -16,13 +53,13 @@
     <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_-32px_rgba(15,23,42,0.18)]">
         <div class="grid gap-4 lg:grid-cols-[minmax(0,240px)_1fr]">
             <div class="space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Facility</label>
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Facility') }}</label>
                 <div class="relative">
                     <button
                         id="facility-filter-trigger"
                         type="button"
                         class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
-                        <span id="facility-filter-label" class="truncate">All facilities</span>
+                        <span id="facility-filter-label" class="truncate">{{ __('All facilities') }}</span>
                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                     </button>
 
@@ -32,7 +69,7 @@
                         <input
                             id="facility-filter-search"
                             type="text"
-                            placeholder="Search facilities..."
+                            placeholder="{{ __('Search facilities...') }}"
                             class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         <p id="facility-filter-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="facility-filter-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
@@ -46,7 +83,7 @@
                     type="button"
                     class="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900">
                     <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
-                    Reset Filters
+                    {{ __('Reset Filters') }}
                 </button>
             </div>
         </div>
@@ -61,11 +98,11 @@
         class="pointer-events-auto fixed hidden w-52 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_20px_60px_-28px_rgba(15,23,42,0.35)]">
         <button id="user-action-edit" type="button" class="flex w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-sky-50 hover:text-sky-700">
             <i data-lucide="pencil-line" class="h-4 w-4"></i>
-            Edit User
+            {{ __('Edit User') }}
         </button>
         <button id="user-action-delete" type="button" class="flex w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
             <i data-lucide="trash-2" class="h-4 w-4"></i>
-            Delete User
+            {{ __('Delete User') }}
         </button>
     </div>
 </div>
@@ -74,9 +111,9 @@
     <div class="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]">
         <div class="flex items-start justify-between border-b border-slate-200 px-6 py-5">
             <div>
-                <p id="user-edit-kicker" class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Edit User</p>
-                <h3 id="user-edit-title" class="mt-2 text-2xl font-semibold text-slate-900">Update user details</h3>
-                <p id="user-edit-subtitle" class="mt-2 text-sm text-slate-500">Adjust account, role, and facility assignment without leaving the table.</p>
+                <p id="user-edit-kicker" class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Edit User') }}</p>
+                <h3 id="user-edit-title" class="mt-2 text-2xl font-semibold text-slate-900">{{ __('Update user details') }}</h3>
+                <p id="user-edit-subtitle" class="mt-2 text-sm text-slate-500">{{ __('Adjust account, role, and facility assignment without leaving the table.') }}</p>
             </div>
             <button id="user-edit-close" type="button" class="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700">
                 <i data-lucide="x" class="h-5 w-5"></i>
@@ -84,22 +121,22 @@
         </div>
 
         <div class="min-h-0 flex-1 overflow-y-auto px-6 py-6">
-            <div id="user-edit-loading" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">Loading user form...</div>
+            <div id="user-edit-loading" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">{{ __('Loading user form...') }}</div>
             <div id="user-edit-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700"></div>
             <form id="user-edit-form" class="hidden space-y-5">
                 <div class="grid gap-5 md:grid-cols-2">
-                    <label class="space-y-2"><span class="text-sm font-semibold text-slate-700">Username</span><input id="user-name" name="name" type="text" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"></label>
-                    <label class="space-y-2"><span class="text-sm font-semibold text-slate-700">Full Name</span><input id="user-fullname" name="fullname" type="text" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"></label>
-                    <label class="space-y-2"><span class="text-sm font-semibold text-slate-700">Email</span><input id="user-email" name="email" type="email" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"></label>
-                    <label class="space-y-2"><span class="text-sm font-semibold text-slate-700">User Level</span><select id="user-role" name="user_level" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"></select></label>
-                    <label class="space-y-2"><span class="text-sm font-semibold text-slate-700">Password</span><input id="user-password" name="password" type="password" autocomplete="new-password" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"></label>
-                    <label class="space-y-2"><span class="text-sm font-semibold text-slate-700">Confirm Password</span><input id="user-password-confirmation" name="password_confirmation" type="password" autocomplete="new-password" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"></label>
-                    <label class="space-y-2 md:col-span-2"><span class="text-sm font-semibold text-slate-700">Facility</span><select id="user-facility" name="facility_id" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"></select></label>
+                    <label class="space-y-2"><span class="text-sm font-semibold text-slate-700">{{ __('Username') }}</span><input id="user-name" name="name" type="text" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"></label>
+                    <label class="space-y-2"><span class="text-sm font-semibold text-slate-700">{{ __('Full Name') }}</span><input id="user-fullname" name="fullname" type="text" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"></label>
+                    <label class="space-y-2"><span class="text-sm font-semibold text-slate-700">{{ __('Email') }}</span><input id="user-email" name="email" type="email" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"></label>
+                    <label class="space-y-2"><span class="text-sm font-semibold text-slate-700">{{ __('User Level') }}</span><select id="user-role" name="user_level" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"></select></label>
+                    <label class="space-y-2"><span class="text-sm font-semibold text-slate-700">{{ __('Password') }}</span><input id="user-password" name="password" type="password" autocomplete="new-password" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"></label>
+                    <label class="space-y-2"><span class="text-sm font-semibold text-slate-700">{{ __('Confirm Password') }}</span><input id="user-password-confirmation" name="password_confirmation" type="password" autocomplete="new-password" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"></label>
+                    <label class="space-y-2 md:col-span-2"><span class="text-sm font-semibold text-slate-700">{{ __('Facility') }}</span><select id="user-facility" name="facility_id" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"></select></label>
                 </div>
 
                 <label class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-700">
                     <input id="user-enabled" name="enabled" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500">
-                    Enable user account
+                    {{ __('Enable user account') }}
                 </label>
 
                 <input id="user-id" name="id" type="hidden" value="0">
@@ -107,10 +144,10 @@
         </div>
 
         <div class="flex shrink-0 justify-end gap-3 border-t border-slate-200 px-6 py-5">
-            <button id="user-edit-cancel" type="button" class="inline-flex h-11 items-center rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">Cancel</button>
+            <button id="user-edit-cancel" type="button" class="inline-flex h-11 items-center rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">{{ __('Cancel') }}</button>
             <button id="user-edit-save" type="button" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-sky-500 px-4 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60">
                 <i data-lucide="save" class="h-4 w-4"></i>
-                <span id="user-edit-save-label">Save Changes</span>
+                <span id="user-edit-save-label">{{ __('Save Changes') }}</span>
             </button>
         </div>
     </div>
@@ -119,21 +156,23 @@
 <div id="user-delete-modal" class="fixed inset-0 z-[1300] hidden items-center justify-center bg-slate-950/40 p-6">
     <div class="w-full max-w-lg rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]">
         <div class="border-b border-slate-200 px-6 py-5">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-rose-400">Delete User</p>
-            <h3 class="mt-2 text-2xl font-semibold text-slate-900">Delete this user?</h3>
-            <p class="mt-3 text-sm text-slate-500">This action will permanently remove <span id="user-delete-name" class="font-semibold text-slate-700"></span>.</p>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-rose-400">{{ __('Delete User') }}</p>
+            <h3 class="mt-2 text-2xl font-semibold text-slate-900">{{ __('Delete this user?') }}</h3>
+            <p class="mt-3 text-sm text-slate-500">{{ __('This action will permanently remove') }} <span id="user-delete-name" class="font-semibold text-slate-700"></span>.</p>
         </div>
 
         <div class="flex justify-end gap-3 px-6 py-5">
-            <button id="user-delete-cancel" type="button" class="inline-flex h-11 items-center rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">Cancel</button>
-            <button id="user-delete-confirm" type="button" class="inline-flex h-11 items-center rounded-2xl bg-rose-500 px-4 text-sm font-semibold text-white transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-60">Delete User</button>
+            <button id="user-delete-cancel" type="button" class="inline-flex h-11 items-center rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">{{ __('Cancel') }}</button>
+            <button id="user-delete-confirm" type="button" class="inline-flex h-11 items-center rounded-2xl bg-rose-500 px-4 text-sm font-semibold text-white transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-60">{{ __('Delete User') }}</button>
         </div>
     </div>
 </div>
 
 <script id="users-filters-data" type="application/json">@json($filters)</script>
+<script id="users-text" type="application/json">@json($userText)</script>
 <script>
 (function () {
+    const text = JSON.parse(document.getElementById('users-text')?.textContent || '{}');
     let initialized = false;
     const state = {
         config: { canChooseFacility: false, facilities: [], selectedFacilityId: '' },
@@ -269,8 +308,8 @@
         const facilities = getFacilityOptions();
         els.facilityTrigger.disabled = !state.config.canChooseFacility && facilities.length <= 1;
         els.facilityLabel.textContent = state.selectedFacilityId
-            ? findOptionLabel(facilities, state.selectedFacilityId, 'Select facility')
-            : 'All facilities';
+            ? findOptionLabel(facilities, state.selectedFacilityId, text.selectFacility)
+            : text.allFacilities;
         renderFacilityOptions();
     }
 
@@ -283,8 +322,8 @@
         }
 
         els.facilityHint.textContent = options.length
-            ? `${options.length} option${options.length === 1 ? '' : 's'}`
-            : 'No options found';
+            ? `${options.length} ${text.optionCount}`
+            : text.noOptionsFound;
 
         els.facilityOptions.innerHTML = options.length
             ? options.map((item) => `
@@ -295,7 +334,7 @@
                     ${Perfectlum.escapeHtml(item.name)}
                 </button>
             `).join('')
-            : `<div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">No options found</div>`;
+            : `<div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">${Perfectlum.escapeHtml(text.noOptionsFound)}</div>`;
 
         els.facilityOptions.querySelectorAll('button[data-id]').forEach((button) => {
             button.addEventListener('click', () => {
@@ -356,14 +395,14 @@
 
         state.grid = Perfectlum.createGrid(els.grid, {
             columns: [
-                { name: 'Username', formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-800 group-[.theme-chroma]:text-gray-100">${Perfectlum.escapeHtml(c)}</span>`) },
-                { name: 'Full Name', formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c || '-')}</span>`) },
-                { name: 'Email', formatter: (c) => gridjs.html(`<a href="mailto:${Perfectlum.escapeHtml(c)}" class="text-sky-600 hover:underline">${Perfectlum.escapeHtml(c)}</a>`) },
-                { name: 'Facility', formatter: (c) => !c.name || c.name === '-' ? '-' : gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c.name)}</span>`) },
-                { name: 'Role', formatter: (c) => gridjs.html(Perfectlum.badge(c, 'info')) },
-                { name: 'Status', formatter: (c) => c ? gridjs.html(Perfectlum.badge('Active', 'success')) : gridjs.html(Perfectlum.badge('Disabled', 'danger')) },
+                { name: text.username, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-800 group-[.theme-chroma]:text-gray-100">${Perfectlum.escapeHtml(c)}</span>`) },
+                { name: text.fullName, formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c || '-')}</span>`) },
+                { name: text.email, formatter: (c) => gridjs.html(`<a href="mailto:${Perfectlum.escapeHtml(c)}" class="text-sky-600 hover:underline">${Perfectlum.escapeHtml(c)}</a>`) },
+                { name: text.facility, formatter: (c) => !c.name || c.name === '-' ? '-' : gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c.name)}</span>`) },
+                { name: @js(__('Role')), formatter: (c) => gridjs.html(Perfectlum.badge(c, 'info')) },
+                { name: @js(__('Status')), formatter: (c) => c ? gridjs.html(Perfectlum.badge(text.active, 'success')) : gridjs.html(Perfectlum.badge(text.disabled, 'danger')) },
                 {
-                    name: 'Actions',
+                    name: @js(__('Actions')),
                     sort: false,
                     width: '112px',
                     formatter: (c) => gridjs.html(`
@@ -392,7 +431,7 @@
                 server: { url: (_, kw) => buildGridUrl({ search: kw }) },
             },
             sort: { multiColumn: false },
-            language: { search: { placeholder: 'Search users...' } },
+            language: { search: { placeholder: text.searchUsers } },
         });
     }
 
@@ -457,17 +496,17 @@
         els.editError.textContent = '';
         els.editForm.classList.add('hidden');
         els.editSave.disabled = false;
-        els.editSaveLabel.textContent = 'Save Changes';
+        els.editSaveLabel.textContent = text.saveChanges;
 
         try {
             const payload = await Perfectlum.request(`/api/user-modal/${id || ''}`);
             state.edit.payload = payload;
 
-            els.editKicker.textContent = payload.is_existing ? 'Edit User' : 'Add User';
-            els.editTitle.textContent = payload.is_existing ? (payload.fullname || payload.username || 'Update user details') : 'Create a new user';
+            els.editKicker.textContent = payload.is_existing ? text.editUser : @js(__('Add User'));
+            els.editTitle.textContent = payload.is_existing ? (payload.fullname || payload.username || text.updateUserDetails) : text.createNewUser;
             els.editSubtitle.textContent = payload.is_existing
-                ? 'Adjust account, role, and facility assignment without leaving the table.'
-                : 'Create a new account and assign its facility scope and role.';
+                ? text.adjustUserDetails
+                : text.createUserSubtitle;
 
             els.userId.value = payload.id || 0;
             els.username.value = payload.username || '';
@@ -476,14 +515,14 @@
             els.email.value = payload.email || '';
             els.password.value = '';
             els.passwordConfirmation.value = '';
-            fillSelect(els.role, payload.options?.roles || [], payload.user_level, 'Select user level');
-            fillSelect(els.facility, payload.options?.facilities || [], payload.facility_id, payload.can_choose_facility ? 'Select facility' : '');
+            fillSelect(els.role, payload.options?.roles || [], payload.user_level, text.selectUserLevel);
+            fillSelect(els.facility, payload.options?.facilities || [], payload.facility_id, payload.can_choose_facility ? text.selectFacility : '');
             els.facility.disabled = !payload.can_choose_facility;
             els.enabled.checked = !!payload.enabled;
 
             els.editForm.classList.remove('hidden');
         } catch (error) {
-            els.editError.textContent = error.message || 'Unable to load user form.';
+            els.editError.textContent = error.message || text.unableToLoadUserForm;
             els.editError.classList.remove('hidden');
         } finally {
             state.edit.loading = false;
@@ -495,7 +534,7 @@
         if (state.edit.saving || state.edit.loading) return;
         state.edit.saving = true;
         els.editSave.disabled = true;
-        els.editSaveLabel.textContent = 'Saving…';
+        els.editSaveLabel.textContent = text.saving;
         els.editError.classList.add('hidden');
 
         try {
@@ -515,17 +554,17 @@
 
             const payload = await Perfectlum.postForm('/api/user-modal/save', formData);
             if (!payload.success) {
-                throw new Error(payload.message || 'Unable to save user.');
+                throw new Error(payload.message || text.unableToSaveUser);
             }
             closeEditModal();
             reloadGrid();
         } catch (error) {
-            els.editError.textContent = error.message || 'Unable to save user.';
+            els.editError.textContent = error.message || text.unableToSaveUser;
             els.editError.classList.remove('hidden');
         } finally {
             state.edit.saving = false;
             els.editSave.disabled = false;
-            els.editSaveLabel.textContent = 'Save Changes';
+            els.editSaveLabel.textContent = text.saveChanges;
         }
     }
 
@@ -537,7 +576,7 @@
         els.editError.textContent = '';
         els.editForm.classList.add('hidden');
         els.editSave.disabled = false;
-        els.editSaveLabel.textContent = 'Save Changes';
+        els.editSaveLabel.textContent = text.saveChanges;
     }
 
     function openDeleteModal(id, name) {
@@ -553,13 +592,13 @@
         els.deleteModal.classList.add('hidden');
         els.deleteModal.classList.remove('flex');
         els.deleteConfirm.disabled = false;
-        els.deleteConfirm.textContent = 'Delete User';
+        els.deleteConfirm.textContent = text.deleteUser;
     }
 
     async function confirmDelete() {
         if (!state.deleteTarget?.id || els.deleteConfirm.disabled) return;
         els.deleteConfirm.disabled = true;
-        els.deleteConfirm.textContent = 'Deleting...';
+        els.deleteConfirm.textContent = text.deleting;
 
         try {
             const formData = new FormData();
@@ -567,14 +606,14 @@
             formData.append('id', state.deleteTarget.id);
             const payload = await Perfectlum.postForm('/delete-user', formData);
             if (!payload.success) {
-                throw new Error(payload.msg || 'Unable to delete user.');
+                throw new Error(payload.msg || text.unableToDeleteUser);
             }
             closeDeleteModal();
             reloadGrid();
         } catch (error) {
-            window.alert(error.message || 'Unable to delete user.');
+            window.alert(error.message || text.unableToDeleteUser);
             els.deleteConfirm.disabled = false;
-            els.deleteConfirm.textContent = 'Delete User';
+            els.deleteConfirm.textContent = text.deleteUser;
         }
     }
 

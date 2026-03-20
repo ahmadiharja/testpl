@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title ?? 'Signup' }} | {{ $settings['Site name'] ?? 'PerfectLum' }}</title>
+    <title>{{ $title ?? __('Signup') }} | {{ $settings['Site name'] ?? 'PerfectLum' }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -21,9 +21,9 @@
                 <div class="relative z-10 flex h-[620px] flex-col justify-between">
                     <img src="{{ url($settings['Site logo'] ?? 'assets/images/perfectlum-logo.png') }}" alt="Site Logo" class="h-10 w-auto">
                     <div>
-                        <p class="mb-3 text-sm font-semibold uppercase tracking-[0.28em] text-sky-300">Create Account</p>
-                        <h1 class="max-w-xl text-4xl font-extrabold leading-tight">Register with the same Alpine and Tailwind workflow used by the admin pages.</h1>
-                        <p class="mt-4 max-w-lg text-sm text-white/65">This replaces the old Bootstrap signup surface and keeps the onboarding stack aligned with the rest of the application.</p>
+                        <p class="mb-3 text-sm font-semibold uppercase tracking-[0.28em] text-sky-300">{{ __('Create Account') }}</p>
+                        <h1 class="max-w-xl text-4xl font-extrabold leading-tight">{{ __('Register with the same Alpine and Tailwind workflow used by the admin pages.') }}</h1>
+                        <p class="mt-4 max-w-lg text-sm text-white/65">{{ __('This replaces the old Bootstrap signup surface and keeps the onboarding stack aligned with the rest of the application.') }}</p>
                     </div>
                 </div>
             </div>
@@ -33,10 +33,10 @@
             <div class="rounded-[2rem] border border-white/10 bg-[#161820] p-8 shadow-2xl">
                 <div class="mb-8">
                     <a href="{{ url('login') }}" class="inline-flex items-center gap-2 text-sm text-white/50 transition hover:text-white">
-                        <span>&larr;</span> Back to login
+                        <span>&larr;</span> {{ __('Back to login') }}
                     </a>
-                    <h2 class="mt-6 text-3xl font-extrabold tracking-tight">Create an account</h2>
-                    <p class="mt-2 text-sm text-white/55">Provision your initial facility and workgroup in one flow.</p>
+                    <h2 class="mt-6 text-3xl font-extrabold tracking-tight">{{ __('Create an account') }}</h2>
+                    <p class="mt-2 text-sm text-white/55">{{ __('Provision your initial facility and workgroup in one flow.') }}</p>
                 </div>
 
                 <form @submit.prevent="submit" class="space-y-5">
@@ -44,37 +44,37 @@
 
                     <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
                         <div class="md:col-span-2">
-                            <label class="mb-2 block text-sm font-medium text-white/70">Full Name</label>
+                            <label class="mb-2 block text-sm font-medium text-white/70">{{ __('Full Name') }}</label>
                             <input x-model="form.fullname" type="text" required class="h-12 w-full rounded-xl border border-white/10 bg-[#0f1117] px-4 text-sm text-white outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20">
                         </div>
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-white/70">Email</label>
+                            <label class="mb-2 block text-sm font-medium text-white/70">{{ __('Email') }}</label>
                             <input x-model="form.email" type="email" required class="h-12 w-full rounded-xl border border-white/10 bg-[#0f1117] px-4 text-sm text-white outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20">
                         </div>
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-white/70">Username</label>
+                            <label class="mb-2 block text-sm font-medium text-white/70">{{ __('Username') }}</label>
                             <input x-model="form.username" type="text" required autocomplete="off" class="h-12 w-full rounded-xl border border-white/10 bg-[#0f1117] px-4 text-sm text-white outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20">
                         </div>
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-white/70">Password</label>
+                            <label class="mb-2 block text-sm font-medium text-white/70">{{ __('Password') }}</label>
                             <input x-model="form.password" type="password" required autocomplete="off" class="h-12 w-full rounded-xl border border-white/10 bg-[#0f1117] px-4 text-sm text-white outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20">
                         </div>
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-white/70">Confirm Password</label>
+                            <label class="mb-2 block text-sm font-medium text-white/70">{{ __('Confirm Password') }}</label>
                             <input x-model="form.password_confirmation" type="password" required class="h-12 w-full rounded-xl border border-white/10 bg-[#0f1117] px-4 text-sm text-white outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20">
                         </div>
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-white/70">Facility Name</label>
+                            <label class="mb-2 block text-sm font-medium text-white/70">{{ __('Facility Name') }}</label>
                             <input x-model="form.facility_name" type="text" required class="h-12 w-full rounded-xl border border-white/10 bg-[#0f1117] px-4 text-sm text-white outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20">
                         </div>
                         <div>
-                            <label class="mb-2 block text-sm font-medium text-white/70">Workgroup Name</label>
+                            <label class="mb-2 block text-sm font-medium text-white/70">{{ __('Workgroup Name') }}</label>
                             <input x-model="form.workgroup_name" type="text" required class="h-12 w-full rounded-xl border border-white/10 bg-[#0f1117] px-4 text-sm text-white outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20">
                         </div>
                         <div class="md:col-span-2">
-                            <label class="mb-2 block text-sm font-medium text-white/70">Timezone</label>
+                            <label class="mb-2 block text-sm font-medium text-white/70">{{ __('Timezone') }}</label>
                             <select x-model="form.timezone" required class="h-12 w-full rounded-xl border border-white/10 bg-[#0f1117] px-4 text-sm text-white outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20">
-                                <option value="">Select a timezone</option>
+                                <option value="">{{ __('Select a timezone') }}</option>
                                 @foreach(timezone_identifiers_list() as $timezone)
                                     <option value="{{ $timezone }}">{{ $timezone }}</option>
                                 @endforeach
@@ -87,17 +87,17 @@
 
                     <label class="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70">
                         <input x-model="form.tos" type="checkbox" class="mt-1 h-4 w-4 rounded border-white/20 bg-[#0f1117] text-sky-500 focus:ring-sky-500/30">
-                        <span>I agree to the <a href="https://qubyx.com/en/terms-conditions" target="_blank" class="text-sky-300 underline underline-offset-2">terms and conditions</a>.</span>
+                        <span>{{ __('I agree to the') }} <a href="https://qubyx.com/en/terms-conditions" target="_blank" class="text-sky-300 underline underline-offset-2">{{ __('terms and conditions') }}</a>.</span>
                     </label>
 
                     <div x-show="error" x-text="error" class="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300" style="display: none;"></div>
                     <div x-show="success" class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300" style="display: none;">
-                        Account created successfully. Redirecting to login...
+                        {{ __('Account created successfully. Redirecting to login...') }}
                     </div>
 
                     <button type="submit" :disabled="loading || !canSubmit"
                             class="inline-flex h-12 w-full items-center justify-center rounded-xl bg-sky-500 px-4 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60">
-                        <span x-text="loading ? 'Please wait...' : 'Create Account'"></span>
+                        <span x-text="loading ? @js(__('Please wait...')) : @js(__('Create Account'))"></span>
                     </button>
                 </form>
             </div>
@@ -126,16 +126,16 @@
                     if (!password) return '';
 
                     const issues = [];
-                    if (password.length < 6) issues.push('Password must be at least 6 characters long.');
-                    if (!/[A-Z]/.test(password)) issues.push('Password must contain at least one uppercase letter.');
-                    if (!/[a-z]/.test(password)) issues.push('Password must contain at least one lowercase letter.');
-                    if (!/[0-9]/.test(password)) issues.push('Password must contain at least one digit.');
-                    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) issues.push('Password must contain at least one special character.');
+                    if (password.length < 6) issues.push(@js(__('Password must be at least 6 characters long.')));
+                    if (!/[A-Z]/.test(password)) issues.push(@js(__('Password must contain at least one uppercase letter.')));
+                    if (!/[a-z]/.test(password)) issues.push(@js(__('Password must contain at least one lowercase letter.')));
+                    if (!/[0-9]/.test(password)) issues.push(@js(__('Password must contain at least one digit.')));
+                    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) issues.push(@js(__('Password must contain at least one special character.')));
                     return issues.join('<br>');
                 },
                 get confirmationMessage() {
                     if (!this.form.password_confirmation) return '';
-                    return this.form.password === this.form.password_confirmation ? '' : 'Passwords do not match.';
+                    return this.form.password === this.form.password_confirmation ? '' : @js(__('Passwords do not match.'));
                 },
                 get canSubmit() {
                     return !this.passwordMessage && !this.confirmationMessage && this.form.tos;
@@ -162,14 +162,14 @@
                         const data = await response.json();
 
                         if (!response.ok || !data.success) {
-                            this.error = data.msg || 'Unable to create account.';
+                            this.error = data.msg || @js(__('Unable to create account.'));
                             return;
                         }
 
                         this.success = true;
                         setTimeout(() => window.location.href = data.next || '{{ url('login') }}', 1200);
                     } catch (error) {
-                        this.error = 'Unable to create account.';
+                        this.error = @js(__('Unable to create account.'));
                     } finally {
                         this.loading = false;
                     }

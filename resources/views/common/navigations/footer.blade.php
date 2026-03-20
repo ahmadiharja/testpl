@@ -1,3 +1,21 @@
+@php
+    $menuLabels = [
+        'Dashboard' => __('Dashboard'),
+        'Facilities' => __('Facilities'),
+        'Facility Information' => __('Facility Information'),
+        'Workgroups' => __('Workgroups'),
+        'Workstations' => __('Workstations'),
+        'Displays' => __('Displays'),
+        'Calibrate Display' => __('Calibrate Display'),
+        'Scheduler' => __('Scheduler'),
+        'History & Reports' => __('History & Reports'),
+        'Site Settings' => __('Site Settings'),
+        'Application Settings' => __('Application Settings'),
+        'Alert Settings' => __('Alert Settings'),
+        'Users' => __('Users'),
+    ];
+@endphp
+
             </div>
         </div>
     </main>
@@ -35,6 +53,7 @@
                 settingsExpanded: false,
                 viewState: 'list', 
                 theme: '{{ session("platform", "perfectlum") }}',
+                menuLabels: @json($menuLabels),
                 
                 routes: {
                     'Dashboard': '{{ url("dashboard") }}',
@@ -55,6 +74,9 @@
                     if (this.routes[name]) {
                         window.location.href = this.routes[name];
                     }
+                },
+                menuLabel(name) {
+                    return this.menuLabels[name] || name;
                 },
                 isActive(name) {
                     return this.activeMenu === name;

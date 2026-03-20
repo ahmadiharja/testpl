@@ -26,22 +26,22 @@
             
             <!-- Global Nav Buttons -->
             <div class="absolute top-6 right-6 flex items-center gap-3 z-50">
-                <button x-show="viewStack.length > 1" @click="popView()" class="p-2 rounded-full bg-black/10 hover:bg-black/20 text-white transition-colors backdrop-blur-sm" title="Go Back">
+                <button x-show="viewStack.length > 1" @click="popView()" class="p-2 rounded-full bg-black/10 hover:bg-black/20 text-white transition-colors backdrop-blur-sm" title="{{ __('Go Back') }}">
                     <i data-lucide="arrow-left" class="w-5 h-5"></i>
                 </button>
-                <button x-show="current.type === 'display'" @click="openDisplayStructureMap()" class="inline-flex items-center gap-2 rounded-full bg-black/10 hover:bg-black/20 px-4 py-2 text-xs font-semibold text-white transition-colors backdrop-blur-sm" title="Open structure map">
+                <button x-show="current.type === 'display'" @click="openDisplayStructureMap()" class="inline-flex items-center gap-2 rounded-full bg-black/10 hover:bg-black/20 px-4 py-2 text-xs font-semibold text-white transition-colors backdrop-blur-sm" title="{{ __('Open structure map') }}">
                     <i data-lucide="workflow" class="w-4 h-4"></i>
-                    Map
+                    {{ __('Map') }}
                 </button>
-                <button x-show="current.type === 'workgroup'" @click="openWorkgroupStructureMap()" class="inline-flex items-center gap-2 rounded-full bg-black/10 hover:bg-black/20 px-4 py-2 text-xs font-semibold text-white transition-colors backdrop-blur-sm" title="Open workgroup map">
+                <button x-show="current.type === 'workgroup'" @click="openWorkgroupStructureMap()" class="inline-flex items-center gap-2 rounded-full bg-black/10 hover:bg-black/20 px-4 py-2 text-xs font-semibold text-white transition-colors backdrop-blur-sm" title="{{ __('Open workgroup map') }}">
                     <i data-lucide="workflow" class="w-4 h-4"></i>
-                    Map
+                    {{ __('Map') }}
                 </button>
-                <button x-show="current.type === 'workstation'" @click="openWorkstationStructureMap()" class="inline-flex items-center gap-2 rounded-full bg-black/10 hover:bg-black/20 px-4 py-2 text-xs font-semibold text-white transition-colors backdrop-blur-sm" title="Open workstation map">
+                <button x-show="current.type === 'workstation'" @click="openWorkstationStructureMap()" class="inline-flex items-center gap-2 rounded-full bg-black/10 hover:bg-black/20 px-4 py-2 text-xs font-semibold text-white transition-colors backdrop-blur-sm" title="{{ __('Open workstation map') }}">
                     <i data-lucide="workflow" class="w-4 h-4"></i>
-                    Map
+                    {{ __('Map') }}
                 </button>
-                <button @click="close()" class="p-2 rounded-full bg-black/10 hover:bg-black/20 text-white transition-colors backdrop-blur-sm" title="Close">
+                <button @click="close()" class="p-2 rounded-full bg-black/10 hover:bg-black/20 text-white transition-colors backdrop-blur-sm" title="{{ __('Close') }}">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -61,8 +61,8 @@
                                 <i data-lucide="building-2" class="w-6 h-6"></i>
                             </div>
                             <div>
-                                <p class="text-[11px] font-extrabold uppercase tracking-widest opacity-90 mb-0.5" style="text-shadow: 0 1px 2px rgba(0,0,0,0.1)">FACILITY DETAILS</p>
-                                <h2 class="text-[32px] leading-tight font-extrabold tracking-tight drop-shadow-sm truncate" x-text="facilityDetail?.name || 'Loading facility…'">Loading facility…</h2>
+                                <p class="text-[11px] font-extrabold uppercase tracking-widest opacity-90 mb-0.5" style="text-shadow: 0 1px 2px rgba(0,0,0,0.1)">{{ __('Facility Details') }}</p>
+                                <h2 class="text-[32px] leading-tight font-extrabold tracking-tight drop-shadow-sm truncate" x-text="facilityDetail?.name || @js(__('Loading facility…'))">{{ __('Loading facility…') }}</h2>
                             </div>
                         </div>
                     </div>
@@ -73,13 +73,13 @@
                             <div class="flex h-full min-h-[20rem] items-center justify-center rounded-[1.5rem] bg-white">
                                 <div class="flex flex-col items-center gap-4 text-slate-500">
                                     <div class="h-12 w-12 rounded-full border-4 border-sky-200 border-t-sky-500 animate-spin"></div>
-                                    <p class="text-sm font-semibold">Loading facility details...</p>
+                                    <p class="text-sm font-semibold">{{ __('Loading facility details...') }}</p>
                                 </div>
                             </div>
                         </template>
                         <template x-if="!facilityLoading && facilityError">
                             <div class="rounded-[1.5rem] border border-rose-200 bg-rose-50 p-8 text-center">
-                                <p class="text-sm font-bold uppercase tracking-[0.2em] text-rose-500">Unable To Load</p>
+                                <p class="text-sm font-bold uppercase tracking-[0.2em] text-rose-500">{{ __('Unable To Load') }}</p>
                                 <p class="mt-3 text-sm text-rose-700" x-text="facilityError"></p>
                             </div>
                         </template>
@@ -87,15 +87,15 @@
                             <div class="space-y-8">
                                 <div class="bg-white rounded-[1.5rem] p-8 border border-gray-100 shadow-sm">
                                     <div class="flex items-center justify-between mb-8">
-                                        <h3 class="text-lg font-extrabold text-gray-900">Facility Details</h3>
+                                        <h3 class="text-lg font-extrabold text-gray-900">{{ __('Facility Details') }}</h3>
                                         <div class="flex items-center gap-3">
                                             <template x-if="!facilityEditing && facilityDetail?.permissions?.edit">
-                                                <button type="button" class="text-sm font-bold text-sky-500 hover:text-sky-600 flex items-center gap-2" @click="beginFacilityEdit()"><i data-lucide="pen-line" class="w-4 h-4"></i> Edit</button>
+                                                <button type="button" class="text-sm font-bold text-sky-500 hover:text-sky-600 flex items-center gap-2" @click="beginFacilityEdit()"><i data-lucide="pen-line" class="w-4 h-4"></i> {{ __('Edit') }}</button>
                                             </template>
                                             <template x-if="facilityEditing">
                                                 <div class="flex items-center gap-3">
-                                                    <button type="button" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" @click="cancelFacilityEdit()"><i data-lucide="x" class="h-4 w-4"></i>Cancel</button>
-                                                    <button type="button" class="inline-flex items-center gap-2 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60" :disabled="savingFacility" @click="confirmSaveFacility()"><i data-lucide="save" class="h-4 w-4"></i><span x-text="savingFacility ? 'Saving…' : 'Save Changes'"></span></button>
+                                                    <button type="button" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" @click="cancelFacilityEdit()"><i data-lucide="x" class="h-4 w-4"></i>{{ __('Cancel') }}</button>
+                                                    <button type="button" class="inline-flex items-center gap-2 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60" :disabled="savingFacility" @click="confirmSaveFacility()"><i data-lucide="save" class="h-4 w-4"></i><span x-text="savingFacility ? @js(__('Saving…')) : @js(__('Save Changes'))"></span></button>
                                                 </div>
                                             </template>
                                         </div>
@@ -104,19 +104,19 @@
                                     <template x-if="!facilityEditing">
                                         <div class="grid gap-6 md:grid-cols-2">
                                             <div>
-                                                <p class="text-[11px] font-bold text-gray-400 mb-2">Facility Name</p>
+                                                <p class="text-[11px] font-bold text-gray-400 mb-2">{{ __('Facility Name') }}</p>
                                                 <p class="text-[13px] font-bold text-gray-800" x-text="facilityDetail.name || '-'"></p>
                                             </div>
                                             <div>
-                                                <p class="text-[11px] font-bold text-gray-400 mb-2">Timezone</p>
+                                                <p class="text-[11px] font-bold text-gray-400 mb-2">{{ __('Timezone') }}</p>
                                                 <p class="text-[13px] font-bold text-gray-800" x-text="facilityDetail.timezone || '-'"></p>
                                             </div>
                                             <div>
-                                                <p class="text-[11px] font-bold text-gray-400 mb-2">Description</p>
+                                                <p class="text-[11px] font-bold text-gray-400 mb-2">{{ __('Description') }}</p>
                                                 <p class="text-[13px] font-bold text-gray-800" x-text="facilityDetail.description || '-'"></p>
                                             </div>
                                             <div>
-                                                <p class="text-[11px] font-bold text-gray-400 mb-2">Location</p>
+                                                <p class="text-[11px] font-bold text-gray-400 mb-2">{{ __('Location') }}</p>
                                                 <p class="text-[13px] font-bold text-gray-800" x-text="facilityDetail.location || '-'"></p>
                                             </div>
                                         </div>
@@ -125,19 +125,19 @@
                                     <template x-if="facilityEditing">
                                         <div class="grid gap-5 md:grid-cols-2">
                                             <div>
-                                                <label class="mb-1.5 block text-sm font-semibold text-slate-600">Facility Name</label>
+                                                <label class="mb-1.5 block text-sm font-semibold text-slate-600">{{ __('Facility Name') }}</label>
                                                 <input type="text" x-model="facilityForm.name" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                                             </div>
                                             <div>
-                                                <label class="mb-1.5 block text-sm font-semibold text-slate-600">Timezone</label>
+                                                <label class="mb-1.5 block text-sm font-semibold text-slate-600">{{ __('Timezone') }}</label>
                                                 <input type="text" x-model="facilityForm.timezone" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                                             </div>
                                             <div class="md:col-span-2">
-                                                <label class="mb-1.5 block text-sm font-semibold text-slate-600">Description</label>
+                                                <label class="mb-1.5 block text-sm font-semibold text-slate-600">{{ __('Description') }}</label>
                                                 <textarea x-model="facilityForm.description" rows="4" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"></textarea>
                                             </div>
                                             <div class="md:col-span-2">
-                                                <label class="mb-1.5 block text-sm font-semibold text-slate-600">Location</label>
+                                                <label class="mb-1.5 block text-sm font-semibold text-slate-600">{{ __('Location') }}</label>
                                                 <input type="text" x-model="facilityForm.location" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                                             </div>
                                         </div>
@@ -145,7 +145,7 @@
                                 </div>
 
                                 <div>
-                                    <h3 class="text-[15px] font-extrabold text-gray-900 flex items-center gap-2 mb-6"><i data-lucide="network" class="w-5 h-5 text-gray-400"></i> Registered Workgroups</h3>
+                                    <h3 class="text-[15px] font-extrabold text-gray-900 flex items-center gap-2 mb-6"><i data-lucide="network" class="w-5 h-5 text-gray-400"></i> {{ __('Registered Workgroups') }}</h3>
                                     <div class="bg-white border border-gray-100 rounded-[1.5rem] shadow-sm p-2">
                                         <table class="w-full text-left border-collapse">
                                             <thead>
@@ -194,22 +194,22 @@
             
             <!-- Global Nav Buttons for Drawer -->
             <div class="absolute top-6 right-6 flex items-center gap-3 z-50">
-                <button x-show="viewStack.length > 1" @click="popView()" class="p-2 rounded-full bg-black/10 hover:bg-black/20 text-white transition-colors backdrop-blur-sm" title="Go Back">
+                <button x-show="viewStack.length > 1" @click="popView()" class="p-2 rounded-full bg-black/10 hover:bg-black/20 text-white transition-colors backdrop-blur-sm" title="{{ __('Go Back') }}">
                     <i data-lucide="arrow-left" class="w-5 h-5"></i>
                 </button>
-                <button x-show="current.type === 'display'" @click="openDisplayStructureMap()" class="inline-flex items-center gap-2 rounded-full bg-black/10 hover:bg-black/20 px-4 py-2 text-xs font-semibold text-white transition-colors backdrop-blur-sm" title="Open structure map">
+                <button x-show="current.type === 'display'" @click="openDisplayStructureMap()" class="inline-flex items-center gap-2 rounded-full bg-black/10 hover:bg-black/20 px-4 py-2 text-xs font-semibold text-white transition-colors backdrop-blur-sm" title="{{ __('Open structure map') }}">
                     <i data-lucide="workflow" class="w-4 h-4"></i>
-                    Map
+                    {{ __('Map') }}
                 </button>
-                <button x-show="current.type === 'workgroup'" @click="openWorkgroupStructureMap()" class="inline-flex items-center gap-2 rounded-full bg-black/10 hover:bg-black/20 px-4 py-2 text-xs font-semibold text-white transition-colors backdrop-blur-sm" title="Open workgroup map">
+                <button x-show="current.type === 'workgroup'" @click="openWorkgroupStructureMap()" class="inline-flex items-center gap-2 rounded-full bg-black/10 hover:bg-black/20 px-4 py-2 text-xs font-semibold text-white transition-colors backdrop-blur-sm" title="{{ __('Open workgroup map') }}">
                     <i data-lucide="workflow" class="w-4 h-4"></i>
-                    Map
+                    {{ __('Map') }}
                 </button>
-                <button x-show="current.type === 'workstation'" @click="openWorkstationStructureMap()" class="inline-flex items-center gap-2 rounded-full bg-black/10 hover:bg-black/20 px-4 py-2 text-xs font-semibold text-white transition-colors backdrop-blur-sm" title="Open workstation map">
+                <button x-show="current.type === 'workstation'" @click="openWorkstationStructureMap()" class="inline-flex items-center gap-2 rounded-full bg-black/10 hover:bg-black/20 px-4 py-2 text-xs font-semibold text-white transition-colors backdrop-blur-sm" title="{{ __('Open workstation map') }}">
                     <i data-lucide="workflow" class="w-4 h-4"></i>
-                    Map
+                    {{ __('Map') }}
                 </button>
-                <button @click="close()" class="p-2 rounded-full bg-black/10 hover:bg-black/20 text-white transition-colors backdrop-blur-sm" title="Close">
+                <button @click="close()" class="p-2 rounded-full bg-black/10 hover:bg-black/20 text-white transition-colors backdrop-blur-sm" title="{{ __('Close') }}">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -226,8 +226,8 @@
                                 <i data-lucide="network" class="w-6 h-6"></i>
                             </div>
                             <div>
-                                <p class="text-[11px] font-extrabold uppercase tracking-widest opacity-90 mb-0.5">WORKGROUP DETAILS</p>
-                                <h2 class="text-[32px] leading-tight font-extrabold tracking-tight drop-shadow-sm truncate" x-text="workgroupDetail?.name || 'Loading workgroup…'">Loading workgroup…</h2>
+                                <p class="text-[11px] font-extrabold uppercase tracking-widest opacity-90 mb-0.5">{{ __('Workgroup Details') }}</p>
+                                <h2 class="text-[32px] leading-tight font-extrabold tracking-tight drop-shadow-sm truncate" x-text="workgroupDetail?.name || @js(__('Loading workgroup…'))">{{ __('Loading workgroup…') }}</h2>
                             </div>
                         </div>
                     </div>
@@ -237,14 +237,14 @@
                             <div class="flex h-full w-full items-center justify-center bg-white">
                                 <div class="flex flex-col items-center gap-4 text-slate-500">
                                     <div class="h-12 w-12 rounded-full border-4 border-sky-200 border-t-sky-500 animate-spin"></div>
-                                    <p class="text-sm font-semibold">Loading workgroup details...</p>
+                                    <p class="text-sm font-semibold">{{ __('Loading workgroup details...') }}</p>
                                 </div>
                             </div>
                         </template>
                         <template x-if="!workgroupLoading && workgroupError">
                             <div class="flex h-full w-full items-center justify-center bg-white p-10">
                                 <div class="max-w-md rounded-[1.5rem] border border-rose-200 bg-rose-50 p-8 text-center">
-                                    <p class="text-sm font-bold uppercase tracking-[0.2em] text-rose-500">Unable To Load</p>
+                                    <p class="text-sm font-bold uppercase tracking-[0.2em] text-rose-500">{{ __('Unable To Load') }}</p>
                                     <p class="mt-3 text-sm text-rose-700" x-text="workgroupError"></p>
                                 </div>
                             </div>
@@ -253,27 +253,27 @@
                             <div class="flex h-full w-full">
                                 <div class="w-72 bg-white border-r border-gray-100 p-6 shrink-0 space-y-6">
                                     <div>
-                                        <h4 class="text-[15px] font-extrabold text-gray-900">Workgroup Hierarchy</h4>
+                                        <h4 class="text-[15px] font-extrabold text-gray-900">{{ __('Workgroup Hierarchy') }}</h4>
                                     </div>
                                     <div class="space-y-4">
                                         <div>
-                                            <p class="mb-1 text-[10px] font-semibold text-slate-500">Facility:</p>
+                                            <p class="mb-1 text-[10px] font-semibold text-slate-500">{{ __('Facility:') }}</p>
                                             <button type="button" @click="pushView('facility', workgroupDetail.facility.id)" class="flex h-12 w-full items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-left text-[14px] font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 cursor-pointer" x-text="workgroupDetail.facility.name"></button>
                                         </div>
                                         <div>
-                                            <p class="mb-1 text-[10px] font-semibold text-slate-500">Workgroup:</p>
+                                            <p class="mb-1 text-[10px] font-semibold text-slate-500">{{ __('Workgroup:') }}</p>
                                             <div class="flex min-h-[3rem] w-full items-center rounded-2xl border border-sky-300 bg-sky-50 px-4 py-2 text-[14px] font-bold text-sky-700" x-text="workgroupDetail.name"></div>
                                         </div>
                                     </div>
                                     <div class="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-                                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Contact</p>
+                                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Contact') }}</p>
                                         <div class="mt-4 space-y-4 text-sm text-slate-700">
                                             <div>
-                                                <p class="text-[11px] font-semibold text-slate-500">Address</p>
+                                                <p class="text-[11px] font-semibold text-slate-500">{{ __('Address') }}</p>
                                                 <p class="mt-2 font-semibold text-slate-900" x-text="workgroupDetail.address || '-'"></p>
                                             </div>
                                             <div>
-                                                <p class="text-[11px] font-semibold text-slate-500">Phone Number</p>
+                                                <p class="text-[11px] font-semibold text-slate-500">{{ __('Phone Number') }}</p>
                                                 <p class="mt-2 font-semibold text-slate-900" x-text="workgroupDetail.phone || '-'"></p>
                                             </div>
                                         </div>
@@ -284,23 +284,23 @@
                                     <div class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-8 pt-6 backdrop-blur">
                                         <div class="flex items-center justify-between gap-4">
                                             <div class="inline-flex items-center gap-3 border-b border-slate-100">
-                                                <button type="button" @click="activeWorkgroupTab = 'overview'" class="px-1 py-3 text-[15px] font-semibold transition border-b-2" :class="activeWorkgroupTab === 'overview' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-500 hover:text-slate-700'">Overview</button>
-                                                <button type="button" @click="activeWorkgroupTab = 'settings'" class="px-1 py-3 text-[15px] font-semibold transition border-b-2" :class="activeWorkgroupTab === 'settings' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-500 hover:text-slate-700'">Settings</button>
+                                                <button type="button" @click="activeWorkgroupTab = 'overview'" class="px-1 py-3 text-[15px] font-semibold transition border-b-2" :class="activeWorkgroupTab === 'overview' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-500 hover:text-slate-700'">{{ __('Overview') }}</button>
+                                                <button type="button" @click="activeWorkgroupTab = 'settings'" class="px-1 py-3 text-[15px] font-semibold transition border-b-2" :class="activeWorkgroupTab === 'settings' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-500 hover:text-slate-700'">{{ __('Settings') }}</button>
                                             </div>
                                             <div class="flex items-center gap-3" x-show="activeWorkgroupTab === 'settings'">
                                                 <template x-if="!workgroupSettingsEditing && workgroupDetail?.permissions?.edit">
                                                     <button type="button" class="inline-flex items-center gap-2 rounded-2xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600" @click="beginWorkgroupSettingsEdit()">
-                                                        <i data-lucide="pen-line" class="h-4 w-4"></i>Edit
+                                                        <i data-lucide="pen-line" class="h-4 w-4"></i>{{ __('Edit') }}
                                                     </button>
                                                 </template>
                                                 <template x-if="workgroupSettingsEditing">
                                                     <div class="flex items-center gap-3">
                                                         <button type="button" class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" @click="cancelWorkgroupSettingsEdit()">
-                                                            <i data-lucide="x" class="h-4 w-4"></i>Cancel
+                                                            <i data-lucide="x" class="h-4 w-4"></i>{{ __('Cancel') }}
                                                         </button>
                                                         <button type="button" class="inline-flex items-center gap-2 rounded-2xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60" :disabled="savingWorkgroupSettings" @click="confirmSaveWorkgroupSettings()">
                                                             <i data-lucide="save" class="h-4 w-4"></i>
-                                                            <span x-text="savingWorkgroupSettings ? 'Saving...' : 'Save Changes'"></span>
+                                                            <span x-text="savingWorkgroupSettings ? @js(__('Saving...')) : @js(__('Save Changes'))"></span>
                                                         </button>
                                                     </div>
                                                 </template>
@@ -313,19 +313,19 @@
                                             <div class="space-y-8">
                                                 <div class="grid gap-6 md:grid-cols-2">
                                                     <div class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_12px_35px_rgba(15,23,42,0.08)]">
-                                                        <p class="text-[11px] font-extrabold uppercase tracking-[0.22em] text-slate-400">Workstations</p>
+                                                        <p class="text-[11px] font-extrabold uppercase tracking-[0.22em] text-slate-400">{{ __('Workstations') }}</p>
                                                         <p class="mt-5 text-[3rem] font-black tracking-tight text-slate-900" x-text="workgroupDetail.summary.workstationCount"></p>
                                                     </div>
                                                     <div class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_12px_35px_rgba(15,23,42,0.08)]">
-                                                        <p class="text-[11px] font-extrabold uppercase tracking-[0.22em] text-slate-400">Displays</p>
+                                                        <p class="text-[11px] font-extrabold uppercase tracking-[0.22em] text-slate-400">{{ __('Displays') }}</p>
                                                         <p class="mt-5 text-[3rem] font-black tracking-tight text-slate-900" x-text="workgroupDetail.summary.displayCount"></p>
                                                     </div>
                                                     <div class="rounded-[1.75rem] border border-emerald-200 bg-emerald-50 p-5 shadow-[0_12px_35px_rgba(15,23,42,0.08)]">
-                                                        <p class="text-[11px] font-extrabold uppercase tracking-[0.22em] text-emerald-600">Healthy</p>
+                                                        <p class="text-[11px] font-extrabold uppercase tracking-[0.22em] text-emerald-600">{{ __('Healthy') }}</p>
                                                         <p class="mt-5 text-[3rem] font-black tracking-tight text-emerald-600" x-text="workgroupDetail.summary.healthyCount"></p>
                                                     </div>
                                                     <div class="rounded-[1.75rem] border border-rose-200 bg-rose-50 p-5 shadow-[0_12px_35px_rgba(15,23,42,0.08)]">
-                                                        <p class="text-[11px] font-extrabold uppercase tracking-[0.22em] text-rose-600">Needs Attention</p>
+                                                        <p class="text-[11px] font-extrabold uppercase tracking-[0.22em] text-rose-600">{{ __('Needs Attention') }}</p>
                                                         <p class="mt-5 text-[3rem] font-black tracking-tight text-rose-600" x-text="workgroupDetail.summary.attentionCount"></p>
                                                     </div>
                                                 </div>
@@ -334,8 +334,8 @@
                                                     <div class="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)]">
                                                         <div class="flex items-center justify-between gap-4">
                                                             <div>
-                                                                <p class="text-[11px] font-extrabold uppercase tracking-[0.22em] text-slate-400">Registered Workstations</p>
-                                                                <h3 class="mt-3 text-[2rem] leading-[1.05] font-black tracking-tight text-slate-900">All workstations in this workgroup</h3>
+                                                                <p class="text-[11px] font-extrabold uppercase tracking-[0.22em] text-slate-400">{{ __('Registered Workstations') }}</p>
+                                                                <h3 class="mt-3 text-[2rem] leading-[1.05] font-black tracking-tight text-slate-900">{{ __('All workstations in this workgroup') }}</h3>
                                                             </div>
                                                             <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500" x-text="`${workgroupDetail.workstations.length} workstations`"></span>
                                                         </div>
@@ -343,10 +343,10 @@
                                                             <table class="min-w-full divide-y divide-slate-200">
                                                                 <thead class="bg-slate-50">
                                                                     <tr>
-                                                                        <th class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Workstation</th>
-                                                                        <th class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Displays</th>
-                                                                        <th class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Status</th>
-                                                                        <th class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Last Connected</th>
+                                                                        <th class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Workstation') }}</th>
+                                                                        <th class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Displays') }}</th>
+                                                                        <th class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Status') }}</th>
+                                                                        <th class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Last Connected') }}</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody class="divide-y divide-slate-100 bg-white">
@@ -359,7 +359,7 @@
                                                                             <td class="px-5 py-4">
                                                                                 <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold" :class="item.attentionCount > 0 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'">
                                                                                     <span class="inline-block h-2 w-2 rounded-full" :class="item.attentionCount > 0 ? 'bg-rose-500' : 'bg-emerald-500'"></span>
-                                                                                    <span x-text="item.attentionCount > 0 ? 'Needs Attention' : 'Healthy'"></span>
+                                                                                    <span x-text="item.attentionCount > 0 ? @js(__('Needs Attention')) : @js(__('Healthy'))"></span>
                                                                                 </span>
                                                                             </td>
                                                                             <td class="px-5 py-4 text-sm font-semibold text-slate-700" x-text="item.lastConnected"></td>
@@ -371,12 +371,12 @@
                                                     </div>
 
                                                     <div class="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)]">
-                                                        <p class="text-[11px] font-extrabold uppercase tracking-[0.22em] text-slate-400">Workgroup Summary</p>
+                                                        <p class="text-[11px] font-extrabold uppercase tracking-[0.22em] text-slate-400">{{ __('Workgroup Summary') }}</p>
                                                         <div class="mt-6 grid gap-4 sm:grid-cols-2">
-                                                            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Facility</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workgroupDetail.facility.name"></p></div>
-                                                            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Workgroup</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workgroupDetail.name"></p></div>
-                                                            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 sm:col-span-2"><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Address</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workgroupDetail.address || '-'"></p></div>
-                                                            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 sm:col-span-2"><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Phone Number</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workgroupDetail.phone || '-'"></p></div>
+                                                            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{{ __('Facility') }}</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workgroupDetail.facility.name"></p></div>
+                                                            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{{ __('Workgroup') }}</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workgroupDetail.name"></p></div>
+                                                            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 sm:col-span-2"><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{{ __('Address') }}</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workgroupDetail.address || '-'"></p></div>
+                                                            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 sm:col-span-2"><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{{ __('Phone Number') }}</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workgroupDetail.phone || '-'"></p></div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -387,10 +387,10 @@
                                             <div class="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)]">
                                                 <template x-if="!workgroupSettingsEditing">
                                                     <div class="grid gap-4 sm:grid-cols-2">
-                                                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Workgroup Name</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workgroupSettingsForm.name || '-'"></p></div>
-                                                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Facility</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="selectedWorkgroupFacilityName() || '-'"></p></div>
-                                                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 sm:col-span-2"><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Address</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workgroupSettingsForm.address || '-'"></p></div>
-                                                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 sm:col-span-2"><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Phone Number</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workgroupSettingsForm.phone || '-'"></p></div>
+                                                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{{ __('Workgroup Name') }}</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workgroupSettingsForm.name || '-'"></p></div>
+                                                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{{ __('Facility') }}</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="selectedWorkgroupFacilityName() || '-'"></p></div>
+                                                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 sm:col-span-2"><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{{ __('Address') }}</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workgroupSettingsForm.address || '-'"></p></div>
+                                                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 sm:col-span-2"><p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{{ __('Phone Number') }}</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workgroupSettingsForm.phone || '-'"></p></div>
                                                     </div>
                                                 </template>
                                                 <template x-if="workgroupSettingsEditing">
@@ -416,7 +416,7 @@
                                                                             </button>
                                                                         </template>
                                                                         <template x-if="!filteredWorkgroupFacilityOptions().length">
-                                                                            <div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">No options found</div>
+                                                                            <div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">{{ __('No options found') }}</div>
                                                                         </template>
                                                                     </div>
                                                                 </div>
@@ -457,7 +457,7 @@
                             </div>
                             <div>
                                 <p class="text-[11px] font-extrabold uppercase tracking-widest opacity-90 mb-0.5" style="text-shadow: 0 1px 2px rgba(0,0,0,0.1)">WORKSTATION DETAILS</p>
-                                <h2 class="text-[32px] leading-tight font-extrabold tracking-tight drop-shadow-sm truncate" x-text="workstationDetail?.name || 'Loading workstation…'">Loading workstation…</h2>
+                                <h2 class="text-[32px] leading-tight font-extrabold tracking-tight drop-shadow-sm truncate" x-text="workstationDetail?.name || @js(__('Loading workstation…'))">{{ __('Loading workstation…') }}</h2>
                             </div>
                         </div>
                     </div>
@@ -468,14 +468,14 @@
                             <div class="flex h-full w-full items-center justify-center bg-white">
                                 <div class="flex flex-col items-center gap-4 text-slate-500">
                                     <div class="h-12 w-12 rounded-full border-4 border-sky-200 border-t-sky-500 animate-spin"></div>
-                                    <p class="text-sm font-semibold">Loading workstation details...</p>
+                                    <p class="text-sm font-semibold">{{ __('Loading workstation details...') }}</p>
                                 </div>
                             </div>
                         </template>
                         <template x-if="!workstationLoading && workstationError">
                             <div class="flex h-full w-full items-center justify-center bg-white p-10">
                                 <div class="max-w-md rounded-[1.5rem] border border-rose-200 bg-rose-50 p-8 text-center">
-                                    <p class="text-sm font-bold uppercase tracking-[0.2em] text-rose-500">Unable To Load</p>
+                                    <p class="text-sm font-bold uppercase tracking-[0.2em] text-rose-500">{{ __('Unable To Load') }}</p>
                                     <p class="mt-3 text-sm text-rose-700" x-text="workstationError"></p>
                                 </div>
                             </div>
@@ -485,7 +485,7 @@
                                 <!-- Left sidebar (hierarchy/meta) -->
                                 <div class="w-72 bg-white border-r border-gray-100 p-6 shrink-0 space-y-6">
                                     <div class="flex items-center justify-between gap-3">
-                                        <h4 class="text-[15px] font-extrabold text-gray-900">Workstation Hierarchy</h4>
+                                        <h4 class="text-[15px] font-extrabold text-gray-900">{{ __('Workstation Hierarchy') }}</h4>
                                         <button type="button" :disabled="!workstationDetail?.permissions?.changeWorkgroup" class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400" @click="openWorkstationHierarchyEdit()">
                                             <i data-lucide="move-horizontal" class="h-4 w-4"></i>Move
                                         </button>
@@ -505,18 +505,18 @@
                                         </div>
                                     </div>
                                     <div x-show="showWorkstationHierarchyEdit" x-cloak class="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
-                                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Move Workstation</p>
+                                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{{ __('Move Workstation') }}</p>
                                         <p class="mt-2 text-[12px] leading-5 text-slate-500">Relocate this workstation by selecting a new facility and workgroup.</p>
                                         <div class="mt-4 space-y-3">
                                             <div>
                                                 <label class="mb-1.5 block text-[10px] font-semibold text-slate-500">Facility</label>
                                                 <div class="relative" @click.outside="closeInlineSelect()">
                                                     <button type="button" class="flex h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20" @click="toggleInlineSelect('workstation-move-facilities')">
-                                                        <span class="truncate" x-text="selectedWorkstationFacilityName() || 'Select facility'"></span>
+                                                        <span class="truncate" x-text="selectedWorkstationFacilityName() || @js(__('Select facility'))"></span>
                                                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                                                     </button>
                                                     <div x-show="isInlineSelectOpen('workstation-move-facilities')" x-cloak class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                                                        <input x-ref="search-workstation-move-facilities" x-model="workstationMoveSearch.facilities" type="text" placeholder="Search facilities..." class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-[12px] font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                                                        <input x-ref="search-workstation-move-facilities" x-model="workstationMoveSearch.facilities" type="text" placeholder="{{ __('Search facilities...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-[12px] font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                                                         <p class="mb-2 text-[11px] font-medium text-slate-400" x-text="workstationMoveOptionHint('facilities')"></p>
                                                         <div class="max-h-56 space-y-1 overflow-y-auto">
                                                             <template x-for="facility in filteredWorkstationMoveOptions('facilities')" :key="`ws-move-facility-${facility.id}`">
@@ -525,7 +525,7 @@
                                                                 </button>
                                                             </template>
                                                             <template x-if="!filteredWorkstationMoveOptions('facilities').length">
-                                                                <div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">No options found</div>
+                                                                <div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">{{ __('No options found') }}</div>
                                                             </template>
                                                         </div>
                                                     </div>
@@ -535,11 +535,11 @@
                                                 <label class="mb-1.5 block text-[10px] font-semibold text-slate-500">Workgroup</label>
                                                 <div class="relative" @click.outside="closeInlineSelect()">
                                                     <button type="button" :disabled="!workstationMoveForm.facilityId || workstationMoveLoading" class="flex h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 disabled:bg-slate-100 disabled:text-slate-400" @click="toggleInlineSelect('workstation-move-workgroups')">
-                                                        <span class="truncate" x-text="selectedWorkstationWorkgroupName() || 'Select workgroup'"></span>
+                                                        <span class="truncate" x-text="selectedWorkstationWorkgroupName() || @js(__('Select workgroup'))"></span>
                                                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                                                     </button>
                                                     <div x-show="isInlineSelectOpen('workstation-move-workgroups')" x-cloak class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                                                        <input x-ref="search-workstation-move-workgroups" x-model="workstationMoveSearch.workgroups" :disabled="!workstationMoveForm.facilityId || workstationMoveLoading" type="text" placeholder="Search workgroups..." class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-[12px] font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 disabled:bg-slate-100 disabled:text-slate-400">
+                                                        <input x-ref="search-workstation-move-workgroups" x-model="workstationMoveSearch.workgroups" :disabled="!workstationMoveForm.facilityId || workstationMoveLoading" type="text" placeholder="{{ __('Search workgroups...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-[12px] font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 disabled:bg-slate-100 disabled:text-slate-400">
                                                         <p class="mb-2 text-[11px] font-medium text-slate-400" x-text="workstationMoveOptionHint('workgroups')"></p>
                                                         <div class="max-h-56 space-y-1 overflow-y-auto">
                                                             <template x-for="workgroup in filteredWorkstationMoveOptions('workgroups')" :key="`ws-move-workgroup-${workgroup.id}`">
@@ -548,7 +548,7 @@
                                                                 </button>
                                                             </template>
                                                             <template x-if="!filteredWorkstationMoveOptions('workgroups').length">
-                                                                <div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">No options found</div>
+                                                                <div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">{{ __('No options found') }}</div>
                                                             </template>
                                                         </div>
                                                     </div>
@@ -556,8 +556,8 @@
                                             </div>
                                         </div>
                                         <div class="mt-4 flex items-center justify-end gap-2">
-                                            <button type="button" class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" @click="closeWorkstationHierarchyEdit()">Cancel</button>
-                                            <button type="button" :disabled="!workstationMoveForm.workgroupId || workstationMoveLoading" class="rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60" @click="confirmWorkstationMove()"><span x-text="workstationMoveLoading ? 'Moving…' : 'Move Workstation'"></span></button>
+                                            <button type="button" class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" @click="closeWorkstationHierarchyEdit()">{{ __('Cancel') }}</button>
+                                            <button type="button" :disabled="!workstationMoveForm.workgroupId || workstationMoveLoading" class="rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60" @click="confirmWorkstationMove()"><span x-text="workstationMoveLoading ? @js(__('Moving…')) : @js(__('Move Workstation'))"></span></button>
                                         </div>
                                     </div>
                                     <div class="pt-2 border-t border-gray-100 border-dashed space-y-4">
@@ -574,19 +574,19 @@
                                     <div class="sticky top-0 z-10 border-b border-slate-200 bg-[#F8F9FB] px-8 pt-6">
                                         <div class="flex items-center justify-between gap-4 border-b border-slate-200">
                                             <div class="flex items-center gap-2">
-                                                <button type="button" class="border-b-2 px-3 py-3 text-sm font-semibold transition-colors" :class="activeWorkstationTab === 'overview' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-500 hover:text-slate-700'" @click="activeWorkstationTab = 'overview'">Overview</button>
-                                                <button type="button" class="border-b-2 px-3 py-3 text-sm font-semibold transition-colors" :class="activeWorkstationTab === 'settings' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-500 hover:text-slate-700'" @click="openWorkstationSettingsTab()">Settings</button>
+                                                <button type="button" class="border-b-2 px-3 py-3 text-sm font-semibold transition-colors" :class="activeWorkstationTab === 'overview' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-500 hover:text-slate-700'" @click="activeWorkstationTab = 'overview'">{{ __('Overview') }}</button>
+                                                <button type="button" class="border-b-2 px-3 py-3 text-sm font-semibold transition-colors" :class="activeWorkstationTab === 'settings' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-500 hover:text-slate-700'" @click="openWorkstationSettingsTab()">{{ __('Settings') }}</button>
                                             </div>
                                             <template x-if="activeWorkstationTab === 'settings'">
                                                 <div class="flex items-center gap-2 pb-3">
                                                     <template x-if="!workstationSettingsEditing && workstationDetail?.permissions?.edit">
-                                                        <button type="button" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700" @click="beginWorkstationSettingsEdit()"><i data-lucide="pen-line" class="h-4 w-4"></i>Edit</button>
+                                                        <button type="button" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700" @click="beginWorkstationSettingsEdit()"><i data-lucide="pen-line" class="h-4 w-4"></i>{{ __('Edit') }}</button>
                                                     </template>
                                                     <template x-if="workstationSettingsEditing">
-                                                        <button type="button" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50" @click="cancelWorkstationSettingsEdit()"><i data-lucide="x" class="h-4 w-4"></i>Cancel</button>
+                                                        <button type="button" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50" @click="cancelWorkstationSettingsEdit()"><i data-lucide="x" class="h-4 w-4"></i>{{ __('Cancel') }}</button>
                                                     </template>
                                                     <template x-if="workstationSettingsEditing">
-                                                        <button type="button" class="inline-flex items-center gap-2 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60" :disabled="savingWorkstationSettings" @click="confirmSaveWorkstationSettings()"><i data-lucide="save" class="h-4 w-4"></i><span x-text="savingWorkstationSettings ? 'Saving…' : 'Save Changes'"></span></button>
+                                                        <button type="button" class="inline-flex items-center gap-2 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60" :disabled="savingWorkstationSettings" @click="confirmSaveWorkstationSettings()"><i data-lucide="save" class="h-4 w-4"></i><span x-text="savingWorkstationSettings ? @js(__('Saving…')) : @js(__('Save Changes'))"></span></button>
                                                     </template>
                                                 </div>
                                             </template>
@@ -604,27 +604,27 @@
                                             <div class="space-y-6">
                                                 <div class="grid gap-4 xl:grid-cols-2">
                                                     <div class="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-                                                        <p class="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">Workstation Health</p>
+                                                        <p class="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">{{ __('Workstation Health') }}</p>
                                                         <div class="mt-4 grid grid-cols-2 gap-3">
-                                                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Attached Displays</p><p class="mt-3 text-3xl font-extrabold text-slate-900" x-text="workstationOverviewStats().totalDisplays"></p></div>
-                                                            <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4"><p class="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-500">Healthy</p><p class="mt-3 text-3xl font-extrabold text-emerald-600" x-text="workstationOverviewStats().healthyDisplays"></p></div>
-                                                            <div class="rounded-2xl border border-rose-200 bg-rose-50/70 p-4"><p class="text-[10px] font-bold uppercase tracking-[0.2em] text-rose-500">Needs Attention</p><p class="mt-3 text-3xl font-extrabold text-rose-600" x-text="workstationOverviewStats().attentionDisplays"></p></div>
-                                                            <div class="rounded-2xl border border-sky-200 bg-sky-50/70 p-4"><p class="text-[10px] font-bold uppercase tracking-[0.2em] text-sky-500">Client Version</p><p class="mt-3 text-sm font-bold text-slate-900 break-words" x-text="workstationDetail.clientVersion"></p></div>
+                                                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{{ __('Attached Displays') }}</p><p class="mt-3 text-3xl font-extrabold text-slate-900" x-text="workstationOverviewStats().totalDisplays"></p></div>
+                                                            <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4"><p class="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-500">{{ __('Healthy') }}</p><p class="mt-3 text-3xl font-extrabold text-emerald-600" x-text="workstationOverviewStats().healthyDisplays"></p></div>
+                                                            <div class="rounded-2xl border border-rose-200 bg-rose-50/70 p-4"><p class="text-[10px] font-bold uppercase tracking-[0.2em] text-rose-500">{{ __('Needs Attention') }}</p><p class="mt-3 text-3xl font-extrabold text-rose-600" x-text="workstationOverviewStats().attentionDisplays"></p></div>
+                                                            <div class="rounded-2xl border border-sky-200 bg-sky-50/70 p-4"><p class="text-[10px] font-bold uppercase tracking-[0.2em] text-sky-500">{{ __('Client Version') }}</p><p class="mt-3 text-sm font-bold text-slate-900 break-words" x-text="workstationDetail.clientVersion"></p></div>
                                                         </div>
                                                     </div>
                                                     <div class="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-                                                        <p class="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">Hierarchy Summary</p>
+                                                        <p class="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">{{ __('Hierarchy Summary') }}</p>
                                                         <div class="mt-4 grid gap-3 sm:grid-cols-2">
                                                             <button type="button" @click="pushView('facility', workstationDetail.facility.id)" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-sky-200 hover:bg-sky-50/60"><p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Facility</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workstationDetail.facility.name"></p></button>
                                                             <button type="button" @click="pushView('workgroup', workstationDetail.workgroup.id)" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-sky-200 hover:bg-sky-50/60"><p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Workgroup</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workstationDetail.workgroup.name"></p></button>
-                                                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Last Connected</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workstationDetail.lastConnected"></p></div>
-                                                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Workstation</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workstationDetail.name"></p></div>
+                                                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{{ __('Last Connected') }}</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workstationDetail.lastConnected"></p></div>
+                                                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{{ __('Workstation') }}</p><p class="mt-2 text-sm font-bold text-slate-900" x-text="workstationDetail.name"></p></div>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div class="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm">
                                                     <div class="mb-5 flex items-center justify-between gap-4">
-                                                        <h3 class="text-lg font-extrabold text-gray-900 mb-0 flex items-center gap-2"><i data-lucide="layers" class="w-5 h-5 text-gray-400"></i> Attached Displays</h3>
+                                                        <h3 class="text-lg font-extrabold text-gray-900 mb-0 flex items-center gap-2"><i data-lucide="layers" class="w-5 h-5 text-gray-400"></i> {{ __('Attached Displays') }}</h3>
                                                         <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500" x-text="`${workstationDetail.displays.length} displays`"></span>
                                                     </div>
                                                     <div class="overflow-hidden rounded-[1.25rem] border border-gray-100">
@@ -644,7 +644,7 @@
                                                                         <td class="px-6 py-4"><span class="inline-flex py-1 px-2.5 rounded-md text-[11px] font-bold uppercase tracking-wider" :class="display.statusTone === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'"><i :data-lucide="display.statusTone === 'success' ? 'check' : 'triangle-alert'" class="w-3 h-3 mr-1"></i><span x-text="display.statusLabel"></span></span></td>
                                                                     </tr>
                                                                 </template>
-                                                                <tr x-show="!workstationDetail.displays.length"><td colspan="3" class="px-6 py-8 text-center text-sm text-slate-500">No displays are attached to this workstation.</td></tr>
+                                                                <tr x-show="!workstationDetail.displays.length"><td colspan="3" class="px-6 py-8 text-center text-sm text-slate-500">{{ __('No displays are attached to this workstation.') }}</td></tr>
                                                             </tbody>
                                                         </table>
                                                     </div>
@@ -653,7 +653,7 @@
                                         </template>
                                         <template x-if="activeWorkstationTab === 'settings'">
                                             <div class="space-y-6">
-                                                <div x-show="workstationSettingsLoading" class="flex min-h-[22rem] items-center justify-center rounded-[1.5rem] border border-slate-200 bg-white"><div class="flex flex-col items-center gap-4 text-slate-500"><div class="h-12 w-12 rounded-full border-4 border-sky-200 border-t-sky-500 animate-spin"></div><p class="text-sm font-semibold">Loading workstation settings...</p></div></div>
+                                                <div x-show="workstationSettingsLoading" class="flex min-h-[22rem] items-center justify-center rounded-[1.5rem] border border-slate-200 bg-white"><div class="flex flex-col items-center gap-4 text-slate-500"><div class="h-12 w-12 rounded-full border-4 border-sky-200 border-t-sky-500 animate-spin"></div><p class="text-sm font-semibold">{{ __('Loading workstation settings...') }}</p></div></div>
                                                 <template x-if="!workstationSettingsLoading && workstationSettingsError"><div class="rounded-[1.5rem] border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700" x-text="workstationSettingsError"></div></template>
                                                 <div x-show="!workstationSettingsLoading && !workstationSettingsError && workstationSettingsReady" class="space-y-6">
                                                     <template x-if="!workstationSettingsEditing"><div class="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm"><p class="text-sm text-slate-500">This panel shows configuration values for the selected workstation. Use <span class="font-semibold text-slate-700">Edit</span> to update the current settings section.</p></div></template>
@@ -686,7 +686,7 @@
                                                                                 <button type="button" class="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-sky-50 hover:text-sky-700" @click="workstationSettingsForm.application.workgroup_id = option.value; closeInlineSelect()" x-text="option.label"></button>
                                                                             </template>
                                                                             <template x-if="!filteredWorkstationOptionList('workgroup_id').length">
-                                                                                <div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">No options found</div>
+                                                                                <div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">{{ __('No options found') }}</div>
                                                                             </template>
                                                                         </div>
                                                                     </div>
@@ -759,8 +759,8 @@
                                 <i data-lucide="monitor" class="w-6 h-6"></i>
                             </div>
                             <div>
-                                <p class="text-[11px] font-extrabold uppercase tracking-widest opacity-90 mb-0.5" style="text-shadow: 0 1px 2px rgba(0,0,0,0.1)">DISPLAY SETTINGS CONFIGURATION</p>
-                                <h2 class="text-[32px] leading-tight font-extrabold tracking-tight drop-shadow-sm truncate" x-text="displayDetail?.name || 'Loading display…'">Dell U3219Q (9N6WXV2)</h2>
+                                <p class="text-[11px] font-extrabold uppercase tracking-widest opacity-90 mb-0.5" style="text-shadow: 0 1px 2px rgba(0,0,0,0.1)">{{ __('Display Settings Configuration') }}</p>
+                                <h2 class="text-[32px] leading-tight font-extrabold tracking-tight drop-shadow-sm truncate" x-text="displayDetail?.name || @js(__('Loading display…'))">Dell U3219Q (9N6WXV2)</h2>
                             </div>
                         </div>
                     </div>
@@ -772,7 +772,7 @@
                                 <div class="flex h-full items-center justify-center">
                                     <div class="flex flex-col items-center gap-4 text-slate-500">
                                         <div class="h-12 w-12 rounded-full border-4 border-sky-200 border-t-sky-500 animate-spin"></div>
-                                        <p class="text-sm font-semibold">Loading display details...</p>
+                                        <p class="text-sm font-semibold">{{ __('Loading display details...') }}</p>
                                     </div>
                                 </div>
                             </template>
@@ -780,7 +780,7 @@
                             <template x-if="!displayLoading && displayError">
                                 <div class="flex h-full items-center justify-center p-10">
                                     <div class="max-w-md rounded-[1.5rem] border border-rose-200 bg-rose-50 p-8 text-center">
-                                        <p class="text-sm font-bold uppercase tracking-[0.2em] text-rose-500">Unable To Load</p>
+                                        <p class="text-sm font-bold uppercase tracking-[0.2em] text-rose-500">{{ __('Unable To Load') }}</p>
                                         <p class="mt-3 text-sm text-rose-700" x-text="displayError"></p>
                                     </div>
                                 </div>
@@ -791,27 +791,27 @@
                                     <div class="w-[300px] border-r border-gray-100 bg-white p-6 shrink-0 overflow-y-auto no-scrollbar flex flex-col gap-6">
                                         <div>
                                             <div class="mb-4 flex items-center justify-between gap-3">
-                                                <h4 class="text-[13px] font-extrabold text-gray-900">Display Hierarchy</h4>
+                                                <h4 class="text-[13px] font-extrabold text-gray-900">{{ __('Display Hierarchy') }}</h4>
                                                 <button type="button" x-show="displayDetail?.permissions?.move" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700" @click="openDisplayMovePanel()">
                                                     <i data-lucide="arrow-right-left" class="h-3.5 w-3.5"></i>
-                                                    Move
+                                                    {{ __('Move') }}
                                                 </button>
                                             </div>
                                             <div class="space-y-3">
                                                 <div>
-                                                    <p class="text-[10px] text-gray-500 mb-1 ml-1 font-semibold">Facility:</p>
-                                                    <button type="button" class="w-full cursor-pointer rounded-lg border border-gray-100 bg-gray-50 px-4 py-2.5 text-left text-[12px] font-medium text-gray-700 transition-colors hover:border-sky-200 hover:bg-sky-50/50" title="Open facility detail" @click="pushView('facility', displayDetail.hierarchy.facility.id)" x-text="displayDetail.hierarchy.facility.name"></button>
+                                                    <p class="text-[10px] text-gray-500 mb-1 ml-1 font-semibold">{{ __('Facility:') }}</p>
+                                                    <button type="button" class="w-full cursor-pointer rounded-lg border border-gray-100 bg-gray-50 px-4 py-2.5 text-left text-[12px] font-medium text-gray-700 transition-colors hover:border-sky-200 hover:bg-sky-50/50" title="{{ __('Open facility detail') }}" @click="pushView('facility', displayDetail.hierarchy.facility.id)" x-text="displayDetail.hierarchy.facility.name"></button>
                                                 </div>
                                                 <div>
-                                                    <p class="text-[10px] text-gray-500 mb-1 ml-1 font-semibold">Workgroup:</p>
-                                                    <button type="button" class="w-full cursor-pointer rounded-lg border border-gray-100 bg-gray-50 px-4 py-2.5 text-left text-[12px] font-medium text-gray-700 transition-colors hover:border-sky-200 hover:bg-sky-50/50" title="Open workgroup detail" @click="pushView('workgroup', displayDetail.hierarchy.workgroup.id)" x-text="displayDetail.hierarchy.workgroup.name"></button>
+                                                    <p class="text-[10px] text-gray-500 mb-1 ml-1 font-semibold">{{ __('Workgroup:') }}</p>
+                                                    <button type="button" class="w-full cursor-pointer rounded-lg border border-gray-100 bg-gray-50 px-4 py-2.5 text-left text-[12px] font-medium text-gray-700 transition-colors hover:border-sky-200 hover:bg-sky-50/50" title="{{ __('Open workgroup detail') }}" @click="pushView('workgroup', displayDetail.hierarchy.workgroup.id)" x-text="displayDetail.hierarchy.workgroup.name"></button>
                                                 </div>
                                                 <div>
-                                                    <p class="text-[10px] text-gray-500 mb-1 ml-1 font-semibold">Workstation:</p>
-                                                    <button type="button" class="w-full cursor-pointer rounded-lg border border-gray-100 bg-gray-50 px-4 py-2.5 text-left text-[12px] font-medium text-gray-700 transition-colors hover:border-sky-200 hover:bg-sky-50/50" title="Open workstation detail" @click="pushView('workstation', displayDetail.hierarchy.workstation.id)" x-text="displayDetail.hierarchy.workstation.name"></button>
+                                                    <p class="text-[10px] text-gray-500 mb-1 ml-1 font-semibold">{{ __('Workstation:') }}</p>
+                                                    <button type="button" class="w-full cursor-pointer rounded-lg border border-gray-100 bg-gray-50 px-4 py-2.5 text-left text-[12px] font-medium text-gray-700 transition-colors hover:border-sky-200 hover:bg-sky-50/50" title="{{ __('Open workstation detail') }}" @click="pushView('workstation', displayDetail.hierarchy.workstation.id)" x-text="displayDetail.hierarchy.workstation.name"></button>
                                                 </div>
                                                 <div>
-                                                    <p class="text-[10px] text-gray-500 mb-1 ml-1 font-semibold">Display:</p>
+                                                    <p class="text-[10px] text-gray-500 mb-1 ml-1 font-semibold">{{ __('Display:') }}</p>
                                                     <div class="px-4 py-2.5 bg-emerald-50/50 border border-emerald-300 rounded-lg text-[12px] font-bold text-emerald-700" x-text="displayDetail.name"></div>
                                                 </div>
                                             </div>
@@ -820,8 +820,8 @@
                                         <div x-show="showDisplayMovePanel" x-cloak class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                             <div class="mb-4 flex items-start justify-between gap-3">
                                                 <div>
-                                                    <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Move Display</p>
-                                                    <p class="mt-1 text-[11px] leading-relaxed text-slate-500">Relocate this display by choosing a new facility, workgroup, and workstation.</p>
+                                                    <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{{ __('Move Display') }}</p>
+                                                    <p class="mt-1 text-[11px] leading-relaxed text-slate-500">{{ __('Relocate this display by choosing a new facility, workgroup, and workstation.') }}</p>
                                                 </div>
                                                 <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:text-slate-900" @click="closeDisplayMovePanel()">
                                                     <i data-lucide="x" class="h-4 w-4"></i>
@@ -830,14 +830,14 @@
 
                                             <div class="space-y-3">
                                                 <div>
-                                                    <label class="mb-1.5 block text-[10px] font-semibold text-slate-500">Facility</label>
+                                                    <label class="mb-1.5 block text-[10px] font-semibold text-slate-500">{{ __('Facility') }}</label>
                                                     <div class="relative" @click.outside="closeInlineSelect()">
                                                         <button type="button" class="flex h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20" @click="toggleInlineSelect('move-facilities')">
-                                                            <span class="truncate" x-text="selectedMoveFacilityName() || 'Select facility'"></span>
+                                                            <span class="truncate" x-text="selectedMoveFacilityName() || @js(__('Select facility'))"></span>
                                                             <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                                                         </button>
                                                         <div x-show="isInlineSelectOpen('move-facilities')" x-cloak class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                                                            <input x-ref="search-move-facilities" x-model="moveOptionSearch.facilities" type="text" placeholder="Search facilities..." class="mb-2 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                                                            <input x-ref="search-move-facilities" x-model="moveOptionSearch.facilities" type="text" placeholder="{{ __('Search facilities...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                                                             <p class="mb-2 text-[11px] font-medium text-slate-400" x-text="moveOptionHint('facilities')"></p>
                                                             <div class="max-h-56 space-y-1 overflow-y-auto">
                                                                 <template x-for="facility in filteredMoveOptions('facilities')" :key="`move-facility-${facility.id}`">
@@ -846,21 +846,21 @@
                                                                     </button>
                                                                 </template>
                                                                 <template x-if="!filteredMoveOptions('facilities').length">
-                                                                    <div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">No options found</div>
+                                                                    <div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">{{ __('No options found') }}</div>
                                                                 </template>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <label class="mb-1.5 block text-[10px] font-semibold text-slate-500">Workgroup</label>
+                                                    <label class="mb-1.5 block text-[10px] font-semibold text-slate-500">{{ __('Workgroup') }}</label>
                                                     <div class="relative" @click.outside="closeInlineSelect()">
                                                         <button type="button" :disabled="!moveForm.facilityId || moveLoading" class="flex h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 disabled:bg-slate-100 disabled:text-slate-400" @click="toggleInlineSelect('move-workgroups')">
-                                                            <span class="truncate" x-text="selectedMoveWorkgroupName() || 'Select workgroup'"></span>
+                                                            <span class="truncate" x-text="selectedMoveWorkgroupName() || @js(__('Select workgroup'))"></span>
                                                             <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                                                         </button>
                                                         <div x-show="isInlineSelectOpen('move-workgroups')" x-cloak class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                                                            <input x-ref="search-move-workgroups" x-model="moveOptionSearch.workgroups" :disabled="!moveForm.facilityId || moveLoading" type="text" placeholder="Search workgroups..." class="mb-2 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 disabled:bg-slate-100 disabled:text-slate-400">
+                                                            <input x-ref="search-move-workgroups" x-model="moveOptionSearch.workgroups" :disabled="!moveForm.facilityId || moveLoading" type="text" placeholder="{{ __('Search workgroups...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 disabled:bg-slate-100 disabled:text-slate-400">
                                                             <p class="mb-2 text-[11px] font-medium text-slate-400" x-text="moveOptionHint('workgroups')"></p>
                                                             <div class="max-h-56 space-y-1 overflow-y-auto">
                                                                 <template x-for="workgroup in filteredMoveOptions('workgroups')" :key="`move-workgroup-${workgroup.id}`">
@@ -869,21 +869,21 @@
                                                                     </button>
                                                                 </template>
                                                                 <template x-if="!filteredMoveOptions('workgroups').length">
-                                                                    <div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">No options found</div>
+                                                                    <div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">{{ __('No options found') }}</div>
                                                                 </template>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <label class="mb-1.5 block text-[10px] font-semibold text-slate-500">Workstation</label>
+                                                    <label class="mb-1.5 block text-[10px] font-semibold text-slate-500">{{ __('Workstation') }}</label>
                                                     <div class="relative" @click.outside="closeInlineSelect()">
                                                         <button type="button" :disabled="!moveForm.workgroupId || moveLoading" class="flex h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 disabled:bg-slate-100 disabled:text-slate-400" @click="toggleInlineSelect('move-workstations')">
-                                                            <span class="truncate" x-text="selectedMoveWorkstationName() || 'Select workstation'"></span>
+                                                            <span class="truncate" x-text="selectedMoveWorkstationName() || @js(__('Select workstation'))"></span>
                                                             <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                                                         </button>
                                                         <div x-show="isInlineSelectOpen('move-workstations')" x-cloak class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                                                            <input x-ref="search-move-workstations" x-model="moveOptionSearch.workstations" :disabled="!moveForm.workgroupId || moveLoading" type="text" placeholder="Search workstations..." class="mb-2 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 disabled:bg-slate-100 disabled:text-slate-400">
+                                                            <input x-ref="search-move-workstations" x-model="moveOptionSearch.workstations" :disabled="!moveForm.workgroupId || moveLoading" type="text" placeholder="{{ __('Search workstations...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 disabled:bg-slate-100 disabled:text-slate-400">
                                                             <p class="mb-2 text-[11px] font-medium text-slate-400" x-text="moveOptionHint('workstations')"></p>
                                                             <div class="max-h-56 space-y-1 overflow-y-auto">
                                                                 <template x-for="workstation in filteredMoveOptions('workstations')" :key="`move-workstation-${workstation.id}`">
@@ -892,7 +892,7 @@
                                                                     </button>
                                                                 </template>
                                                                 <template x-if="!filteredMoveOptions('workstations').length">
-                                                                    <div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">No options found</div>
+                                                                    <div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">{{ __('No options found') }}</div>
                                                                 </template>
                                                             </div>
                                                         </div>
@@ -901,23 +901,23 @@
                                             </div>
 
                                             <div class="mt-4 flex items-center justify-end gap-2">
-                                                <button type="button" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] font-semibold text-slate-600 transition hover:bg-slate-100" @click="closeDisplayMovePanel()">Cancel</button>
+                                                <button type="button" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] font-semibold text-slate-600 transition hover:bg-slate-100" @click="closeDisplayMovePanel()">{{ __('Cancel') }}</button>
                                                 <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-3 py-2 text-[12px] font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60" :disabled="moveLoading || !moveForm.workstationId" @click="confirmDisplayMove()">
                                                     <i data-lucide="arrow-right-left" class="h-3.5 w-3.5"></i>
-                                                    <span x-text="moveLoading ? 'Moving...' : 'Move Display'"></span>
+                                                    <span x-text="moveLoading ? @js(__('Moving...')) : @js(__('Move Display'))"></span>
                                                 </button>
                                             </div>
                                         </div>
 
                                         <div class="bg-gray-50/80 rounded-2xl p-5 border border-gray-100 mt-2">
-                                            <p class="text-[10px] text-gray-500 mb-2 font-semibold">Status</p>
+                                            <p class="text-[10px] text-gray-500 mb-2 font-semibold">{{ __('Status') }}</p>
                                             <div class="flex items-center gap-2 mb-3">
                                                 <span class="w-2.5 h-2.5 rounded-full" :class="displayDetail.statusTone === 'success' ? 'bg-emerald-500' : 'bg-rose-500'"></span>
                                                 <span class="text-sm font-extrabold text-gray-900" x-text="displayDetail.statusLabel"></span>
                                             </div>
                                             <div class="space-y-2 text-[11px] text-gray-500">
-                                                <p><span class="font-semibold text-gray-700">Connection:</span> <span x-text="displayDetail.connectedLabel"></span></p>
-                                                <p><span class="font-semibold text-gray-700">Last sync:</span> <span x-text="displayDetail.lastSync"></span></p>
+                                                <p><span class="font-semibold text-gray-700">{{ __('Connection:') }}</span> <span x-text="displayDetail.connectedLabel"></span></p>
+                                                <p><span class="font-semibold text-gray-700">{{ __('Last sync:') }}</span> <span x-text="displayDetail.lastSync"></span></p>
                                             </div>
                                             <p class="mt-4 rounded-xl border border-rose-100 bg-white px-3 py-2 text-[11px] leading-relaxed text-gray-600" x-text="displayDetail.latestError"></p>
                                         </div>
@@ -958,7 +958,7 @@
                                                 <template x-if="isEditingDisplaySettings">
                                                     <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50" @click="cancelDisplayEditing()">
                                                         <i data-lucide="x" class="h-4 w-4"></i>
-                                                        Cancel
+                                                        {{ __('Cancel') }}
                                                     </button>
                                                 </template>
                                             </div>
@@ -968,9 +968,9 @@
                                             <div class="rounded-[1.25rem] border border-gray-200 bg-white p-6 shadow-sm">
                                                 <div class="flex items-center justify-between mb-5">
                                                     <div>
-                                                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">Performance Trend</p>
-                                                        <h4 class="mt-2 text-lg font-extrabold text-gray-900">Recent calibration history</h4>
-                                                        <p x-show="historyLoading" x-cloak class="mt-1 text-xs font-medium text-sky-600">Updating history...</p>
+                                                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">{{ __('Performance Trend') }}</p>
+                                                        <h4 class="mt-2 text-lg font-extrabold text-gray-900">{{ __('Recent calibration history') }}</h4>
+                                                        <p x-show="historyLoading" x-cloak class="mt-1 text-xs font-medium text-sky-600">{{ __('Updating history...') }}</p>
                                                     </div>
                                                     <div class="flex items-center gap-2">
                                                         <button type="button" class="rounded-full px-3 py-1 text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-60" :disabled="historyLoading" :class="displayPeriod === '30d' ? 'bg-sky-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" @click="changeDisplayPeriod('30d')">30D</button>
@@ -985,10 +985,10 @@
                                                             <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
                                                                 <div>
                                                                     <p class="text-xs font-semibold text-slate-700" x-text="displayDetail.history.timelineTitle"></p>
-                                                                    <p class="mt-1 text-[11px] text-slate-500">Stacked bars show run volume by outcome. Blue line shows pass rate.</p>
+                                                                    <p class="mt-1 text-[11px] text-slate-500">{{ __('Stacked bars show run volume by outcome. Blue line shows pass rate.') }}</p>
                                                                 </div>
                                                                 <p class="text-[11px] font-semibold text-slate-500">
-                                                                    Bucket:
+                                                                    {{ __('Bucket:') }}
                                                                     <span class="text-slate-700" x-text="displayDetail.history.bucket"></span>
                                                                 </p>
                                                             </div>
@@ -1023,32 +1023,32 @@
                                                                     <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400" x-text="performanceTrendTooltip.bucket?.rangeLabel || '-'"></p>
                                                                     <div class="mt-3 grid gap-3 sm:grid-cols-2">
                                                                         <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-                                                                            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Total Runs</p>
+                                                                            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">{{ __('Total Runs') }}</p>
                                                                             <p class="mt-1 text-lg font-extrabold text-slate-900" x-text="performanceTrendTooltip.bucket?.total ?? 0"></p>
                                                                         </div>
                                                                         <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-                                                                            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Pass Rate</p>
+                                                                            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">{{ __('Pass Rate') }}</p>
                                                                             <p class="mt-1 text-lg font-extrabold text-sky-600"><span x-text="performanceTrendTooltip.bucket?.passRate ?? 0"></span>%</p>
                                                                         </div>
                                                                     </div>
                                                                     <div class="mt-3 space-y-2 text-sm">
-                                                                        <div class="flex items-center justify-between gap-3 text-slate-600"><span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-emerald-500"></span>Passed</span><span class="font-bold text-slate-900" x-text="performanceTrendTooltip.bucket?.passed ?? 0"></span></div>
-                                                                        <div class="flex items-center justify-between gap-3 text-slate-600"><span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-rose-500"></span>Failed</span><span class="font-bold text-slate-900" x-text="performanceTrendTooltip.bucket?.failed ?? 0"></span></div>
-                                                                        <div class="flex items-center justify-between gap-3 text-slate-600"><span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-amber-500"></span>Skipped / Cancelled</span><span class="font-bold text-slate-900" x-text="performanceTrendTooltip.bucket?.other ?? 0"></span></div>
+                                                                        <div class="flex items-center justify-between gap-3 text-slate-600"><span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-emerald-500"></span>{{ __('Passed') }}</span><span class="font-bold text-slate-900" x-text="performanceTrendTooltip.bucket?.passed ?? 0"></span></div>
+                                                                        <div class="flex items-center justify-between gap-3 text-slate-600"><span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-rose-500"></span>{{ __('Failed') }}</span><span class="font-bold text-slate-900" x-text="performanceTrendTooltip.bucket?.failed ?? 0"></span></div>
+                                                                        <div class="flex items-center justify-between gap-3 text-slate-600"><span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-amber-500"></span>{{ __('Skipped / Cancelled') }}</span><span class="font-bold text-slate-900" x-text="performanceTrendTooltip.bucket?.other ?? 0"></span></div>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                         <div class="flex flex-wrap gap-3 text-[11px] font-semibold text-gray-500">
-                                                            <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-emerald-500"></span> Passed</span>
-                                                            <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-rose-500"></span> Failed</span>
-                                                            <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-amber-500"></span> Skipped / Cancelled</span>
-                                                            <span class="inline-flex items-center gap-2"><span class="h-0.5 w-4 rounded-full bg-sky-500"></span> Pass Rate</span>
+                                                            <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-emerald-500"></span> {{ __('Passed') }}</span>
+                                                            <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-rose-500"></span> {{ __('Failed') }}</span>
+                                                            <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-sm bg-amber-500"></span> {{ __('Skipped / Cancelled') }}</span>
+                                                            <span class="inline-flex items-center gap-2"><span class="h-0.5 w-4 rounded-full bg-sky-500"></span> {{ __('Pass Rate') }}</span>
                                                         </div>
                                                     </div>
                                                 </template>
                                                 <template x-if="!displayDetail.history.timeline.length">
-                                                    <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">No history data available yet.</div>
+                                                    <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">{{ __('No history data available yet.') }}</div>
                                                 </template>
                                             </div>
 
@@ -1056,8 +1056,8 @@
                                                 <div class="rounded-[1.25rem] border border-gray-200 bg-white p-5 shadow-sm">
                                                     <div class="flex items-start justify-between gap-6">
                                                         <div>
-                                                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">Pass Rate</p>
-                                                            <p class="mt-2 text-sm font-medium text-gray-500">Current success ratio in selected period</p>
+                                                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">{{ __('Pass Rate') }}</p>
+                                                            <p class="mt-2 text-sm font-medium text-gray-500">{{ __('Current success ratio in selected period') }}</p>
                                                         </div>
                                                         <p class="text-4xl font-extrabold text-gray-900"><span x-text="displayDetail.history.passRate"></span>%</p>
                                                     </div>
@@ -1065,8 +1065,8 @@
                                                 <div class="rounded-[1.25rem] border border-gray-200 bg-white p-5 shadow-sm">
                                                     <div class="flex items-start justify-between gap-6">
                                                         <div>
-                                                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">Total Histories</p>
-                                                            <p class="mt-2 text-sm font-medium text-gray-500">Recorded runs included in this view</p>
+                                                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">{{ __('Total Histories') }}</p>
+                                                            <p class="mt-2 text-sm font-medium text-gray-500">{{ __('Recorded runs included in this view') }}</p>
                                                         </div>
                                                         <p class="text-4xl font-extrabold text-gray-900" x-text="displayDetail.history.total"></p>
                                                     </div>
@@ -1074,8 +1074,8 @@
                                                 <div class="rounded-[1.25rem] border border-gray-200 bg-white p-5 shadow-sm">
                                                     <div class="flex items-start justify-between gap-6">
                                                         <div>
-                                                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">Passed</p>
-                                                            <p class="mt-2 text-sm font-medium text-gray-500">Runs completed successfully</p>
+                                                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">{{ __('Passed') }}</p>
+                                                            <p class="mt-2 text-sm font-medium text-gray-500">{{ __('Runs completed successfully') }}</p>
                                                         </div>
                                                         <p class="text-4xl font-extrabold text-emerald-600" x-text="displayDetail.history.passed"></p>
                                                     </div>
@@ -1083,8 +1083,8 @@
                                                 <div class="rounded-[1.25rem] border border-gray-200 bg-white p-5 shadow-sm">
                                                     <div class="flex items-start justify-between gap-6">
                                                         <div>
-                                                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">Failed</p>
-                                                            <p class="mt-2 text-sm font-medium text-gray-500">Runs needing follow-up attention</p>
+                                                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">{{ __('Failed') }}</p>
+                                                            <p class="mt-2 text-sm font-medium text-gray-500">{{ __('Runs needing follow-up attention') }}</p>
                                                         </div>
                                                         <p class="text-4xl font-extrabold text-rose-600" x-text="displayDetail.history.failed"></p>
                                                     </div>
@@ -1092,30 +1092,30 @@
                                             </div>
 
                                             <div class="rounded-[1.25rem] border border-gray-200 bg-white p-6 shadow-sm">
-                                                <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">Technical Summary</p>
+                                                <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">{{ __('Technical Summary') }}</p>
                                                 <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                                                     <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Manufacturer</p>
+                                                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{{ __('Manufacturer') }}</p>
                                                         <p class="mt-2 text-sm font-bold text-slate-900" x-text="displayDetail.manufacturer"></p>
                                                     </div>
                                                     <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Model</p>
+                                                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{{ __('Model') }}</p>
                                                         <p class="mt-2 text-sm font-bold text-slate-900" x-text="displayDetail.model"></p>
                                                     </div>
                                                     <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Serial</p>
+                                                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{{ __('Serial') }}</p>
                                                         <p class="mt-2 text-sm font-bold text-slate-900" x-text="displayDetail.serial"></p>
                                                     </div>
                                                     <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Inventory</p>
+                                                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{{ __('Inventory') }}</p>
                                                         <p class="mt-2 text-sm font-bold text-slate-900" x-text="displayDetail.inventoryNumber"></p>
                                                     </div>
                                                     <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Type</p>
+                                                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{{ __('Type') }}</p>
                                                         <p class="mt-2 text-sm font-bold text-slate-900" x-text="displayDetail.typeOfDisplay"></p>
                                                     </div>
                                                     <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Technology</p>
+                                                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{{ __('Technology') }}</p>
                                                         <p class="mt-2 text-sm font-bold text-slate-900" x-text="displayDetail.displayTechnology"></p>
                                                     </div>
                                                     <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -1335,7 +1335,7 @@
                                             <div class="flex justify-end">
                                                 <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60" :disabled="savingDisplaySettings" @click="confirmSaveDisplaySettings()">
                                                     <i data-lucide="save" class="h-4 w-4"></i>
-                                                    <span x-text="savingDisplaySettings ? 'Saving...' : 'Save Changes'"></span>
+                        <span x-text="savingDisplaySettings ? @js(__('Saving...')) : @js(__('Save Changes'))"></span>
                                                 </button>
                                             </div>
                                         </div>
@@ -1343,7 +1343,7 @@
                                         <div x-show="activeDisplayTab === 'history'" x-cloak class="space-y-8 pb-10">
                                             <div class="flex flex-wrap items-center justify-between gap-4 rounded-[1.25rem] border border-gray-200 bg-white px-5 py-4 shadow-sm">
                                                 <div>
-                                                    <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">History Range</p>
+                                                <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">{{ __('History Range') }}</p>
                                                     <p class="mt-1 text-sm font-medium text-slate-500">Select the time period used across trends and recent runs.</p>
                                                 </div>
                                                 <div class="flex items-center gap-3">
@@ -1355,7 +1355,7 @@
                                                     </div>
                                                     <a :href="displayDetail.links.histories" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">
                                                         <i data-lucide="history" class="h-4 w-4"></i>
-                                                        All History
+                                                        {{ __('All History') }}
                                                     </a>
                                                 </div>
                                             </div>
@@ -1554,7 +1554,7 @@
                                                 <div x-show="false && historyReportOpen" x-cloak class="space-y-6">
                                                     <template x-if="historyReportLoading">
                                                         <div class="flex min-h-[220px] items-center justify-center rounded-2xl border border-slate-200 bg-slate-50">
-                                                            <div class="rounded-2xl border border-slate-200 bg-white px-6 py-5 text-sm font-semibold text-slate-500 shadow-sm">Loading history report...</div>
+                                                <div class="rounded-2xl border border-slate-200 bg-white px-6 py-5 text-sm font-semibold text-slate-500 shadow-sm">{{ __('Loading history report...') }}</div>
                                                         </div>
                                                     </template>
                                                     <template x-if="!historyReportLoading && historyReportError">
@@ -1652,7 +1652,7 @@
              @click.stop>
             <div class="flex items-center justify-between border-b border-slate-200 px-5 py-3.5">
                 <div>
-                    <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">History Report</p>
+                                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('History Report') }}</p>
                     <h3 class="mt-1 text-lg font-extrabold text-slate-900" x-text="historyReportTitle"></h3>
                 </div>
                 <div class="flex items-center gap-3">
@@ -1668,7 +1668,7 @@
             <div class="h-full overflow-y-auto bg-slate-50 px-4 py-4">
                 <template x-if="historyReportLoading">
                     <div class="flex h-full min-h-[320px] items-center justify-center">
-                        <div class="rounded-2xl border border-slate-200 bg-white px-6 py-5 text-sm font-semibold text-slate-500 shadow-sm">Loading history report...</div>
+                                                <div class="rounded-2xl border border-slate-200 bg-white px-6 py-5 text-sm font-semibold text-slate-500 shadow-sm">{{ __('Loading history report...') }}</div>
                     </div>
                 </template>
                 <template x-if="!historyReportLoading && historyReportError">
@@ -1823,7 +1823,7 @@
                     <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50" @click="closeWorkgroupSettingsConfirm()">Cancel</button>
                     <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60" :disabled="savingWorkgroupSettings" @click="saveWorkgroupSettings()">
                         <i data-lucide="save" class="h-4 w-4"></i>
-                        <span x-text="savingWorkgroupSettings ? 'Saving...' : 'Confirm Save'"></span>
+                        <span x-text="savingWorkgroupSettings ? @js(__('Saving...')) : @js(__('Confirm Save'))"></span>
                     </button>
                 </div>
             </div>
@@ -1849,7 +1849,7 @@
                 <div class="border-b border-slate-100 px-6 py-5">
                     <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Confirm Save</p>
                     <h3 class="mt-2 text-xl font-extrabold tracking-tight text-slate-900">Save Workstation Settings?</h3>
-                    <p class="mt-2 text-sm leading-relaxed text-slate-500">Please confirm the changes for the active workstation settings section before saving.</p>
+                    <p class="mt-2 text-sm leading-relaxed text-slate-500">{{ __('Please confirm the changes for the active workstation settings section before saving.') }}</p>
                 </div>
 
                 <div class="space-y-4 px-6 py-5">
@@ -1875,7 +1875,7 @@
                     <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50" @click="closeWorkstationSettingsConfirm()">Cancel</button>
                     <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60" :disabled="savingWorkstationSettings" @click="saveWorkstationSettings()">
                         <i data-lucide="save" class="h-4 w-4"></i>
-                        <span x-text="savingWorkstationSettings ? 'Saving...' : 'Confirm Save'"></span>
+                        <span x-text="savingWorkstationSettings ? @js(__('Saving...')) : @js(__('Confirm Save'))"></span>
                     </button>
                 </div>
             </div>
@@ -1963,7 +1963,7 @@
 
                 <div class="space-y-4 px-6 py-5">
                     <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Current Location</p>
+                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Current Location') }}</p>
                         <div class="mt-3 space-y-2 text-sm text-slate-600">
                             <p><span class="font-semibold text-slate-900">Facility:</span> <span x-text="displayDetail?.hierarchy?.facility?.name || '-'"></span></p>
                             <p><span class="font-semibold text-slate-900">Workgroup:</span> <span x-text="displayDetail?.hierarchy?.workgroup?.name || '-'"></span></p>
@@ -1976,7 +1976,7 @@
                     </div>
 
                     <div class="rounded-2xl border border-sky-200 bg-sky-50/70 p-4">
-                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-sky-500">New Location</p>
+                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-sky-500">{{ __('New Location') }}</p>
                         <div class="mt-3 space-y-2 text-sm text-slate-600">
                             <p><span class="font-semibold text-slate-900">Facility:</span> <span x-text="selectedMoveFacilityName()"></span></p>
                             <p><span class="font-semibold text-slate-900">Workgroup:</span> <span x-text="selectedMoveWorkgroupName()"></span></p>
@@ -2013,41 +2013,41 @@
                  class="w-full max-w-md overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]"
                  style="z-index: 2147483151; margin-right: max(20px, calc((min(1080px, 100vw - 120px) - min(28rem, 100vw - 2rem)) / 2 - 28px));">
                 <div class="border-b border-slate-100 px-6 py-5">
-                    <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Confirm Save</p>
-                    <h3 class="mt-2 text-xl font-extrabold tracking-tight text-slate-900">Save Display Settings?</h3>
-                    <p class="mt-2 text-sm leading-relaxed text-slate-500">This will update the display settings and financial values shown in this modal.</p>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Confirm Save') }}</p>
+                    <h3 class="mt-2 text-xl font-extrabold tracking-tight text-slate-900">{{ __('Save Display Settings?') }}</h3>
+                    <p class="mt-2 text-sm leading-relaxed text-slate-500">{{ __('This will update the display settings and financial values shown in this modal.') }}</p>
                 </div>
 
                 <div class="space-y-4 px-6 py-5">
                     <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Display</p>
+                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Display') }}</p>
                         <p class="mt-3 text-base font-bold text-slate-900" x-text="displayDetail?.name || '-'"></p>
                     </div>
                     <div class="grid gap-3 sm:grid-cols-2">
                         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Technical</p>
+                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Technical') }}</p>
                             <div class="mt-3 space-y-2 text-sm text-slate-600">
-                                <p><span class="font-semibold text-slate-900">Manufacturer:</span> <span x-text="displayForm.manufacturer || '-'"></span></p>
-                                <p><span class="font-semibold text-slate-900">Model:</span> <span x-text="displayForm.model || '-'"></span></p>
-                                <p><span class="font-semibold text-slate-900">Serial:</span> <span x-text="displayForm.serial || '-'"></span></p>
+                                <p><span class="font-semibold text-slate-900">{{ __('Manufacturer:') }}</span> <span x-text="displayForm.manufacturer || '-'"></span></p>
+                                <p><span class="font-semibold text-slate-900">{{ __('Model:') }}</span> <span x-text="displayForm.model || '-'"></span></p>
+                                <p><span class="font-semibold text-slate-900">{{ __('Serial:') }}</span> <span x-text="displayForm.serial || '-'"></span></p>
                             </div>
                         </div>
                         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Financial</p>
+                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Financial') }}</p>
                             <div class="mt-3 space-y-2 text-sm text-slate-600">
-                                <p><span class="font-semibold text-slate-900">Purchase Date:</span> <span x-text="financialForm.purchaseDate || '-'"></span></p>
-                                <p><span class="font-semibold text-slate-900">Current Value:</span> <span x-text="financialForm.currentValue || '-'"></span></p>
-                                <p><span class="font-semibold text-slate-900">Replacement:</span> <span x-text="financialForm.expectedReplacementDate || '-'"></span></p>
+                                <p><span class="font-semibold text-slate-900">{{ __('Purchase Date:') }}</span> <span x-text="financialForm.purchaseDate || '-'"></span></p>
+                                <p><span class="font-semibold text-slate-900">{{ __('Current Value:') }}</span> <span x-text="financialForm.currentValue || '-'"></span></p>
+                                <p><span class="font-semibold text-slate-900">{{ __('Replacement:') }}</span> <span x-text="financialForm.expectedReplacementDate || '-'"></span></p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
-                    <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50" @click="closeSettingsSaveConfirm()">Cancel</button>
+                    <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50" @click="closeSettingsSaveConfirm()">{{ __('Cancel') }}</button>
                     <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60" :disabled="savingDisplaySettings" @click="saveDisplayModal()">
                         <i data-lucide="save" class="h-4 w-4"></i>
-                        <span x-text="savingDisplaySettings ? 'Saving...' : 'Confirm Save'"></span>
+                        <span x-text="savingDisplaySettings ? @js(__('Saving...')) : @js(__('Confirm Save'))"></span>
                     </button>
                 </div>
             </div>
@@ -2073,33 +2073,33 @@
                 <div class="border-b border-slate-100 px-6 py-5 shrink-0">
                     <div class="flex items-start justify-between gap-4">
                         <div>
-                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Structure Map</p>
-                            <h3 class="mt-2 text-xl font-extrabold tracking-tight text-slate-900" x-text="current.type === 'workstation' ? 'Workstation Hierarchy Map' : (current.type === 'workgroup' ? 'Workgroup Hierarchy Map' : 'Display Hierarchy Map')">Display Hierarchy Map</h3>
-                            <p class="mt-2 text-sm leading-relaxed text-slate-500" x-text="current.type === 'workgroup' ? 'Facility to workgroup path with sibling workgroups in the same facility. Drag to pan, use zoom controls or mouse wheel.' : (current.type === 'workstation' ? 'Facility to workstation path with sibling workstations in the same workgroup. Drag to pan, use zoom controls or mouse wheel.' : 'Facility to workstation path with sibling displays on the selected workstation. Drag to pan, use zoom controls or mouse wheel.')">Facility to workstation path with sibling displays on the selected workstation. Drag to pan, use zoom controls or mouse wheel.</p>
+                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Structure Map') }}</p>
+                            <h3 class="mt-2 text-xl font-extrabold tracking-tight text-slate-900" x-text="structureMapTitle()">{{ __('Display Hierarchy Map') }}</h3>
+                            <p class="mt-2 text-sm leading-relaxed text-slate-500" x-text="structureMapDescription()">{{ __('Facility to workstation path with sibling displays on the selected workstation. Drag to pan, use zoom controls or mouse wheel.') }}</p>
                         </div>
                         <div class="flex items-center gap-2">
                             <template x-if="current.type === 'workstation' || current.type === 'workgroup'">
                                 <div class="mr-2 inline-flex items-center rounded-full border border-slate-200 bg-white p-1">
                                     <button type="button" class="rounded-full px-3 py-1.5 text-xs font-semibold transition" :class="structureMapFilter === 'all' ? 'bg-sky-500 text-white' : 'text-slate-600 hover:bg-slate-50'" @click="setStructureMapFilter('all')"><span x-text="`All (${workstationStructureMapStats().all})`"></span></button>
-                                    <button type="button" class="rounded-full px-3 py-1.5 text-xs font-semibold transition" :class="structureMapFilter === 'attention' ? 'bg-rose-500 text-white' : 'text-slate-600 hover:bg-slate-50'" @click="setStructureMapFilter('attention')"><span x-text="`Needs Attention (${workstationStructureMapStats().attention})`"></span></button>
-                                    <button type="button" class="rounded-full px-3 py-1.5 text-xs font-semibold transition" :class="structureMapFilter === 'healthy' ? 'bg-emerald-500 text-white' : 'text-slate-600 hover:bg-slate-50'" @click="setStructureMapFilter('healthy')"><span x-text="`Healthy (${workstationStructureMapStats().healthy})`"></span></button>
+                                    <button type="button" class="rounded-full px-3 py-1.5 text-xs font-semibold transition" :class="structureMapFilter === 'attention' ? 'bg-rose-500 text-white' : 'text-slate-600 hover:bg-slate-50'" @click="setStructureMapFilter('attention')"><span x-text="structureMapAttentionLabel()"></span></button>
+                                    <button type="button" class="rounded-full px-3 py-1.5 text-xs font-semibold transition" :class="structureMapFilter === 'healthy' ? 'bg-emerald-500 text-white' : 'text-slate-600 hover:bg-slate-50'" @click="setStructureMapFilter('healthy')"><span x-text="structureMapHealthyLabel()"></span></button>
                                 </div>
                             </template>
                             <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50" @click="autoLayoutStructureMap()">
                                 <i data-lucide="sparkles" class="h-4 w-4"></i>
-                                Auto Layout
+                                {{ __('Auto Layout') }}
                             </button>
                             <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50" @click="zoomStructureMapOut()">
                                 <i data-lucide="zoom-out" class="h-4 w-4"></i>
-                                Out
+                                {{ __('Out') }}
                             </button>
                             <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50" @click="resetStructureMapView()">
                                 <i data-lucide="scan-search" class="h-4 w-4"></i>
-                                Reset
+                                {{ __('Reset') }}
                             </button>
                             <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50" @click="zoomStructureMapIn()">
                                 <i data-lucide="zoom-in" class="h-4 w-4"></i>
-                                In
+                                {{ __('In') }}
                             </button>
                             <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:text-slate-900" @click="closeDisplayStructureMap()">
                                 <i data-lucide="x" class="h-5 w-5"></i>
@@ -2112,10 +2112,10 @@
                     <div class="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.5rem] border border-slate-200 bg-[radial-gradient(circle_at_1px_1px,rgba(148,163,184,0.18)_1px,transparent_0)] bg-[size:24px_24px]">
                         <div class="flex items-center justify-between border-b border-slate-200 bg-white/90 px-5 py-3 backdrop-blur-sm">
                             <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                                Zoom
+                                {{ __('Zoom') }}
                                 <span class="ml-2 text-slate-700" x-text="`${Math.round(structureMap.zoom * 100)}%`"></span>
                             </div>
-                            <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Drag nodes or canvas to inspect the hierarchy</div>
+                            <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{{ __('Drag nodes or canvas to inspect the hierarchy') }}</div>
                         </div>
                         <div x-ref="structureMapViewport" class="relative h-full min-h-0 flex-1 overflow-hidden">
                             <div x-ref="structureGraphContainer" class="h-full w-full"></div>
@@ -2178,21 +2178,21 @@
             workstationMoveLoading: false,
             workstationMoveConfirmOpen: false,
             workstationSettingsTabs: [
-                { key: 'application', label: 'Application' },
-                { key: 'calibration', label: 'Display Calibration' },
-                { key: 'qa', label: 'Quality Assurance' },
-                { key: 'location', label: 'Location' },
+                { key: 'application', label: @js(__('Application')) },
+                { key: 'calibration', label: @js(__('Display Calibration')) },
+                { key: 'qa', label: @js(__('Quality Assurance')) },
+                { key: 'location', label: @js(__('Location')) },
             ],
             workstationQaClassificationOptions: [],
             workstationLocationFields: [
-                { key: 'Facility', label: 'Facility Label' },
-                { key: 'Department', label: 'Department' },
-                { key: 'Room', label: 'Room' },
-                { key: 'ResponsiblePersonName', label: 'Responsible Person' },
-                { key: 'ResponsiblePersonCity', label: 'Address' },
-                { key: 'ResponsiblePersonAddress', label: 'City' },
-                { key: 'ResponsiblePersonEmail', label: 'Email' },
-                { key: 'ResponsiblePersonPhoneNumber', label: 'Phone Number' },
+                { key: 'Facility', label: @js(__('Facility Label')) },
+                { key: 'Department', label: @js(__('Department')) },
+                { key: 'Room', label: @js(__('Room')) },
+                { key: 'ResponsiblePersonName', label: @js(__('Responsible Person')) },
+                { key: 'ResponsiblePersonCity', label: @js(__('Address')) },
+                { key: 'ResponsiblePersonAddress', label: @js(__('City')) },
+                { key: 'ResponsiblePersonEmail', label: @js(__('Email')) },
+                { key: 'ResponsiblePersonPhoneNumber', label: @js(__('Phone Number')) },
             ],
             workstationSettingsOptions: {},
             workstationOptionSearch: {},
@@ -2224,7 +2224,7 @@
             historyReportLoading: false,
             historyReportError: '',
             historyReportDetail: null,
-            historyReportTitle: 'History Report',
+            historyReportTitle: @js(__('History Report')),
             activeDisplayTab: 'overview',
             displayPeriod: 'all',
             isEditingDisplaySettings: false,
@@ -2529,7 +2529,7 @@
                 const total = (this.workgroupDetail?.settings?.facilities || []).length;
                 const filtered = this.filteredWorkgroupFacilityOptions().length;
                 if (filtered === 0) {
-                    return 'No options found';
+                    return @js(__('No options found'));
                 }
 
                 return filtered === total ? `${total} options` : `${filtered} of ${total} options`;
@@ -2698,7 +2698,7 @@
                 const total = (options || this.workstationOptionList(field)).length;
                 const filtered = this.filteredWorkstationOptionList(field, options).length;
                 if (filtered === 0) {
-                    return 'No options found';
+                    return @js(__('No options found'));
                 }
 
                 return filtered === total ? `${total} options` : `${filtered} of ${total} options`;
@@ -2739,7 +2739,7 @@
                 const total = (this.workstationMoveOptions[type] || []).length;
                 const filtered = this.filteredWorkstationMoveOptions(type).length;
                 if (filtered === 0) {
-                    return 'No options found';
+                    return @js(__('No options found'));
                 }
 
                 return filtered === total ? `${total} options` : `${filtered} of ${total} options`;
@@ -2767,7 +2767,7 @@
                 const total = (this.moveOptions[type] || []).length;
                 const filtered = this.filteredMoveOptions(type).length;
                 if (filtered === 0) {
-                    return 'No options found';
+                    return @js(__('No options found'));
                 }
 
                 return filtered === total ? `${total} options` : `${filtered} of ${total} options`;
@@ -3001,25 +3001,25 @@
                     application: [
                         { label: 'Workstation Name', value: application.name || this.workstationDetail?.name || '-' },
                         { label: 'Workgroup', value: this.workstationOptionLabel('workgroup_id', application.workgroup_id) },
-                        { label: 'Units of Length', value: this.workstationOptionLabel('units', application.units) },
-                        { label: 'Units of Luminance', value: this.workstationOptionLabel('LumUnits', application.LumUnits) },
+                        { label: @js(__('Units of Length')), value: this.workstationOptionLabel('units', application.units) },
+                        { label: @js(__('Units of Luminance')), value: this.workstationOptionLabel('LumUnits', application.LumUnits) },
                         { label: 'Veiling Luminance', value: application.AmbientLight || '-' },
-                        { label: 'Ambient Conditions Stable', value: this.workstationOptionLabel('AmbientStable', application.AmbientStable) },
+                        { label: @js(__('Ambient Conditions Stable')), value: this.workstationOptionLabel('AmbientStable', application.AmbientStable) },
                         { label: 'Energy Save Mode', value: this.workstationBooleanLabel(application.PutDisplaysToEnergySaveMode) },
                         { label: 'Energy Save Start', value: application.StartEnergySaveMode || '-' },
                         { label: 'Energy Save End', value: application.EndEnergySaveMode || '-' },
                     ],
                     calibration: [
-                        { label: 'Preset', value: this.workstationOptionLabel('CalibrationPresents', calibration.CalibrationPresents) },
-                        { label: 'Luminance Response', value: this.workstationOptionLabel('CalibrationType', calibration.CalibrationType) },
+                        { label: @js(__('Preset')), value: this.workstationOptionLabel('CalibrationPresents', calibration.CalibrationPresents) },
+                        { label: @js(__('Luminance Response')), value: this.workstationOptionLabel('CalibrationType', calibration.CalibrationType) },
                         { label: 'Color Temperature', value: calibration.ColorTemperatureAdjustment === '20' ? (calibration.ColorTemperatureAdjustment_ext || 'Custom') : this.workstationOptionLabel('ColorTemperatureAdjustment', calibration.ColorTemperatureAdjustment) },
-                        { label: 'Max Luminance', value: this.workstationOptionLabel('WhiteLevel_u_extcombo', whiteLevelValue) },
-                        { label: 'Gamut', value: this.workstationOptionLabel('gamut_name', calibration.gamut_name) },
+                        { label: @js(__('Max Luminance')), value: this.workstationOptionLabel('WhiteLevel_u_extcombo', whiteLevelValue) },
+                        { label: @js(__('Gamut')), value: this.workstationOptionLabel('gamut_name', calibration.gamut_name) },
                         { label: 'ICC Profile', value: this.workstationBooleanLabel(calibration.CreateICCICMProfile, 'Create', 'Disabled') },
                     ],
                     qa: [
-                        { label: 'Regulation', value: this.workstationOptionLabel('UsedRegulation', qa.UsedRegulation) },
-                        { label: 'Display Category', value: this.workstationQaClassificationOptions.find((option) => String(option.value) === String(qa.UsedClassification))?.label || qa.UsedClassification || '-' },
+                        { label: @js(__('Regulation')), value: this.workstationOptionLabel('UsedRegulation', qa.UsedRegulation) },
+                        { label: @js(__('Display Category')), value: this.workstationQaClassificationOptions.find((option) => String(option.value) === String(qa.UsedClassification))?.label || qa.UsedClassification || '-' },
                         { label: 'Body Region', value: qa.bodyRegion || '-' },
                         { label: 'Daily Tests', value: this.workstationBooleanLabel(qa.AutoDailyTests, 'Automatic', 'Manual') },
                     ],
@@ -3254,6 +3254,38 @@
                     await this.renderStructureMapGraph(true);
                     lucide.createIcons();
                 });
+            },
+
+            structureMapTitle() {
+                if (this.current.type === 'workstation') {
+                    return @js(__('Workstation Hierarchy Map'));
+                }
+
+                if (this.current.type === 'workgroup') {
+                    return @js(__('Workgroup Hierarchy Map'));
+                }
+
+                return @js(__('Display Hierarchy Map'));
+            },
+
+            structureMapDescription() {
+                if (this.current.type === 'workgroup') {
+                    return @js(__('Facility to workgroup path with sibling workgroups in the same facility. Drag to pan, use zoom controls or mouse wheel.'));
+                }
+
+                if (this.current.type === 'workstation') {
+                    return @js(__('Facility to workstation path with sibling workstations in the same workgroup. Drag to pan, use zoom controls or mouse wheel.'));
+                }
+
+                return @js(__('Facility to workstation path with sibling displays on the selected workstation. Drag to pan, use zoom controls or mouse wheel.'));
+            },
+
+            structureMapAttentionLabel() {
+                return @js(__('Needs Attention')) + ' (' + this.workstationStructureMapStats().attention + ')';
+            },
+
+            structureMapHealthyLabel() {
+                return @js(__('Healthy')) + ' (' + this.workstationStructureMapStats().healthy + ')';
             },
 
             closeDisplayStructureMap() {
@@ -3766,7 +3798,7 @@
                     this.moveConfirmOpen = false;
                     this.closeDisplayMovePanel();
                 } catch (error) {
-                    notify('failed', error.message || 'Failed to move display.');
+                    notify('failed', error.message || @js(__('Failed to move display.')));
                 } finally {
                     this.moveLoading = false;
                 }
@@ -3777,7 +3809,7 @@
                     return;
                 }
 
-                this.historyReportTitle = item.name || 'History Report';
+                this.historyReportTitle = item.name || @js(__('History Report'));
                 this.historyReportOpen = true;
                 this.historyReportLoading = true;
                 this.historyReportError = '';
@@ -3789,7 +3821,7 @@
                         this.historyReportTitle = response.name || this.historyReportTitle;
                     })
                     .catch((error) => {
-                        this.historyReportError = error.message || 'Failed to load history report.';
+                    this.historyReportError = error.message || @js(__('Failed to load history report.'));
                     })
                     .finally(() => {
                         this.historyReportLoading = false;
@@ -3802,7 +3834,7 @@
                 this.historyReportLoading = false;
                 this.historyReportError = '';
                 this.historyReportDetail = null;
-                this.historyReportTitle = 'History Report';
+                this.historyReportTitle = @js(__('History Report'));
             },
 
             csrfToken() {
@@ -4153,7 +4185,7 @@
                     this.historyReportLoading = false;
                     this.historyReportError = '';
                     this.historyReportDetail = null;
-                    this.historyReportTitle = 'History Report';
+                this.historyReportTitle = @js(__('History Report'));
                 }, 300);
             }
         }

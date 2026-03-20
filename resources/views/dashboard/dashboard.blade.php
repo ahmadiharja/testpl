@@ -7,33 +7,136 @@
     $isUserDashboard = $dashboardRole === 'user';
 
     $dashboardDescription = $isSuperDashboard
-        ? 'Monitor cross-facility display health, fleet activity, and upcoming tasks from one operational surface.'
+        ? __('Monitor cross-facility display health, fleet activity, and upcoming tasks from one operational surface.')
         : ($isAdminDashboard
-            ? 'Track display health, recent activity, and schedule pressure inside your assigned facility.'
-            : 'Review display health, recent activity, and upcoming tasks in a read-only workspace.');
+            ? __('Track display health, recent activity, and schedule pressure inside your assigned facility.')
+            : __('Review display health, recent activity, and upcoming tasks in a read-only workspace.'));
 
     $dashboardScopePill = $isSuperDashboard
-        ? ['label' => 'Super scope', 'tone' => 'border-sky-200 bg-sky-50 text-sky-700']
+        ? ['label' => __('Super scope'), 'tone' => 'border-sky-200 bg-sky-50 text-sky-700']
         : ($isAdminDashboard
-            ? ['label' => 'Facility scope', 'tone' => 'border-emerald-200 bg-emerald-50 text-emerald-700']
-            : ['label' => 'Read only', 'tone' => 'border-slate-200 bg-slate-50 text-slate-600']);
+            ? ['label' => __('Facility scope'), 'tone' => 'border-emerald-200 bg-emerald-50 text-emerald-700']
+            : ['label' => __('Read only'), 'tone' => 'border-slate-200 bg-slate-50 text-slate-600']);
 
     $failedSectionDescription = $isUserDashboard
-        ? 'The latest ten displays with active issues inside your visible scope.'
-        : 'The most recent ten failed displays across the visible scope.';
+        ? __('The latest ten displays with active issues inside your visible scope.')
+        : __('The most recent ten failed displays across the visible scope.');
 
     $recentSectionDescription = $isUserDashboard
-        ? 'The latest ten completed test results available to your account.'
-        : 'The latest ten completed test results in the current scope.';
+        ? __('The latest ten completed test results available to your account.')
+        : __('The latest ten completed test results in the current scope.');
 
     $dueSectionDescription = $isUserDashboard
-        ? 'The next ten due tasks in a read-only schedule overview.'
-        : 'The next ten due tasks across calibration and QA schedules.';
+        ? __('The next ten due tasks in a read-only schedule overview.')
+        : __('The next ten due tasks across calibration and QA schedules.');
+
+    $dashboardText = [
+        'healthy' => __('Healthy'),
+        'displaysOk' => __('Displays OK'),
+        'displaysNotOk' => __('Displays Not OK'),
+        'dueTasks' => __('Due Tasks'),
+        'displaysNeedAttention' => __('Displays that need attention'),
+        'openFullPage' => __('Open Full Page'),
+        'noActions' => __('No actions'),
+        'healthyDisplays' => __('Healthy displays'),
+        'displaysNeedFollowUp' => __('Displays that need follow-up'),
+        'upcomingDueTasks' => __('Upcoming due tasks'),
+    ];
+
+    $dashboardJs = [
+        'historiesUrl' => url('histories-reports'),
+        'canManageDashboardTasks' => session('role') !== 'user',
+        'noActions' => __('No actions'),
+        'scheduleTask' => __('Schedule Task'),
+        'deleteTask' => __('Delete Task'),
+        'csrfToken' => csrf_token(),
+        'deleteTaskUrl' => url('delete-task'),
+        'modals' => [
+            'displays_ok' => [
+                'eyebrow' => __('Displays OK'),
+                'title' => $dashboardText['healthyDisplays'],
+                'description' => __('Review the latest ten displays that are currently reported as healthy.'),
+                'fullUrl' => url('displays?type=ok'),
+            ],
+            'displays_failed' => [
+                'eyebrow' => __('Displays Not OK'),
+                'title' => $dashboardText['displaysNeedFollowUp'],
+                'description' => __('Review the latest ten failed displays and jump straight into the affected hierarchy.'),
+                'fullUrl' => url('displays?type=failed'),
+            ],
+            'workstations' => [
+                'eyebrow' => __('Workstations'),
+                'title' => __('Workstation fleet overview'),
+                'description' => __('Scan workstation identity, hierarchy scope, connected state, and display coverage from one compact view.'),
+                'fullUrl' => url('workstations'),
+            ],
+            'due_tasks' => [
+                'eyebrow' => __('Due Tasks'),
+                'title' => $dashboardText['upcomingDueTasks'],
+                'description' => __('Review the next ten scheduled items with their target display, hierarchy scope, cadence, due date, and current status.'),
+                'fullUrl' => url('scheduler'),
+            ],
+        ],
+        'grid' => [
+            'display' => __('Display'),
+            'workstation' => __('Workstation'),
+            'workgroup' => __('Workgroup'),
+            'facility' => __('Facility'),
+            'status' => __('Status'),
+            'task' => __('Task'),
+            'schedule' => __('Schedule'),
+            'dueDate' => __('Due Date'),
+            'actions' => __('Actions'),
+            'lastUpdate' => __('Last Update'),
+            'errorDetails' => __('Error Details'),
+            'result' => __('Result'),
+            'performed' => __('Performed'),
+            'ok' => __('OK'),
+            'fail' => __('Fail'),
+            'pass' => __('Pass'),
+            'overdue' => __('Overdue'),
+            'today' => __('Today'),
+            'upcoming' => __('Upcoming'),
+            'inService' => __('in service'),
+            'requireFollowUp' => __('require follow-up'),
+            'fleet' => __('Fleet'),
+            'activeRecords' => __('active records'),
+            'pipeline' => __('Pipeline'),
+            'scheduledItems' => __('scheduled items'),
+            'displayNotOk' => __('Display Not OK'),
+            'viewAll' => __('View All'),
+            'noFailedDisplaysDetected' => __('No failed displays detected'),
+            'failedDisplaysEmptyDescription' => __('This area will list displays with recent errors as soon as any issue is reported.'),
+            'latestPerformed' => __('Latest Performed'),
+            'recentActivity' => __('Recent activity'),
+            'openScheduler' => __('Open Scheduler'),
+            'upcomingMaintenancePipeline' => __('Upcoming maintenance pipeline'),
+            'facilityAdminScope' => __('Facility Admin Scope'),
+            'managingOneFacilityWorkspace' => __('You are managing one facility workspace'),
+            'bulkActionsScopedPrefix' => __('Bulk actions, task scheduling, and workstation changes remain scoped to'),
+            'yourAssignedFacility' => __('your assigned facility'),
+            'facility' => __('Facility'),
+            'assignedFacility' => __('Assigned facility'),
+            'recordsToReview' => __('records to review'),
+            'recentDueTasks' => __('Recent Due Tasks'),
+            'upcomingItems' => __('upcoming items'),
+            'readOnlyWorkspace' => __('Read-only Workspace'),
+            'dashboardDesignedForMonitoring' => __('This dashboard is designed for monitoring'),
+            'readOnlyScopeDescription' => __('You can review workstation health, schedule pressure, and recent activity, but task management and configuration actions stay hidden.'),
+            'remotePortalInfo' => __('Remote Portal Info'),
+            'clientConnectionDetails' => __('Client connection details'),
+            'remotePortalDescription' => __('Use these values to connect a remote client to this environment without leaving the dashboard.'),
+            'downloadClient' => __('Download Client'),
+            'endpointUrl' => __('Endpoint URL'),
+            'serviceId' => __('Service ID'),
+            'tokenPk' => __('Token PK'),
+        ],
+    ];
 @endphp
 
 <div class="mx-auto flex w-full max-w-[1600px] flex-col gap-6 pb-10">
     <x-page-header
-        title="Dashboard"
+        title="{{ __('Dashboard') }}"
         :description="$dashboardDescription"
         icon="layout-dashboard"
     >
@@ -47,7 +150,7 @@
                 class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
                 <i data-lucide="refresh-cw" class="h-4 w-4"></i>
-                Refresh
+                {{ __('Refresh') }}
             </button>
         </x-slot>
     </x-page-header>
@@ -63,14 +166,14 @@
                     <i data-lucide="monitor-check" class="h-6 w-6"></i>
                 </div>
                 <span class="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700">
-                    Healthy
+                    {{ $dashboardText['healthy'] }}
                 </span>
             </div>
             <div class="mt-6">
-                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Displays OK</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">{{ $dashboardText['displaysOk'] }}</p>
                 <div class="mt-2 flex items-end gap-3">
                     <p class="text-5xl font-black tracking-tight text-slate-900">{{ $d_ok }}</p>
-                    <p class="pb-1 text-sm font-semibold text-emerald-600">in service</p>
+                    <p class="pb-1 text-sm font-semibold text-emerald-600">{{ __('in service') }}</p>
                 </div>
             </div>
         </button>
@@ -85,14 +188,14 @@
                     <i data-lucide="alert-octagon" class="h-6 w-6"></i>
                 </div>
                 <span class="rounded-full bg-rose-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-rose-700">
-                    Attention
+                    {{ __('Attention') }}
                 </span>
             </div>
             <div class="mt-6">
-                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Displays Not OK</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">{{ $dashboardText['displaysNotOk'] }}</p>
                 <div class="mt-2 flex items-end gap-3">
                     <p class="text-5xl font-black tracking-tight text-slate-900">{{ $d_fail }}</p>
-                    <p class="pb-1 text-sm font-semibold text-rose-600">require follow-up</p>
+                    <p class="pb-1 text-sm font-semibold text-rose-600">{{ __('require follow-up') }}</p>
                 </div>
             </div>
         </button>
@@ -107,14 +210,14 @@
                     <i data-lucide="layout-grid" class="h-6 w-6"></i>
                 </div>
                 <span class="rounded-full bg-sky-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-sky-700">
-                    Fleet
+                    {{ __('Fleet') }}
                 </span>
             </div>
             <div class="mt-6">
-                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Workstations</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">{{ __('Workstations') }}</p>
                 <div class="mt-2 flex items-end gap-3">
                     <p class="text-5xl font-black tracking-tight text-slate-900">{{ $workstations }}</p>
-                    <p class="pb-1 text-sm font-semibold text-sky-600">active records</p>
+                    <p class="pb-1 text-sm font-semibold text-sky-600">{{ __('active records') }}</p>
                 </div>
             </div>
         </button>
@@ -129,14 +232,14 @@
                     <i data-lucide="calendar-clock" class="h-6 w-6"></i>
                 </div>
                 <span class="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-amber-700">
-                    Pipeline
+                    {{ __('Pipeline') }}
                 </span>
             </div>
             <div class="mt-6">
-                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Due Tasks</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">{{ $dashboardText['dueTasks'] }}</p>
                 <div class="mt-2 flex items-end gap-3">
                     <p id="due_tasks_stats" class="text-5xl font-black tracking-tight text-slate-900">{{ $due_tasks }}</p>
-                    <p class="pb-1 text-sm font-semibold text-amber-600">scheduled items</p>
+                    <p class="pb-1 text-sm font-semibold text-amber-600">{{ __('scheduled items') }}</p>
                 </div>
             </div>
         </button>
@@ -146,12 +249,12 @@
         <div class="xl:col-span-4 rounded-[2rem] border border-slate-200/80 bg-white p-5 shadow-sm">
             <div class="mb-4 flex items-start justify-between gap-4">
                 <div>
-                    <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Display Not OK</p>
-                    <h3 class="mt-1 text-2xl font-bold tracking-tight text-slate-900">Displays that need attention</h3>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">{{ __('Display Not OK') }}</p>
+                    <h3 class="mt-1 text-2xl font-bold tracking-tight text-slate-900">{{ $dashboardText['displaysNeedAttention'] }}</h3>
                     <p class="mt-1 text-[13px] text-slate-500">{{ $failedSectionDescription }}</p>
                 </div>
                 <a href="{{ url('displays?type=failed') }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 transition hover:bg-slate-50">
-                    View All
+                    {{ __('View All') }}
                     <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
                 </a>
             </div>
@@ -162,8 +265,8 @@
                         <div class="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-emerald-50 text-emerald-600 shadow-sm">
                             <i data-lucide="shield-check" class="h-8 w-8"></i>
                         </div>
-                        <h4 class="mt-5 text-lg font-bold text-slate-900">No failed displays detected</h4>
-                        <p class="mt-2 max-w-md text-sm text-slate-500">This area will list displays with recent errors as soon as any issue is reported.</p>
+                        <h4 class="mt-5 text-lg font-bold text-slate-900">{{ __('No failed displays detected') }}</h4>
+                        <p class="mt-2 max-w-md text-sm text-slate-500">{{ __('This area will list displays with recent errors as soon as any issue is reported.') }}</p>
                     </div>
                 @else
                     <div id="failed-displays-grid" class="w-full"></div>
@@ -174,8 +277,8 @@
         <div class="xl:col-span-2 rounded-[2rem] border border-slate-200/80 bg-white p-5 shadow-sm">
             <div class="mb-4 flex items-start justify-between gap-4">
                 <div>
-                    <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Latest Performed</p>
-                    <h3 class="mt-1 text-2xl font-bold tracking-tight text-slate-900">Recent activity</h3>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">{{ __('Latest Performed') }}</p>
+                    <h3 class="mt-1 text-2xl font-bold tracking-tight text-slate-900">{{ __('Recent activity') }}</h3>
                     <p class="mt-1 text-[13px] text-slate-500">{{ $recentSectionDescription }}</p>
                 </div>
                 <button type="button" onclick="window.refreshDashboardGrids && window.refreshDashboardGrids()" class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50">
@@ -192,12 +295,12 @@
     <section class="rounded-[2rem] border border-slate-200/80 bg-white p-5 shadow-sm">
         <div class="mb-4 flex items-start justify-between gap-4">
             <div>
-                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Due Tasks</p>
-                <h3 class="mt-1 text-2xl font-bold tracking-tight text-slate-900">Upcoming maintenance pipeline</h3>
+                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">{{ __('Due Tasks') }}</p>
+                <h3 class="mt-1 text-2xl font-bold tracking-tight text-slate-900">{{ __('Upcoming maintenance pipeline') }}</h3>
                 <p class="mt-1 text-[13px] text-slate-500">{{ $dueSectionDescription }}</p>
             </div>
             <a href="{{ url('scheduler') }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 transition hover:bg-slate-50">
-                Open Scheduler
+                {{ __('Open Scheduler') }}
                 <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
             </a>
         </div>
@@ -211,22 +314,22 @@
     <section class="rounded-[2rem] border border-emerald-200/80 bg-white p-5 shadow-sm">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div class="max-w-2xl">
-                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Facility Admin Scope</p>
-                <h3 class="mt-1 text-xl font-bold tracking-tight text-slate-900">You are managing one facility workspace</h3>
-                <p class="mt-1 text-[13px] text-slate-500">Bulk actions, task scheduling, and workstation changes remain scoped to {{ optional($user->facility)->name ?? 'your assigned facility' }}.</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">{{ __('Facility Admin Scope') }}</p>
+                <h3 class="mt-1 text-xl font-bold tracking-tight text-slate-900">{{ __('You are managing one facility workspace') }}</h3>
+                <p class="mt-1 text-[13px] text-slate-500">{{ __('Bulk actions, task scheduling, and workstation changes remain scoped to') }} {{ optional($user->facility)->name ?? __('your assigned facility') }}.</p>
             </div>
             <div class="grid gap-3 sm:grid-cols-3">
                 <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Facility</p>
-                    <p class="mt-2 text-sm font-bold text-slate-900">{{ optional($user->facility)->name ?? 'Assigned facility' }}</p>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Facility') }}</p>
+                    <p class="mt-2 text-sm font-bold text-slate-900">{{ optional($user->facility)->name ?? __('Assigned facility') }}</p>
                 </div>
                 <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Workstations</p>
-                    <p class="mt-2 text-sm font-bold text-slate-900">{{ $workstations }} active records</p>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Workstations') }}</p>
+                    <p class="mt-2 text-sm font-bold text-slate-900">{{ $workstations }} {{ __('active records') }}</p>
                 </div>
                 <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Due Tasks</p>
-                    <p class="mt-2 text-sm font-bold text-slate-900">{{ $due_tasks }} scheduled items</p>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Due Tasks') }}</p>
+                    <p class="mt-2 text-sm font-bold text-slate-900">{{ $due_tasks }} {{ __('scheduled items') }}</p>
                 </div>
             </div>
         </div>
@@ -235,22 +338,22 @@
     <section class="rounded-[2rem] border border-slate-200/80 bg-white p-5 shadow-sm">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div class="max-w-2xl">
-                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Read-only Workspace</p>
-                <h3 class="mt-1 text-xl font-bold tracking-tight text-slate-900">This dashboard is designed for monitoring</h3>
-                <p class="mt-1 text-[13px] text-slate-500">You can review workstation health, schedule pressure, and recent activity, but task management and configuration actions stay hidden.</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">{{ __('Read-only Workspace') }}</p>
+                <h3 class="mt-1 text-xl font-bold tracking-tight text-slate-900">{{ __('This dashboard is designed for monitoring') }}</h3>
+                <p class="mt-1 text-[13px] text-slate-500">{{ __('You can review workstation health, schedule pressure, and recent activity, but task management and configuration actions stay hidden.') }}</p>
             </div>
             <div class="grid gap-3 sm:grid-cols-3">
                 <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Assigned Facility</p>
-                    <p class="mt-2 text-sm font-bold text-slate-900">{{ optional($user->facility)->name ?? 'Assigned facility' }}</p>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Assigned Facility') }}</p>
+                    <p class="mt-2 text-sm font-bold text-slate-900">{{ optional($user->facility)->name ?? __('Assigned facility') }}</p>
                 </div>
                 <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Displays Not OK</p>
-                    <p class="mt-2 text-sm font-bold text-slate-900">{{ $d_fail }} records to review</p>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Displays Not OK') }}</p>
+                    <p class="mt-2 text-sm font-bold text-slate-900">{{ $d_fail }} {{ __('records to review') }}</p>
                 </div>
                 <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Recent Due Tasks</p>
-                    <p class="mt-2 text-sm font-bold text-slate-900">{{ $due_tasks }} upcoming items</p>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Recent Due Tasks') }}</p>
+                    <p class="mt-2 text-sm font-bold text-slate-900">{{ $due_tasks }} {{ __('upcoming items') }}</p>
                 </div>
             </div>
         </div>
@@ -261,9 +364,9 @@
     <section class="rounded-[2rem] border border-slate-200/80 bg-white p-5 shadow-sm">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div class="max-w-xl">
-                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Remote Portal Info</p>
-                <h3 class="mt-1 text-xl font-bold tracking-tight text-slate-900">Client connection details</h3>
-                <p class="mt-1 text-[13px] text-slate-500">Use these values to connect a remote client to this environment without leaving the dashboard.</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">{{ __('Remote Portal Info') }}</p>
+                <h3 class="mt-1 text-xl font-bold tracking-tight text-slate-900">{{ __('Client connection details') }}</h3>
+                <p class="mt-1 text-[13px] text-slate-500">{{ __('Use these values to connect a remote client to this environment without leaving the dashboard.') }}</p>
             </div>
             <a
                 href="https://qubyx.com/product/remote-server/"
@@ -271,13 +374,13 @@
                 class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-600"
             >
                 <i data-lucide="download-cloud" class="h-4 w-4"></i>
-                Download Client
+                {{ __('Download Client') }}
             </a>
         </div>
 
         <div class="mt-5 grid gap-4 lg:grid-cols-[1.4fr_1fr_1fr]">
             <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Endpoint URL</p>
+                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Endpoint URL') }}</p>
                 <div class="mt-2 flex items-center justify-between gap-3">
                     <span class="truncate text-sm font-semibold text-slate-700">{{ url('/') }}</span>
                     <button type="button" onclick="copy_field('#endpoint_url')" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100">
@@ -288,7 +391,7 @@
             </div>
 
             <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Service ID</p>
+                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Service ID') }}</p>
                 <div class="mt-2 flex items-center justify-between gap-3">
                     <span class="truncate text-sm font-semibold text-slate-700">{{ $user->sync_user }}</span>
                     <button type="button" onclick="copy_field('#sync_user')" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100">
@@ -299,7 +402,7 @@
             </div>
 
             <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Token PK</p>
+                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Token PK') }}</p>
                 <div class="mt-2 flex items-center justify-between gap-3">
                     <span class="truncate text-sm font-semibold text-slate-700">{{ $user->sync_password_raw }}</span>
                     <button type="button" onclick="copy_field('#sync_pass')" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100">
@@ -412,9 +515,9 @@
         >
             <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
                 <div class="min-w-0">
-                    <p id="dashboard-stat-modal-eyebrow" class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Dashboard Detail</p>
-                    <h3 id="dashboard-stat-modal-title" class="mt-1 text-2xl font-bold tracking-tight text-slate-900">Stat Detail</h3>
-                    <p id="dashboard-stat-modal-description" class="mt-1 text-[13px] text-slate-500">Review the latest records related to this dashboard metric.</p>
+                    <p id="dashboard-stat-modal-eyebrow" class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">{{ __('Dashboard Detail') }}</p>
+                    <h3 id="dashboard-stat-modal-title" class="mt-1 text-2xl font-bold tracking-tight text-slate-900">{{ __('Stat Detail') }}</h3>
+                    <p id="dashboard-stat-modal-description" class="mt-1 text-[13px] text-slate-500">{{ __('Review the latest records related to this dashboard metric.') }}</p>
                 </div>
                 <div class="flex items-center gap-3">
                     <a
@@ -422,7 +525,7 @@
                         href="#"
                         class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 transition hover:bg-slate-50"
                     >
-                        Open Full Page
+                        {{ __('Open Full Page') }}
                         <i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>
                     </a>
                     <button
@@ -450,7 +553,7 @@
             return `/histories/${historyId}`;
         }
 
-        const url = new URL(@json(url('histories-reports')), window.location.origin);
+        const url = new URL(@json($dashboardJs['historiesUrl']), window.location.origin);
         if (displayId) {
             url.searchParams.set('display_id', displayId);
         }
@@ -610,7 +713,7 @@
             <article class="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0">
-                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Workstation</p>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Workstation') }}</p>
                         <button
                             type="button"
                             onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'workstation', id: ${item.id} }}))"
@@ -632,14 +735,14 @@
 
                 <div class="mt-5 grid gap-3 sm:grid-cols-2">
                     <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Display Coverage</p>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Display Coverage') }}</p>
                         <div class="mt-2 flex items-end justify-between gap-3">
                             <span class="text-2xl font-black tracking-tight text-slate-900">${dashboardEscapeHtml(item.displaysCount)}</span>
                             <span class="text-[12px] font-medium text-slate-500">${dashboardEscapeHtml(displaysLabel)}</span>
                         </div>
                     </div>
                     <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Last Connected</p>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Last Connected') }}</p>
                         <div class="mt-2 flex flex-wrap items-center gap-2">
                             <span class="inline-flex items-center justify-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${connection.pill}">
                                 ${dashboardEscapeHtml(connection.label)}
@@ -652,8 +755,8 @@
 
                 <div class="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 px-4 py-3">
                     <div class="min-w-0">
-                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Quick access</p>
-                        <p class="mt-1 truncate text-[12px] text-slate-500">Open the workstation drawer or continue to the management page.</p>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Quick access') }}</p>
+                        <p class="mt-1 truncate text-[12px] text-slate-500">{{ __('Open the workstation drawer or continue to the management page.') }}</p>
                     </div>
                     <div class="flex items-center gap-2">
                         <button
@@ -699,7 +802,7 @@
 
         holder.innerHTML = `
             <div class="flex min-h-[16rem] items-center justify-center px-6 py-12 text-sm font-medium text-slate-500">
-                Loading workstation records...
+                ${@json(__('Loading workstation records...'))}
             </div>
         `;
 
@@ -726,9 +829,9 @@
                     <div class="mb-5 rounded-[1.6rem] border border-slate-200 bg-slate-50/70 p-4">
                         <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                             <div class="max-w-xl">
-                                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Filter workstations</p>
-                                <h4 class="mt-1 text-lg font-bold tracking-tight text-slate-900">Narrow the active scope</h4>
-                                <p class="mt-1 text-[13px] text-slate-500">Filter by facility, workgroup, or a workstation name before you open the detailed record.</p>
+                                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Filter workstations') }}</p>
+                                <h4 class="mt-1 text-lg font-bold tracking-tight text-slate-900">${@json(__('Narrow the active scope'))}</h4>
+                                <p class="mt-1 text-[13px] text-slate-500">{{ __('Filter by facility, workgroup, or a workstation name before you open the detailed record.') }}</p>
                             </div>
                             <button type="button" data-workstation-modal-reset class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-100">
                                 Reset filters
@@ -736,20 +839,20 @@
                         </div>
                         <div class="mt-4 grid gap-3 xl:grid-cols-[1.2fr_0.9fr_0.9fr]">
                             <label class="block">
-                                <span class="mb-2 block text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Search</span>
+                                <span class="mb-2 block text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Search') }}</span>
                                 <input data-workstation-modal-search type="text" value="${dashboardEscapeHtml(state.search)}" placeholder="Search workstation name..." class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
                             </label>
                             <label class="block">
-                                <span class="mb-2 block text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Facility</span>
+                                <span class="mb-2 block text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Facility') }}</span>
                                 <select data-workstation-modal-facility class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
-                                    <option value="">All facilities</option>
+                                    <option value="">{{ __('All facilities') }}</option>
                                     ${facilities.map((facility) => `<option value="${facility.id}" ${String(state.facilityId) === String(facility.id) ? 'selected' : ''}>${dashboardEscapeHtml(facility.name)}</option>`).join('')}
                                 </select>
                             </label>
                             <label class="block">
-                                <span class="mb-2 block text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Workgroup</span>
+                                <span class="mb-2 block text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Workgroup') }}</span>
                                 <select data-workstation-modal-workgroup class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-300 focus:ring-2 focus:ring-sky-100">
-                                    <option value="">All workgroups</option>
+                                    <option value="">{{ __('All workgroups') }}</option>
                                     ${workgroups.map((workgroup) => `<option value="${workgroup.id}" ${String(state.workgroupId) === String(workgroup.id) ? 'selected' : ''}>${dashboardEscapeHtml(workgroup.name)}</option>`).join('')}
                                 </select>
                             </label>
@@ -761,16 +864,16 @@
                                 <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 shadow-sm">
                                     <i data-lucide="layout-grid" class="h-7 w-7"></i>
                                 </div>
-                                <h4 class="mt-4 text-lg font-bold text-slate-900">No workstation records found</h4>
-                                <p class="mt-2 max-w-md text-sm text-slate-500">There are no workstation records available in the current dashboard scope.</p>
+                                <h4 class="mt-4 text-lg font-bold text-slate-900">${@json(__('No workstation records found'))}</h4>
+                                <p class="mt-2 max-w-md text-sm text-slate-500">${@json(__('There are no workstation records available in the current dashboard scope.'))}</p>
                            </div>`
                     }
                 </div>
                 <div class="border-t border-slate-200/90 px-6 py-4">
                     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <p class="text-xs font-medium text-slate-500">Showing ${from} to ${to} of ${total} results</p>
+                        <p class="text-xs font-medium text-slate-500">${@json(__('Showing'))} ${from} ${@json(__('to'))} ${to} ${@json(__('of'))} ${total} ${@json(__('results'))}</p>
                         <div class="flex flex-wrap items-center justify-end gap-2">
-                            <button type="button" ${currentPage === 1 ? 'disabled' : ''} data-workstation-modal-page="${currentPage - 1}" class="inline-flex h-9 items-center justify-center rounded-full px-4 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:pointer-events-none disabled:opacity-40">Prev</button>
+                            <button type="button" ${currentPage === 1 ? 'disabled' : ''} data-workstation-modal-page="${currentPage - 1}" class="inline-flex h-9 items-center justify-center rounded-full px-4 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:pointer-events-none disabled:opacity-40">${@json(__('Prev'))}</button>
                             ${paginationItems.map((item) => {
                                 if (item === 'ellipsis') {
                                     return '<span class="px-1 text-sm font-semibold text-slate-400">...</span>';
@@ -778,7 +881,7 @@
                                 const active = item === currentPage;
                                 return `<button type="button" data-workstation-modal-page="${item}" class="inline-flex h-9 min-w-[2.25rem] items-center justify-center rounded-full border px-3 text-sm font-semibold transition ${active ? 'border-sky-500 bg-sky-500 text-white shadow-sm' : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900'}">${item}</button>`;
                             }).join('')}
-                            <button type="button" ${currentPage >= totalPages ? 'disabled' : ''} data-workstation-modal-page="${currentPage + 1}" class="inline-flex h-9 items-center justify-center rounded-full px-4 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:pointer-events-none disabled:opacity-40">Next</button>
+                            <button type="button" ${currentPage >= totalPages ? 'disabled' : ''} data-workstation-modal-page="${currentPage + 1}" class="inline-flex h-9 items-center justify-center rounded-full px-4 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:pointer-events-none disabled:opacity-40">${@json(__('Next'))}</button>
                         </div>
                     </div>
                 </div>
@@ -843,8 +946,8 @@
                     <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 shadow-sm">
                         <i data-lucide="triangle-alert" class="h-7 w-7"></i>
                     </div>
-                    <h4 class="mt-4 text-lg font-bold text-slate-900">Unable to load workstation records</h4>
-                    <p class="mt-2 max-w-md text-sm text-slate-500">Please try again or open the full workstation page for a broader view.</p>
+                    <h4 class="mt-4 text-lg font-bold text-slate-900">${@json(__('Unable to load workstation records'))}</h4>
+                    <p class="mt-2 max-w-md text-sm text-slate-500">${@json(__('Please try again or open the full workstation page for a broader view.'))}</p>
                 </div>
             `;
             if (window.lucide) {
@@ -870,7 +973,11 @@
 
     window.dashboardGridsRendered = false;
     window.currentDashboardStatModalKey = null;
-    const canManageDashboardTasks = @json(session('role') !== 'user');
+    const canManageDashboardTasks = @json($dashboardJs['canManageDashboardTasks']);
+    const dashboardNoActionsLabel = @json($dashboardJs['noActions']);
+    const dashboardScheduleTaskLabel = @json($dashboardJs['scheduleTask']);
+    const dashboardDeleteTaskLabel = @json($dashboardJs['deleteTask']);
+    const dashboardGridText = @json($dashboardJs['grid']);
 
     window.refreshDashboardGrids = function () {
         ['failed-displays-grid', 'latest-performed-grid', 'due-tasks-grid'].forEach((id) => {
@@ -886,7 +993,7 @@
 
     function renderDashboardDueTaskActions(row) {
         if (!canManageDashboardTasks) {
-            return '<span class="text-xs text-slate-400">No actions</span>';
+            return `<span class="text-xs text-slate-400">${dashboardNoActionsLabel}</span>`;
         }
 
         return `
@@ -901,11 +1008,11 @@
                 <div data-dashboard-due-task-menu="${row.id}" class="absolute right-0 top-full z-20 mt-2 hidden w-44 overflow-hidden rounded-2xl border border-slate-200 bg-white py-1 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
                     <button type="button" data-dashboard-due-task-edit="${row.id}" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50">
                         <i data-lucide="calendar-clock" class="h-4 w-4 text-sky-500"></i>
-                        Schedule Task
+                        ${dashboardScheduleTaskLabel}
                     </button>
                     <button type="button" data-dashboard-due-task-delete="${row.id}" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
                         <i data-lucide="trash-2" class="h-4 w-4"></i>
-                        Delete Task
+                        ${dashboardDeleteTaskLabel}
                     </button>
                 </div>
             </div>
@@ -918,11 +1025,11 @@
 
     async function deleteDashboardDueTask(id) {
         const formData = new FormData();
-        formData.append('_token', @json(csrf_token()));
+        formData.append('_token', @json($dashboardJs['csrfToken']));
         formData.append('id', id);
 
         try {
-            const payload = await Perfectlum.postForm(@json(url('delete-task')), formData);
+            const payload = await Perfectlum.postForm(@json($dashboardJs['deleteTaskUrl']), formData);
             if (!payload.success) {
                 notify('failed', payload.msg || 'Failed to delete task.');
                 return;
@@ -948,14 +1055,14 @@
 
     const dashboardStatModalConfigs = {
         displays_ok: {
-            eyebrow: 'Displays OK',
-            title: 'Healthy displays',
-            description: 'Review the latest ten displays that are currently reported as healthy.',
-            fullUrl: @json(url('displays?type=ok')),
+            eyebrow: @json($dashboardJs['modals']['displays_ok']['eyebrow']),
+            title: @json($dashboardJs['modals']['displays_ok']['title']),
+            description: @json($dashboardJs['modals']['displays_ok']['description']),
+            fullUrl: @json($dashboardJs['modals']['displays_ok']['fullUrl']),
             baseUrl: (page = 1, limit = 10) => `/api/displays?type=ok&page=${page}&limit=${limit}`,
             columns: [
                 {
-                    name: 'Display',
+                    name: @json(__('Display')),
                     formatter: (cell) => gridjs.html(`
                         <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'display', id: ${cell.displayId} }}))" class="min-w-[16rem] text-left text-[13px] font-bold text-slate-900 transition hover:text-sky-600">
                             ${dashboardEscapeHtml(cell.displayName)}
@@ -963,20 +1070,20 @@
                     `)
                 },
                 {
-                    name: 'Workstation',
+                    name: dashboardGridText.workstation,
                     formatter: (cell, row) => gridjs.html(dashboardHierarchyButton('workstation', row.cells[0].data.wsId, cell, hierarchyIcons.workstation))
                 },
                 {
-                    name: 'Workgroup',
+                    name: @json(__('Workgroup')),
                     formatter: (cell, row) => gridjs.html(dashboardHierarchyButton('workgroup', row.cells[0].data.wgId, cell, hierarchyIcons.workgroup))
                 },
                 {
-                    name: 'Facility',
+                    name: @json(__('Facility')),
                     formatter: (cell, row) => gridjs.html(dashboardHierarchyButton('facility', row.cells[0].data.facId, cell, hierarchyIcons.facility))
                 },
                 {
-                    name: 'Status',
-                    formatter: () => gridjs.html('<span class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-700">OK</span>')
+                    name: @json(__('Status')),
+                    formatter: () => gridjs.html(`<span class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-700">${dashboardGridText.ok}</span>`)
                 }
             ],
             server: {
@@ -1001,14 +1108,14 @@
             }
         },
         displays_failed: {
-            eyebrow: 'Displays Not OK',
-            title: 'Displays that need follow-up',
-            description: 'Review the latest ten failed displays and jump straight into the affected hierarchy.',
-            fullUrl: @json(url('displays?type=failed')),
+            eyebrow: @json($dashboardJs['modals']['displays_failed']['eyebrow']),
+            title: @json($dashboardJs['modals']['displays_failed']['title']),
+            description: @json($dashboardJs['modals']['displays_failed']['description']),
+            fullUrl: @json($dashboardJs['modals']['displays_failed']['fullUrl']),
             baseUrl: (page = 1, limit = 10) => `/api/displays?type=failed&page=${page}&limit=${limit}`,
             columns: [
                 {
-                    name: 'Display',
+                    name: @json(__('Display')),
                     formatter: (cell) => gridjs.html(`
                         <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'display', id: ${cell.displayId} }}))" class="min-w-[16rem] text-left text-[13px] font-bold text-slate-900 transition hover:text-sky-600">
                             ${dashboardEscapeHtml(cell.displayName)}
@@ -1016,20 +1123,20 @@
                     `)
                 },
                 {
-                    name: 'Workstation',
+                    name: @json(__('Workstation')),
                     formatter: (cell, row) => gridjs.html(dashboardHierarchyButton('workstation', row.cells[0].data.wsId, cell, hierarchyIcons.workstation))
                 },
                 {
-                    name: 'Workgroup',
+                    name: @json(__('Workgroup')),
                     formatter: (cell, row) => gridjs.html(dashboardHierarchyButton('workgroup', row.cells[0].data.wgId, cell, hierarchyIcons.workgroup))
                 },
                 {
-                    name: 'Facility',
+                    name: @json(__('Facility')),
                     formatter: (cell, row) => gridjs.html(dashboardHierarchyButton('facility', row.cells[0].data.facId, cell, hierarchyIcons.facility))
                 },
                 {
-                    name: 'Status',
-                    formatter: () => gridjs.html('<span class="inline-flex rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-rose-700">Fail</span>')
+                    name: @json(__('Status')),
+                    formatter: () => gridjs.html(`<span class="inline-flex rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-rose-700">${dashboardGridText.fail}</span>`)
                 }
             ],
             server: {
@@ -1054,22 +1161,22 @@
             }
         },
         workstations: {
-            eyebrow: 'Workstations',
-            title: 'Workstation fleet overview',
-            description: 'Scan workstation identity, hierarchy scope, connected state, and display coverage from one compact view.',
-            fullUrl: @json(url('workstations')),
+            eyebrow: @json($dashboardJs['modals']['workstations']['eyebrow']),
+            title: @json($dashboardJs['modals']['workstations']['title']),
+            description: @json($dashboardJs['modals']['workstations']['description']),
+            fullUrl: @json($dashboardJs['modals']['workstations']['fullUrl']),
             baseUrl: (page = 1, limit = 10) => `/api/workstations?page=${page}&limit=${limit}`,
             customRenderer: true
         },
         due_tasks: {
-            eyebrow: 'Due Tasks',
-            title: 'Upcoming due tasks',
-            description: 'Review the next ten scheduled items with their target display, hierarchy scope, cadence, due date, and current status.',
-            fullUrl: @json(url('scheduler')),
+            eyebrow: @json($dashboardJs['modals']['due_tasks']['eyebrow']),
+            title: @json($dashboardJs['modals']['due_tasks']['title']),
+            description: @json($dashboardJs['modals']['due_tasks']['description']),
+            fullUrl: @json($dashboardJs['modals']['due_tasks']['fullUrl']),
             baseUrl: (page = 1, limit = 10) => `/api/tasks?sort_mode=due_desc&page=${page}&limit=${limit}`,
             columns: [
                 {
-                    name: 'Display & Scope',
+                    name: @json(__('Display & Scope')),
                     formatter: (cell) => gridjs.html(`
                         <div class="min-w-[18rem]">
                             <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'display', id: ${cell.displayId} }}))" class="text-left text-[13px] font-bold text-slate-900 transition hover:text-sky-600">
@@ -1085,8 +1192,8 @@
                         </div>
                     `)
                 },
-                {
-                    name: 'Task',
+                    {
+                        name: @json(__('Task')),
                     formatter: (cell) => gridjs.html(`
                         <div class="flex justify-center text-center">
                             <div class="max-w-[15rem] whitespace-normal leading-6 text-center">
@@ -1096,7 +1203,7 @@
                     `)
                 },
                 {
-                    name: 'Schedule',
+                    name: @json(__('Schedule')),
                     formatter: (cell) => gridjs.html(`
                         <div class="flex justify-center text-center">
                             <span class="inline-flex items-center justify-center rounded-full bg-amber-50 px-2.5 py-1 text-center text-[11px] font-bold text-amber-700">${dashboardEscapeHtml(cell)}</span>
@@ -1104,7 +1211,7 @@
                     `)
                 },
                 {
-                    name: 'Due Date',
+                    name: @json(__('Due Date')),
                     formatter: (cell) => {
                         const tone = cell.dueColor === 'danger'
                             ? 'border-rose-200 bg-rose-50 text-rose-700'
@@ -1122,7 +1229,7 @@
                     }
                 },
                 {
-                    name: 'Status',
+                    name: @json(__('Status')),
                     formatter: (cell) => {
                         const tone = cell.statusColor === 'danger'
                             ? 'border-rose-200 bg-rose-50 text-rose-700'
@@ -1137,7 +1244,7 @@
                     }
                 },
                     {
-                        name: 'Actions',
+                        name: @json(__('Actions')),
                         sort: false,
                         formatter: (cell, row) => gridjs.html(`
                             <div class="flex items-center justify-end gap-2">
@@ -1166,7 +1273,7 @@
                         item.scheduleName,
                         {
                             formatted: item.dueAt,
-                            note: item.dueColor === 'danger' ? 'Overdue item' : (item.dueColor === 'warning' ? 'Due today' : 'Upcoming schedule'),
+                            note: item.dueColor === 'danger' ? @json(__('Overdue item')) : (item.dueColor === 'warning' ? @json(__('Due today')) : @json(__('Upcoming schedule'))),
                             dueColor: item.dueColor
                         },
                         {
@@ -1277,7 +1384,7 @@
             Perfectlum.createGrid(document.getElementById('failed-displays-grid'), {
                 columns: [
                     {
-                        name: 'Display',
+                        name: dashboardGridText.display,
                         formatter: (cell) => gridjs.html(`
                             <div class="min-w-[16rem]">
                                 <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'display', id: ${cell.displayId} }}))" class="text-left text-[13px] font-bold text-slate-900 transition hover:text-sky-600">
@@ -1294,19 +1401,19 @@
                         `)
                     },
                     {
-                        name: 'Workstation',
+                    name: @json(__('Workstation')),
                         formatter: (cell) => gridjs.html(`<span class="text-sm font-semibold text-slate-700">${dashboardEscapeHtml(cell)}</span>`)
                     },
                     {
-                        name: 'Last Update',
+                    name: dashboardGridText.lastUpdate,
                         formatter: (cell) => gridjs.html(`<span class="text-sm font-medium text-slate-500">${dashboardEscapeHtml(cell)}</span>`)
                     },
                     {
-                        name: 'Error Details',
+                    name: dashboardGridText.errorDetails,
                         formatter: (cell) => gridjs.html(`<div class="max-w-[20rem] whitespace-normal text-sm leading-6 text-slate-600">${dashboardEscapeHtml(cell)}</div>`)
                     },
                     {
-                        name: 'Actions',
+                    name: dashboardGridText.actions,
                         sort: false,
                         formatter: (cell, row) => gridjs.html(`
                             <div class="flex items-center justify-end gap-2">
@@ -1355,7 +1462,7 @@
             Perfectlum.createGrid(document.getElementById('latest-performed-grid'), {
                 columns: [
                     {
-                        name: 'Task',
+                    name: dashboardGridText.task,
                         formatter: (cell) => gridjs.html(`
                             <div class="min-w-[12rem]">
                                 <a href="${dashboardHistoryUrl(null, cell.historyId)}" class="block text-[13px] font-bold text-slate-900 transition hover:text-sky-600">
@@ -1366,17 +1473,17 @@
                         `)
                     },
                     {
-                        name: 'Result',
+                    name: dashboardGridText.result,
                         formatter: (cell) => {
                             const tone = cell === 'ok'
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                 : 'bg-rose-50 text-rose-700 border-rose-200';
-                            const label = cell === 'ok' ? 'Pass' : 'Fail';
+                            const label = cell === 'ok' ? dashboardGridText.pass : dashboardGridText.fail;
                             return gridjs.html(`<span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] ${tone}">${label}</span>`);
                         }
                     },
                     {
-                        name: 'Performed',
+                    name: dashboardGridText.performed,
                         formatter: (cell) => gridjs.html(`<span class="whitespace-nowrap text-sm font-medium text-slate-500">${dashboardEscapeHtml(cell)}</span>`)
                     }
                 ],
@@ -1404,7 +1511,7 @@
             Perfectlum.createGrid(document.getElementById('due-tasks-grid'), {
                 columns: [
                     {
-                        name: 'Display',
+                    name: dashboardGridText.display,
                         formatter: (cell) => gridjs.html(`
                             <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'display', id: ${cell.displayId} }}))" class="min-w-[16rem] text-left text-[13px] font-bold text-slate-900 transition hover:text-sky-600">
                                 ${dashboardEscapeHtml(cell.displayName)}
@@ -1412,42 +1519,45 @@
                         `)
                     },
                     {
-                        name: 'Workstation',
+                    name: dashboardGridText.workstation,
                         formatter: (cell, row) => gridjs.html(dashboardHierarchyButton('workstation', row.cells[0].data.wsId, cell, hierarchyIcons.workstation))
                     },
                     {
-                        name: 'Workgroup',
+                    name: dashboardGridText.workgroup,
                         formatter: (cell, row) => gridjs.html(dashboardHierarchyButton('workgroup', row.cells[0].data.wgId, cell, hierarchyIcons.workgroup))
                     },
                     {
-                        name: 'Facility',
+                    name: dashboardGridText.facility,
                         formatter: (cell, row) => gridjs.html(dashboardHierarchyButton('facility', row.cells[0].data.facId, cell, hierarchyIcons.facility))
                     },
                     {
-                        name: 'Task',
+                    name: dashboardGridText.task,
                         formatter: (cell) => gridjs.html(`<span class="inline-flex rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-bold text-sky-700">${dashboardEscapeHtml(cell)}</span>`)
                     },
                     {
-                        name: 'Schedule',
+                    name: dashboardGridText.schedule,
                         formatter: (cell) => gridjs.html(`<span class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">${dashboardEscapeHtml(cell)}</span>`)
                     },
                     {
-                        name: 'Due Date',
+                    name: dashboardGridText.dueDate,
                         formatter: (cell) => gridjs.html(`<span class="whitespace-nowrap text-sm font-medium text-slate-600">${dashboardEscapeHtml(cell.formatted)}</span>`)
                     },
                     {
-                        name: 'Status',
+                    name: dashboardGridText.status,
                         formatter: (cell) => {
                             const tones = {
                                 overdue: 'bg-rose-50 text-rose-700 border-rose-200',
                                 today: 'bg-amber-50 text-amber-700 border-amber-200',
                                 upcoming: 'bg-emerald-50 text-emerald-700 border-emerald-200',
                             };
-                            return gridjs.html(`<span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] ${tones[cell]}">${cell}</span>`);
+                            const label = cell === 'overdue'
+                                ? dashboardGridText.overdue
+                                : (cell === 'today' ? dashboardGridText.today : dashboardGridText.upcoming);
+                            return gridjs.html(`<span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] ${tones[cell]}">${label}</span>`);
                         }
                     },
                     {
-                        name: 'Actions',
+                    name: dashboardGridText.actions,
                         sort: false,
                         formatter: (cell, row) => gridjs.html(`
                             <div class="flex items-center justify-end gap-2">

@@ -2,7 +2,7 @@
 
 <div class="flex flex-col gap-6 pb-8">
 
-    <x-page-header title="History and Reports" description="Browse and export calibration history records." icon="files">
+    <x-page-header title="{{ __('History and Reports') }}" description="{{ __('Browse and export calibration history records.') }}" icon="files">
         <x-slot name="actions">
             <x-export-dropdown
                 excel-url="{{ url('reports/histories-reports?export_type=excel') }}"
@@ -13,16 +13,48 @@
     @php
         $role = session('role') ?? 'user';
         $initialDisplayId = request('display_id');
+        $historyText = [
+            'allFacilities' => __('All facilities'),
+            'allWorkgroups' => __('All workgroups'),
+            'allWorkstations' => __('All workstations'),
+            'allDisplaysInScope' => __('All displays in scope'),
+            'pleaseSelect' => __('Please select'),
+            'noOptionsFound' => __('No options found'),
+            'noDisplaysFound' => __('No displays found'),
+            'option' => __('option'),
+            'options' => __('options'),
+            'display' => __('Display'),
+            'displays' => __('Displays'),
+            'selected' => __('selected'),
+            'historySummary' => __('History Summary'),
+            'loadingReportSummary' => __('Loading report summary...'),
+            'failedToLoadHistorySummary' => __('Failed to load history summary.'),
+            'detailedSummaryForTask' => __('Detailed summary for the selected task execution.'),
+            'noStructuredSummary' => __('No structured summary is available for this history record.'),
+            'facility' => __('Facility'),
+            'workgroup' => __('Workgroup'),
+            'workstation' => __('Workstation'),
+            'displayLabel' => __('Display'),
+            'performedAt' => __('Performed At'),
+            'result' => __('Result'),
+            'section' => __('Section'),
+            'reviewScoredChecks' => __('Review scored checks, question answers, and comments captured for this task.'),
+            'score' => __('Score'),
+            'limit' => __('Limit'),
+            'measured' => __('Measured'),
+            'status' => __('Status'),
+            'comment' => __('Comment'),
+        ];
     @endphp
 
     <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_-32px_rgba(15,23,42,0.18)]">
         <div class="grid gap-4 lg:grid-cols-[minmax(0,220px)_minmax(0,220px)_minmax(0,220px)_minmax(0,260px)_1fr]">
             <div class="space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Facility</label>
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Facility') }}</label>
                 <div class="relative">
                     <select id="facility_field" class="hidden" onchange="fetch_workgroups(this)">
                         @if($role === 'super')
-                            <option value="">All facilities</option>
+                            <option value="">{{ __('All facilities') }}</option>
                             @foreach($facilities as $facility)
                                 <option value="{{ $facility->id }}">{{ $facility->name }}</option>
                             @endforeach
@@ -37,12 +69,12 @@
                         id="history-facility-trigger"
                         type="button"
                         class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
-                        <span id="history-facility-label" class="truncate">{{ $role === 'super' ? 'All facilities' : ($facilities[0]['name'] ?? 'Please select') }}</span>
+                        <span id="history-facility-label" class="truncate">{{ $role === 'super' ? __('All facilities') : ($facilities[0]['name'] ?? __('Please select')) }}</span>
                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                     </button>
 
                     <div id="history-facility-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                        <input id="history-facility-search" type="text" placeholder="Search facilities..." class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                        <input id="history-facility-search" type="text" placeholder="{{ __('Search facilities...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         <p id="history-facility-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="history-facility-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                     </div>
@@ -50,22 +82,22 @@
             </div>
 
             <div class="space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Workgroup</label>
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Workgroup') }}</label>
                 <div class="relative">
                     <select id="workgroups_field" class="hidden" onchange="fetch_workstations(this)">
-                        <option value="">All workgroups</option>
+                        <option value="">{{ __('All workgroups') }}</option>
                     </select>
 
                     <button
                         id="history-workgroup-trigger"
                         type="button"
                         class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
-                        <span id="history-workgroup-label" class="truncate">All workgroups</span>
+                        <span id="history-workgroup-label" class="truncate">{{ __('All workgroups') }}</span>
                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                     </button>
 
                     <div id="history-workgroup-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                        <input id="history-workgroup-search" type="text" placeholder="Search workgroups..." class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                        <input id="history-workgroup-search" type="text" placeholder="{{ __('Search workgroups...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         <p id="history-workgroup-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="history-workgroup-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                     </div>
@@ -73,22 +105,22 @@
             </div>
 
             <div class="space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Workstation</label>
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Workstation') }}</label>
                 <div class="relative">
                     <select id="workstations_field" class="hidden" onchange="fetch_displays_checklist(this)">
-                        <option value="">All workstations</option>
+                        <option value="">{{ __('All workstations') }}</option>
                     </select>
 
                     <button
                         id="history-workstation-trigger"
                         type="button"
                         class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
-                        <span id="history-workstation-label" class="truncate">All workstations</span>
+                        <span id="history-workstation-label" class="truncate">{{ __('All workstations') }}</span>
                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                     </button>
 
                     <div id="history-workstation-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                        <input id="history-workstation-search" type="text" placeholder="Search workstations..." class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                        <input id="history-workstation-search" type="text" placeholder="{{ __('Search workstations...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         <p id="history-workstation-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="history-workstation-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                     </div>
@@ -96,18 +128,18 @@
             </div>
 
             <div class="space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Displays</label>
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Displays') }}</label>
                 <div class="relative">
                     <button
                         id="history-displays-trigger"
                         type="button"
                         class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
-                        <span id="history-displays-label" class="truncate">All displays in scope</span>
+                        <span id="history-displays-label" class="truncate">{{ __('All displays in scope') }}</span>
                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                     </button>
 
                     <div id="history-displays-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                        <input id="history-displays-search" type="text" placeholder="Search displays..." class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                        <input id="history-displays-search" type="text" placeholder="{{ __('Search displays...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         <p id="history-displays-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="displays_field" class="max-h-56 space-y-1 overflow-y-auto"></div>
                     </div>
@@ -120,7 +152,7 @@
                     type="button"
                     class="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900">
                     <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
-                    Reset Filters
+                    {{ __('Reset Filters') }}
                 </button>
             </div>
         </div>
@@ -136,9 +168,9 @@
         <div data-history-summary-panel class="relative flex max-h-[88vh] w-full max-w-5xl translate-y-4 scale-[0.985] flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_32px_90px_rgba(15,23,42,0.24)] opacity-0 transition-all duration-200">
             <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
                 <div class="min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-500">History Summary</p>
-                    <h2 id="history-summary-title" class="mt-1 truncate text-2xl font-semibold text-slate-900">Loading report...</h2>
-                    <p id="history-summary-subtitle" class="mt-2 text-sm text-slate-500">Preparing history summary.</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-500">{{ __('History Summary') }}</p>
+                    <h2 id="history-summary-title" class="mt-1 truncate text-2xl font-semibold text-slate-900">{{ __('Loading report...') }}</h2>
+                    <p id="history-summary-subtitle" class="mt-2 text-sm text-slate-500">{{ __('Preparing history summary.') }}</p>
                 </div>
                 <button type="button" data-history-summary-close class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 text-slate-400 transition hover:border-slate-300 hover:text-slate-700">
                     <i data-lucide="x" class="h-5 w-5"></i>
@@ -147,17 +179,17 @@
 
             <div id="history-summary-body" class="flex-1 overflow-y-auto px-6 py-5">
                 <div class="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-                    Loading history summary...
+                    {{ __('Loading history summary...') }}
                 </div>
             </div>
 
             <div class="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
                 <a id="history-summary-print" href="#" target="_blank" rel="noopener" class="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900">
                     <i data-lucide="printer" class="h-4 w-4"></i>
-                    Print Preview
+                    {{ __('Print Preview') }}
                 </a>
                 <button type="button" data-history-summary-close class="inline-flex h-11 items-center rounded-2xl bg-sky-500 px-5 text-sm font-semibold text-white transition hover:bg-sky-600">
-                    Close
+                    {{ __('Close') }}
                 </button>
             </div>
         </div>
@@ -168,9 +200,10 @@
 
 <script>
 (function(){
+    const text = @json($historyText);
     const isSuperHistoryRole = @json($role === 'super');
     const initialFacilityValue = isSuperHistoryRole ? '' : '{{ $facilities[0]['id'] ?? '' }}';
-    const initialFacilityLabel = isSuperHistoryRole ? 'All facilities' : '{{ $facilities[0]['name'] ?? 'Please select' }}';
+    const initialFacilityLabel = isSuperHistoryRole ? text.allFacilities : ('{{ $facilities[0]['name'] ?? '' }}' || text.pleaseSelect);
     const historyFilterState = {
         facilitySearch: '',
         workgroupSearch: '',
@@ -210,11 +243,11 @@
         });
     }
 
-    function renderHistoryNativeOptions(selectId, optionsId, hintId, query, onPick, emptyText = 'No options found') {
+    function renderHistoryNativeOptions(selectId, optionsId, hintId, query, onPick, emptyText = text.noOptionsFound) {
         const options = parseNativeSelectOptions(selectId).filter((item) => item.label.toLowerCase().includes((query || '').trim().toLowerCase()));
         const hint = document.getElementById(hintId);
         const box = document.getElementById(optionsId);
-        if (hint) hint.textContent = options.length ? `${options.length} option${options.length === 1 ? '' : 's'}` : emptyText;
+        if (hint) hint.textContent = options.length ? `${options.length} ${options.length === 1 ? text.option : text.options}` : emptyText;
         if (!box) return;
 
         box.innerHTML = options.length
@@ -241,7 +274,7 @@
         if (!host || !hint) return;
         const options = Array.from(host.querySelectorAll('.form-check'));
         const visible = options.filter((item) => !item.classList.contains('hidden'));
-        hint.textContent = visible.length ? `${visible.length} option${visible.length === 1 ? '' : 's'}` : 'No displays found';
+        hint.textContent = visible.length ? `${visible.length} ${visible.length === 1 ? text.option : text.options}` : text.noDisplaysFound;
     }
 
     function filterDisplaysList() {
@@ -262,17 +295,17 @@
 
         const checked = Array.from(host.querySelectorAll('input[type="checkbox"]:checked'));
         if (!checked.length) {
-            label.textContent = 'All displays in scope';
+            label.textContent = text.allDisplaysInScope;
             return;
         }
 
         if (checked.length === 1) {
-            const text = checked[0].closest('.form-check')?.querySelector('label')?.textContent?.trim() || '1 display selected';
-            label.textContent = text;
+            const selectedLabel = checked[0].closest('.form-check')?.querySelector('label')?.textContent?.trim() || `1 ${text.display} ${text.selected}`;
+            label.textContent = selectedLabel;
             return;
         }
 
-        label.textContent = `${checked.length} displays selected`;
+        label.textContent = `${checked.length} ${text.displays} ${text.selected}`;
     }
 
     function refreshHistoriesGrid() {
@@ -326,9 +359,9 @@
         },
         openSkeleton(id, name) {
             this.activeId = id;
-            this.title.textContent = name || 'History Summary';
-            this.subtitle.textContent = 'Loading report summary...';
-            this.body.innerHTML = '<div class="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">Loading history summary...</div>';
+            this.title.textContent = name || text.historySummary;
+            this.subtitle.textContent = text.loadingReportSummary;
+            this.body.innerHTML = `<div class="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">${Perfectlum.escapeHtml(text.loadingReportSummary)}</div>`;
             this.printLink.setAttribute('href', '#');
             this.root.classList.remove('hidden');
             requestAnimationFrame(() => {
@@ -371,17 +404,17 @@
             const comment = section.comment || '';
             return `
                 <section class="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_12px_40px_-32px_rgba(15,23,42,0.24)]">
-                    <h3 class="text-lg font-semibold text-slate-900">${Perfectlum.escapeHtml(section.name || 'Section')}</h3>
-                    <p class="mt-1 text-sm text-slate-500">Review scored checks, question answers, and comments captured for this task.</p>
+                    <h3 class="text-lg font-semibold text-slate-900">${Perfectlum.escapeHtml(section.name || text.section)}</h3>
+                    <p class="mt-1 text-sm text-slate-500">${Perfectlum.escapeHtml(text.reviewScoredChecks)}</p>
                     ${scores.length ? `
                         <div class="mt-5 overflow-hidden rounded-[1.25rem] border border-slate-200">
                             <table class="min-w-full divide-y divide-slate-200 text-sm">
                                 <thead class="bg-slate-50">
                                     <tr class="text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                                        <th class="px-4 py-3">Score</th>
-                                        <th class="px-4 py-3">Limit</th>
-                                        <th class="px-4 py-3">Measured</th>
-                                        <th class="px-4 py-3">Status</th>
+                                        <th class="px-4 py-3">${Perfectlum.escapeHtml(text.score)}</th>
+                                        <th class="px-4 py-3">${Perfectlum.escapeHtml(text.limit)}</th>
+                                        <th class="px-4 py-3">${Perfectlum.escapeHtml(text.measured)}</th>
+                                        <th class="px-4 py-3">${Perfectlum.escapeHtml(text.status)}</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-200 bg-white">
@@ -404,32 +437,32 @@
                         </div>`).join('')}</div>` : ''}
                     ${comment ? `
                         <div class="mt-5 rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-4">
-                            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Comment</p>
+                            <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">${Perfectlum.escapeHtml(text.comment)}</p>
                             <p class="mt-2 text-sm leading-6 text-slate-700">${Perfectlum.escapeHtml(comment)}</p>
                         </div>` : ''}
                 </section>`;
         },
         render(payload) {
-            this.title.textContent = payload.name || 'History Summary';
+            this.title.textContent = payload.name || text.historySummary;
             this.subtitle.textContent = `${payload.performedAt || '-'} • ${payload.display?.display || '-'}`;
             this.printLink.setAttribute('href', payload.printUrl || '#');
             const displayInfo = [
-                { label: 'Facility', value: payload.display?.facility || '-' },
-                { label: 'Workgroup', value: payload.display?.workgroup || '-' },
-                { label: 'Workstation', value: payload.display?.workstation || '-' },
-                { label: 'Display', value: payload.display?.display || '-' },
-                { label: 'Performed At', value: payload.performedAt || '-' },
-                { label: 'Result', value: payload.resultLabel || '-' },
+                { label: text.facility, value: payload.display?.facility || '-' },
+                { label: text.workgroup, value: payload.display?.workgroup || '-' },
+                { label: text.workstation, value: payload.display?.workstation || '-' },
+                { label: text.displayLabel, value: payload.display?.display || '-' },
+                { label: text.performedAt, value: payload.performedAt || '-' },
+                { label: text.result, value: payload.resultLabel || '-' },
             ];
             this.body.innerHTML = `
                 <div class="space-y-5">
                     <section class="flex flex-wrap items-center gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4">
                         ${this.renderBadge(payload.resultLabel || 'Unknown', payload.resultTone || 'neutral')}
-                        <span class="text-sm text-slate-500">Detailed summary for the selected task execution.</span>
+                        <span class="text-sm text-slate-500">${Perfectlum.escapeHtml(text.detailedSummaryForTask)}</span>
                     </section>
                     ${this.renderInfoGrid(displayInfo)}
                     ${payload.header?.length ? this.renderInfoGrid(payload.header) : ''}
-                    ${payload.sections?.length ? payload.sections.map((section) => this.renderSection(section)).join('') : '<div class="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">No structured summary is available for this history record.</div>'}
+                    ${payload.sections?.length ? payload.sections.map((section) => this.renderSection(section)).join('') : `<div class="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">${Perfectlum.escapeHtml(text.noStructuredSummary)}</div>`}
                 </div>`;
             if (window.lucide) window.lucide.createIcons();
         },
@@ -440,7 +473,7 @@
                 if (this.activeId !== id) return;
                 this.render(payload);
             } catch (error) {
-                this.body.innerHTML = '<div class="rounded-[1.5rem] border border-rose-200 bg-rose-50 px-4 py-8 text-center text-sm text-rose-600">Failed to load history summary.</div>';
+                this.body.innerHTML = `<div class="rounded-[1.5rem] border border-rose-200 bg-rose-50 px-4 py-8 text-center text-sm text-rose-600">${Perfectlum.escapeHtml(text.failedToLoadHistorySummary)}</div>`;
             }
         }
     };
@@ -477,16 +510,16 @@
                 if (data.success) {
                     let wgField = document.getElementById('workgroups_field');
                     if(wgField) {
-                        wgField.innerHTML = '<option value="">All workgroups</option>' + data.content;
-                        setHistorySelectValue('workgroups_field', 'history-workgroup-label', '', 'All workgroups');
+                        wgField.innerHTML = `<option value="">${text.allWorkgroups}</option>` + data.content;
+                        setHistorySelectValue('workgroups_field', 'history-workgroup-label', '', text.allWorkgroups);
                         let wsField = document.getElementById('workstations_field');
                         if (wsField) {
-                            wsField.innerHTML = '<option value="">All workstations</option>';
-                            setHistorySelectValue('workstations_field', 'history-workstation-label', '', 'All workstations');
+                            wsField.innerHTML = `<option value="">${text.allWorkstations}</option>`;
+                            setHistorySelectValue('workstations_field', 'history-workstation-label', '', text.allWorkstations);
                         }
                         const displaysField = document.getElementById('displays_field');
                         if (displaysField) {
-                            displaysField.innerHTML = '<div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">All displays in scope</div>';
+                            displaysField.innerHTML = `<div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">${Perfectlum.escapeHtml(text.allDisplaysInScope)}</div>`;
                             syncDisplayLabel();
                             updateDisplaysHint();
                         }
@@ -511,11 +544,11 @@
                 if (data.success) {
                     let wsField = document.getElementById('workstations_field');
                     if(wsField) {
-                        wsField.innerHTML = '<option value="">All workstations</option>' + data.content;
-                        setHistorySelectValue('workstations_field', 'history-workstation-label', '', 'All workstations');
+                        wsField.innerHTML = `<option value="">${text.allWorkstations}</option>` + data.content;
+                        setHistorySelectValue('workstations_field', 'history-workstation-label', '', text.allWorkstations);
                         const displaysField = document.getElementById('displays_field');
                         if (displaysField) {
-                            displaysField.innerHTML = '<div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">All displays in scope</div>';
+                            displaysField.innerHTML = `<div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">${Perfectlum.escapeHtml(text.allDisplaysInScope)}</div>`;
                             syncDisplayLabel();
                             updateDisplaysHint();
                         }

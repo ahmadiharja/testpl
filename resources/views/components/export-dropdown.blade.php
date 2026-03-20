@@ -1,7 +1,7 @@
 @props([
     'excelUrl' => '#',
     'pdfUrl'   => '#',
-    'label'    => 'Export',
+    'label'    => __('Export'),
 ])
 
 {{--
@@ -13,7 +13,7 @@
     Props:
       excel-url — string — URL for Excel download
       pdf-url   — string — URL for PDF download
-      label     — string — button label (default: Export)
+      label     — string — button label (default: translated Export)
 --}}
 
 <div class="relative z-50" x-data="{ open: false }">
@@ -42,14 +42,14 @@
            target="_blank"
            :class="theme === 'perfectlum' ? 'text-gray-600 hover:bg-black/5' : 'text-[#e2e1e6] hover:bg-white/5'">
             <i data-lucide="file-spreadsheet" style="width:14px;height:14px;color:#4ade80;"></i>
-            Download Excel
+            {{ __('Download Excel') }}
         </a>
         <a class="flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] transition-colors"
            href="{{ $pdfUrl }}"
            target="_blank"
            :class="theme === 'perfectlum' ? 'text-gray-600 hover:bg-black/5' : 'text-[#e2e1e6] hover:bg-white/5'">
             <i data-lucide="file-text" style="width:14px;height:14px;color:#f87171;"></i>
-            Download PDF
+            {{ __('Download PDF') }}
         </a>
     </div>
 </div>

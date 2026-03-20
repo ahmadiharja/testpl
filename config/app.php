@@ -102,6 +102,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Supported Locales
+    |--------------------------------------------------------------------------
+    |
+    | These locales are exposed in the admin language switcher. The locale
+    | code is stored in session and applied per request by middleware.
+    |
+    */
+
+    'supported_locales' => [
+        'en' => ['label' => 'English', 'native' => 'English', 'flag' => '🇺🇸', 'flag_asset' => 'assets/flags/circle/us.svg'],
+        'id' => ['label' => 'Indonesian', 'native' => 'Bahasa Indonesia', 'flag' => '🇮🇩', 'flag_asset' => 'assets/flags/circle/id.svg'],
+        'de' => ['label' => 'German', 'native' => 'Deutsch', 'flag' => '🇩🇪', 'flag_asset' => 'assets/flags/circle/de.svg'],
+        'fr' => ['label' => 'French', 'native' => 'Français', 'flag' => '🇫🇷', 'flag_asset' => 'assets/flags/circle/fr.svg'],
+        'es' => ['label' => 'Spanish', 'native' => 'Español', 'flag' => '🇪🇸', 'flag_asset' => 'assets/flags/circle/es.svg'],
+        'pt' => ['label' => 'Portuguese', 'native' => 'Português', 'flag' => '🇵🇹', 'flag_asset' => 'assets/flags/circle/pt.svg'],
+        'it' => ['label' => 'Italian', 'native' => 'Italiano', 'flag' => '🇮🇹', 'flag_asset' => 'assets/flags/circle/it.svg'],
+        'zh_CN' => ['label' => 'Chinese', 'native' => '简体中文', 'flag' => '🇨🇳', 'flag_asset' => 'assets/flags/circle/cn.svg'],
+        'ja' => ['label' => 'Japanese', 'native' => '日本語', 'flag' => '🇯🇵', 'flag_asset' => 'assets/flags/circle/jp.svg'],
+        'ko' => ['label' => 'Korean', 'native' => '한국어', 'flag' => '🇰🇷', 'flag_asset' => 'assets/flags/circle/kr.svg'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Faker Locale
     |--------------------------------------------------------------------------
     |

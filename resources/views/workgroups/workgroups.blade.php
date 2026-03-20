@@ -4,10 +4,45 @@
     $role = session('role');
     $canManageWorkgroups = in_array($role, ['super', 'admin'], true);
     $initialWorkgroupStatus = in_array(request('type'), ['ok', 'failed'], true) ? request('type') : '';
+    $workgroupText = [
+        'display' => __('display'),
+        'displays' => __('displays'),
+        'needAttention' => __('need attention'),
+        'name' => __('Name'),
+        'address' => __('Address'),
+        'phone' => __('Phone'),
+        'facility' => __('Facility'),
+        'workstations' => __('Workstations'),
+        'displaysLabel' => __('Displays'),
+        'actions' => __('Actions'),
+        'allFacilities' => __('All facilities'),
+        'selectFacility' => __('Select facility'),
+        'searchFacilities' => __('Search facilities...'),
+        'noOptionsFound' => __('No options found'),
+        'option' => __('option'),
+        'options' => __('options'),
+        'searchWorkgroups' => __('Search workgroups...'),
+        'previous' => __('Previous'),
+        'next' => __('Next'),
+        'showing' => __('Showing'),
+        'results' => __('results'),
+        'loading' => __('Loading...'),
+        'noMatchingRecordsFound' => __('No matching records found'),
+        'unableToLoadData' => __('Unable to load data'),
+        'addWorkgroup' => __('Add Workgroup'),
+        'editWorkgroup' => __('Edit Workgroup'),
+        'createWorkgroup' => __('Create a new workgroup'),
+        'updateWorkgroupDetails' => __('Update workgroup details'),
+        'unableToLoadWorkgroupForm' => __('Unable to load workgroup form.'),
+        'unableToSaveWorkgroup' => __('Unable to save workgroup.'),
+        'deleteWorkgroup' => __('Delete Workgroup'),
+        'deleting' => __('Deleting...'),
+        'unableToDeleteWorkgroup' => __('Unable to delete workgroup.'),
+    ];
 @endphp
 
 <div class="flex flex-col gap-6 pb-8">
-    <x-page-header title="All Workgroups" description="Manage departmental workgroups spanning across all facilities." icon="network">
+    <x-page-header title="{{ __('All Workgroups') }}" description="{{ __('Manage departmental workgroups spanning across all facilities.') }}" icon="network">
         <x-slot name="actions">
             @if($canManageWorkgroups)
                 <button
@@ -15,7 +50,7 @@
                     type="button"
                     class="inline-flex h-12 items-center gap-2 rounded-2xl bg-sky-500 px-4 text-sm font-semibold text-white transition hover:bg-sky-400">
                     <i data-lucide="plus" class="h-4 w-4"></i>
-                    Add Workgroup
+                    {{ __('Add Workgroup') }}
                 </button>
             @endif
             <x-export-dropdown
@@ -27,13 +62,13 @@
     <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_-32px_rgba(15,23,42,0.18)]">
         <div class="grid gap-4 lg:grid-cols-[minmax(0,240px)_minmax(0,280px)_1fr]">
             <div class="space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Facility</label>
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Facility') }}</label>
                 <div class="relative">
                     <button
                         id="facility-filter-trigger"
                         type="button"
                         class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
-                        <span id="facility-filter-label" class="truncate">All facilities</span>
+                        <span id="facility-filter-label" class="truncate">{{ __('All facilities') }}</span>
                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                     </button>
 
@@ -43,7 +78,7 @@
                         <input
                             id="facility-filter-search"
                             type="text"
-                            placeholder="Search facilities..."
+                            placeholder="{{ __('Search facilities...') }}"
                             class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         <p id="facility-filter-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="facility-filter-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
@@ -52,7 +87,7 @@
             </div>
 
             <div class="space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Status</label>
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Status') }}</label>
                 <div class="grid h-12 grid-cols-3 rounded-2xl border border-slate-200 bg-white p-1">
                     <button
                         id="workgroup-status-all"
@@ -61,7 +96,7 @@
                         class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
                         <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <i data-lucide="layers-3" class="h-4 w-4"></i>
-                            <span>All</span>
+                            <span>{{ __('All') }}</span>
                         </span>
                     </button>
                     <button
@@ -71,7 +106,7 @@
                         class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
                         <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <i data-lucide="badge-check" class="h-4 w-4"></i>
-                            <span>OK</span>
+                            <span>{{ __('OK') }}</span>
                         </span>
                     </button>
                     <button
@@ -81,7 +116,7 @@
                         class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
                         <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <i data-lucide="triangle-alert" class="h-4 w-4"></i>
-                            <span>Not OK</span>
+                            <span>{{ __('Not OK') }}</span>
                         </span>
                     </button>
                 </div>
@@ -93,7 +128,7 @@
                     type="button"
                     class="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900">
                     <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
-                    Reset Filters
+                    {{ __('Reset Filters') }}
                 </button>
             </div>
         </div>
@@ -112,14 +147,14 @@
                 type="button"
                 class="flex w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-sky-50 hover:text-sky-700">
                 <i data-lucide="pencil-line" class="h-4 w-4"></i>
-                Edit Workgroup
+                {{ __('Edit Workgroup') }}
             </button>
             <button
                 id="workgroup-action-delete"
                 type="button"
                 class="flex w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
                 <i data-lucide="trash-2" class="h-4 w-4"></i>
-                Delete Workgroup
+                {{ __('Delete Workgroup') }}
             </button>
         @endif
     </div>
@@ -129,8 +164,8 @@
     <div class="w-full max-w-2xl rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]">
         <div class="flex items-start justify-between border-b border-slate-200 px-6 py-5">
             <div>
-                <p id="workgroup-edit-kicker" class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Edit Workgroup</p>
-                <h3 id="workgroup-edit-title" class="mt-2 text-2xl font-semibold text-slate-900">Update workgroup details</h3>
+                <p id="workgroup-edit-kicker" class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Edit Workgroup') }}</p>
+                <h3 id="workgroup-edit-title" class="mt-2 text-2xl font-semibold text-slate-900">{{ __('Update workgroup details') }}</h3>
             </div>
             <button id="workgroup-edit-close" type="button" class="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700">
                 <i data-lucide="x" class="h-5 w-5"></i>
@@ -139,7 +174,7 @@
 
         <div class="px-6 py-6">
             <div id="workgroup-edit-loading" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-                Loading workgroup form...
+                {{ __('Loading workgroup form...') }}
             </div>
             <div id="workgroup-edit-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700"></div>
             <div id="workgroup-edit-form"></div>
@@ -150,11 +185,11 @@
 <div id="workgroup-delete-modal" class="fixed inset-0 z-[1300] hidden items-center justify-center bg-slate-950/40 p-6">
     <div class="w-full max-w-lg rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]">
         <div class="border-b border-slate-200 px-6 py-5">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-rose-400">Delete Workgroup</p>
-            <h3 class="mt-2 text-2xl font-semibold text-slate-900">Delete this workgroup?</h3>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-rose-400">{{ __('Delete Workgroup') }}</p>
+            <h3 class="mt-2 text-2xl font-semibold text-slate-900">{{ __('Delete this workgroup?') }}</h3>
             <p class="mt-3 text-sm text-slate-500">
-                This action will permanently remove <span id="workgroup-delete-name" class="font-semibold text-slate-700"></span>.
-                Workgroups that still have workstations attached cannot be deleted.
+                {{ __('This action will permanently remove') }} <span id="workgroup-delete-name" class="font-semibold text-slate-700"></span>.
+                {{ __('Workgroups that still have workstations attached cannot be deleted.') }}
             </p>
         </div>
 
@@ -163,13 +198,13 @@
                 id="workgroup-delete-cancel"
                 type="button"
                 class="inline-flex h-11 items-center rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
-                Cancel
+                {{ __('Cancel') }}
             </button>
             <button
                 id="workgroup-delete-confirm"
                 type="button"
                 class="inline-flex h-11 items-center rounded-2xl bg-rose-500 px-4 text-sm font-semibold text-white transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-60">
-                Delete Workgroup
+                {{ __('Delete Workgroup') }}
             </button>
         </div>
     </div>
@@ -178,6 +213,7 @@
 <script id="workgroup-filters-data" type="application/json">@json($filters)</script>
 <script>
 (function () {
+    const text = @json($workgroupText);
     const canManageWorkgroups = @json($canManageWorkgroups);
     let initialized = false;
     const state = {
@@ -308,8 +344,8 @@
         const facilities = getFacilityOptions();
         els.facilityTrigger.disabled = !state.config.canChooseFacility && facilities.length <= 1;
         els.facilityLabel.textContent = state.selectedFacilityId
-            ? findOptionLabel(facilities, state.selectedFacilityId, 'Select facility')
-            : 'All facilities';
+            ? findOptionLabel(facilities, state.selectedFacilityId, text.selectFacility)
+            : text.allFacilities;
         renderFacilityOptions();
         renderStatusFilter();
     }
@@ -340,12 +376,12 @@
         const query = state.facilitySearch.trim().toLowerCase();
         let options = facilities.filter((item) => item.name.toLowerCase().includes(query));
         if (state.config.canChooseFacility) {
-            options = [{ id: '', name: 'All facilities' }, ...options];
+            options = [{ id: '', name: text.allFacilities }, ...options];
         }
 
         els.facilityHint.textContent = options.length
-            ? `${options.length} option${options.length === 1 ? '' : 's'}`
-            : 'No options found';
+            ? `${options.length} ${options.length === 1 ? text.option : text.options}`
+            : text.noOptionsFound;
 
         els.facilityOptions.innerHTML = options.length
             ? options.map((item) => `
@@ -356,7 +392,7 @@
                     ${Perfectlum.escapeHtml(item.name)}
                 </button>
             `).join('')
-            : `<div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">No options found</div>`;
+            : `<div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">${Perfectlum.escapeHtml(text.noOptionsFound)}</div>`;
 
         els.facilityOptions.querySelectorAll('button[data-id]').forEach((button) => {
             button.addEventListener('click', () => {
@@ -440,7 +476,7 @@
         state.grid = Perfectlum.createGrid(els.grid, {
             columns: [
                 {
-                    name: 'Name',
+                    name: text.name,
                     formatter: (c) => gridjs.html(`
                         <div class="flex items-center gap-2.5">
                             <span class="inline-flex h-2.5 w-2.5 shrink-0 rounded-full ${Number(c.failedDisplaysCount || 0) > 0 ? 'bg-rose-500 shadow-[0_0_0_4px_rgba(244,63,94,0.12)]' : (Number(c.okDisplaysCount || 0) > 0 ? 'bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]' : 'bg-slate-300 shadow-[0_0_0_4px_rgba(148,163,184,0.12)]')}"></span>
@@ -452,24 +488,24 @@
                                     ${Perfectlum.escapeHtml(c.name)}
                                 </button>
                                 ${Number(c.failedDisplaysCount || 0) > 0
-                                    ? `<p class="mt-1 text-[11px] font-medium text-rose-600">${Perfectlum.escapeHtml(String(c.failedDisplaysCount))} display${Number(c.failedDisplaysCount) === 1 ? '' : 's'} need attention</p>`
+                                    ? `<p class="mt-1 text-[11px] font-medium text-rose-600">${Perfectlum.escapeHtml(String(c.failedDisplaysCount))} ${Perfectlum.escapeHtml(Number(c.failedDisplaysCount) === 1 ? text.display : text.displays)} ${Perfectlum.escapeHtml(text.needAttention)}</p>`
                                     : ''}
                             </div>
                         </div>
                     `),
                 },
-                { name: 'Address', formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
-                { name: 'Phone', formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
+                { name: text.address, formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
+                { name: text.phone, formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
                 {
-                    name: 'Facility',
+                    name: text.facility,
                     formatter: (c) => !c.facName || c.facName === '-'
                         ? '-'
                         : gridjs.html(`<button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'facility',id:${c.facId}}}))" class="cursor-pointer text-gray-600 transition hover:text-sky-500 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c.facName)}</button>`),
                 },
-                { name: 'Workstations', sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
-                { name: 'Displays', sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
+                { name: text.workstations, sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
+                { name: text.displaysLabel, sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
                 {
-                    name: 'Actions',
+                    name: text.actions,
                     sort: false,
                     width: '112px',
                     formatter: (c) => !canManageWorkgroups ? '' : gridjs.html(`
@@ -502,7 +538,18 @@
                 },
             },
             sort: { multiColumn: false },
-            language: { search: { placeholder: 'Search workgroups...' } },
+            language: {
+                search: { placeholder: text.searchWorkgroups },
+                pagination: {
+                    previous: text.previous,
+                    next: text.next,
+                    showing: text.showing,
+                    results: () => text.results,
+                },
+                loading: text.loading,
+                noRecordsFound: text.noMatchingRecordsFound,
+                error: text.unableToLoadData,
+            },
         });
     }
 
@@ -556,8 +603,8 @@
         els.editError.classList.add('hidden');
         els.editError.textContent = '';
         els.editForm.innerHTML = '';
-        if (els.editKicker) els.editKicker.textContent = id === 0 ? 'Add Workgroup' : 'Edit Workgroup';
-        if (els.editTitle) els.editTitle.textContent = id === 0 ? 'Create a new workgroup' : 'Update workgroup details';
+        if (els.editKicker) els.editKicker.textContent = id === 0 ? text.addWorkgroup : text.editWorkgroup;
+        if (els.editTitle) els.editTitle.textContent = id === 0 ? text.createWorkgroup : text.updateWorkgroupDetails;
 
         try {
             const formData = new FormData();
@@ -568,7 +615,7 @@
             bindEditForm();
             window.lucide?.createIcons();
         } catch (error) {
-            els.editError.textContent = error.message || 'Unable to load workgroup form.';
+            els.editError.textContent = error.message || text.unableToLoadWorkgroupForm;
             els.editError.classList.remove('hidden');
         } finally {
             els.editLoading.classList.add('hidden');
@@ -592,7 +639,7 @@
                 closeEditModal();
                 reloadGrid();
             } catch (error) {
-                els.editError.textContent = error.message || 'Unable to save workgroup.';
+                els.editError.textContent = error.message || text.unableToSaveWorkgroup;
                 els.editError.classList.remove('hidden');
             } finally {
                 form.dataset.submitting = '0';
@@ -623,13 +670,13 @@
         els.deleteModal.classList.add('hidden');
         els.deleteModal.classList.remove('flex');
         els.deleteConfirm.disabled = false;
-        els.deleteConfirm.textContent = 'Delete Workgroup';
+        els.deleteConfirm.textContent = text.deleteWorkgroup;
     }
 
     async function confirmDelete() {
         if (!state.deleteTarget?.id || els.deleteConfirm.disabled) return;
         els.deleteConfirm.disabled = true;
-        els.deleteConfirm.textContent = 'Deleting...';
+        els.deleteConfirm.textContent = text.deleting;
 
         try {
             const formData = new FormData();
@@ -637,14 +684,14 @@
             formData.append('id', state.deleteTarget.id);
             const payload = await Perfectlum.postForm('/delete-workgroup', formData);
             if (!payload.success) {
-                throw new Error(payload.msg || 'Unable to delete workgroup.');
+                throw new Error(payload.msg || text.unableToDeleteWorkgroup);
             }
             closeDeleteModal();
             reloadGrid();
         } catch (error) {
-            window.alert(error.message || 'Unable to delete workgroup.');
+            window.alert(error.message || text.unableToDeleteWorkgroup);
             els.deleteConfirm.disabled = false;
-            els.deleteConfirm.textContent = 'Delete Workgroup';
+            els.deleteConfirm.textContent = text.deleteWorkgroup;
         }
     }
 

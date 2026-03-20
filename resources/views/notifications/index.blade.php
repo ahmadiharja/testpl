@@ -1,15 +1,32 @@
 @include('common.navigations.header')
 
+@php
+    $notificationPageJs = [
+        'apiUrl' => url('api/notifications'),
+        'readAllUrl' => url('api/notifications/read-all'),
+        'translations' => [
+            'noUnreadNotifications' => __('No unread notifications'),
+            'noNotificationsYet' => __('No notifications yet'),
+            'open' => __('Open'),
+            'view' => __('View'),
+            'resolved' => __('Resolved'),
+            'needsReview' => __('Needs review'),
+            'attention' => __('Attention'),
+            'update' => __('Update'),
+        ],
+    ];
+@endphp
+
 <div x-data="notificationsPage()" x-init="init()" class="flex flex-col gap-6 pb-10">
     <x-page-header
-        title="Notifications"
-        description="Review alerts, reminders, and operational updates assigned to your workspace."
+        title="{{ __('Notifications') }}"
+        description="{{ __('Review alerts, reminders, and operational updates assigned to your workspace.') }}"
         icon="bell-ring"
     >
         <x-slot name="actions">
             <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-600">
                 <span x-text="unreadCount"></span>
-                <span class="ml-2">Unread</span>
+                <span class="ml-2">{{ __('Unread') }}</span>
             </span>
             <button
                 type="button"
@@ -17,7 +34,7 @@
                 class="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
                 <i data-lucide="mail-check" class="h-4 w-4"></i>
-                Mark all read
+                {{ __('Mark all read') }}
             </button>
         </x-slot>
     </x-page-header>
@@ -25,7 +42,7 @@
     <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_-32px_rgba(15,23,42,0.18)]">
         <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <div class="space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">View</label>
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('View') }}</label>
                 <div class="grid h-12 max-w-sm grid-cols-2 rounded-2xl border border-slate-200 bg-slate-50 p-1">
                     <button
                         type="button"
@@ -33,7 +50,7 @@
                         class="rounded-[0.9rem] px-4 text-sm font-semibold transition"
                         :class="filter === 'unread' ? 'bg-white text-sky-700 shadow-[0_8px_24px_-18px_rgba(14,165,233,0.45)]' : 'text-slate-500 hover:bg-white hover:text-slate-800'"
                     >
-                        Unread
+                        {{ __('Unread') }}
                     </button>
                     <button
                         type="button"
@@ -41,7 +58,7 @@
                         class="rounded-[0.9rem] px-4 text-sm font-semibold transition"
                         :class="filter === 'all' ? 'bg-white text-sky-700 shadow-[0_8px_24px_-18px_rgba(14,165,233,0.45)]' : 'text-slate-500 hover:bg-white hover:text-slate-800'"
                     >
-                        All
+                        {{ __('All') }}
                     </button>
                 </div>
             </div>
@@ -53,7 +70,7 @@
                     class="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 >
                     <i data-lucide="refresh-cw" class="h-4 w-4"></i>
-                    Refresh
+                    {{ __('Refresh') }}
                 </button>
             </div>
         </div>
@@ -73,8 +90,8 @@
 
         <div x-show="!loading && items.length === 0" class="flex min-h-[20rem] flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center">
             <div class="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-white text-slate-400 shadow-sm" x-html="iconSvg('bell')"></div>
-            <h3 class="mt-5 text-xl font-bold tracking-tight text-slate-900" x-text="filter === 'unread' ? 'No unread notifications' : 'No notifications yet'"></h3>
-            <p class="mt-2 max-w-lg text-sm leading-6 text-slate-500">Alerts, reminders, and workspace activity assigned to your account will appear here as they happen.</p>
+            <h3 class="mt-5 text-xl font-bold tracking-tight text-slate-900" x-text="filter === 'unread' ? translations.noUnreadNotifications : translations.noNotificationsYet"></h3>
+            <p class="mt-2 max-w-lg text-sm leading-6 text-slate-500">{{ __('Alerts, reminders, and workspace activity assigned to your account will appear here as they happen.') }}</p>
         </div>
 
         <div x-show="!loading && items.length > 0" class="space-y-3">
@@ -117,14 +134,14 @@
                                         @click.stop="markRead(item.id)"
                                         class="inline-flex items-center rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
                                     >
-                                        Mark as read
+                                        {{ __('Mark as read') }}
                                     </button>
                                     <button
                                         type="button"
                                         @click="openItem(item)"
                                         class="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
                                     >
-                                        <span x-text="item.url ? 'Open' : 'View'"></span>
+                                        <span x-text="item.url ? translations.open : translations.view"></span>
                                         <i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>
                                     </button>
                                 </div>
@@ -146,7 +163,7 @@
                     class="inline-flex items-center rounded-full px-3 py-2 text-sm font-medium transition"
                     :class="pagination.currentPage <= 1 ? 'cursor-not-allowed text-slate-300' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
                 >
-                    Prev
+                    {{ __('Prev') }}
                 </button>
 
                 <template x-for="token in pageTokens()" :key="`page-${token}`">
@@ -171,7 +188,7 @@
                     class="inline-flex items-center rounded-full px-3 py-2 text-sm font-medium transition"
                     :class="pagination.currentPage >= pagination.lastPage ? 'cursor-not-allowed text-slate-300' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'"
                 >
-                    Next
+                    {{ __('Next') }}
                 </button>
             </div>
         </div>
@@ -194,9 +211,10 @@ if (!window.notificationsPage) {
                 total: 0,
                 perPage: 12,
             },
-            apiUrl: @json(url('api/notifications')),
-            readAllUrl: @json(url('api/notifications/read-all')),
+            apiUrl: @json($notificationPageJs['apiUrl']),
+            readAllUrl: @json($notificationPageJs['readAllUrl']),
             csrf: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+            translations: @json($notificationPageJs['translations']),
 
             init() {
                 this.load(1);
@@ -249,13 +267,13 @@ if (!window.notificationsPage) {
             severityLabel(item) {
                 switch (item.severity) {
                     case 'success':
-                        return 'Resolved';
+                        return this.translations.resolved;
                     case 'warning':
-                        return 'Needs review';
+                        return this.translations.needsReview;
                     case 'danger':
-                        return 'Attention';
+                        return this.translations.attention;
                     default:
-                        return 'Update';
+                        return this.translations.update;
                 }
             },
 

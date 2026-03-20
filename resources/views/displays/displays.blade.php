@@ -5,32 +5,96 @@
     $role = session('role');
     $canManageDisplays = in_array($role, ['super', 'admin'], true);
     $initialDisplayStatus = in_array($type, ['ok', 'failed'], true) ? $type : '';
+    $displayText = [
+        'allFacilities' => __('All facilities'),
+        'allWorkgroups' => __('All workgroups'),
+        'allWorkstations' => __('All workstations'),
+        'selectFacility' => __('Select facility'),
+        'selectWorkgroup' => __('Select workgroup'),
+        'selectWorkstation' => __('Select workstation'),
+        'option' => __('option'),
+        'options' => __('options'),
+        'noOptionsFound' => __('No options found'),
+        'displayName' => __('Display Name'),
+        'inventoryNumber' => __('Inventory Number'),
+        'workstation' => __('Workstation'),
+        'workgroup' => __('Workgroup'),
+        'facility' => __('Facility'),
+        'status' => __('Status'),
+        'actions' => __('Actions'),
+        'searchDisplays' => __('Search displays...'),
+        'searchFacilities' => __('Search facilities...'),
+        'searchWorkgroups' => __('Search workgroups...'),
+        'searchWorkstations' => __('Search workstations...'),
+        'previous' => __('Previous'),
+        'next' => __('Next'),
+        'showing' => __('Showing'),
+        'results' => __('results'),
+        'loading' => __('Loading...'),
+        'noMatchingRecordsFound' => __('No matching records found'),
+        'unableToLoadData' => __('Unable to load data'),
+        'saveChanges' => __('Save Changes'),
+        'saving' => __('Saving...'),
+        'deleteDisplay' => __('Delete Display'),
+        'quickDisplayUpdate' => __('Quick display update'),
+        'loadingDisplayForm' => __('Loading display form...'),
+        'generalSettings' => __('General settings'),
+        'calibration' => __('Calibration'),
+        'manufacturer' => __('Manufacturer'),
+        'model' => __('Model'),
+        'serialNumber' => __('Serial Number'),
+        'typeOfDisplay' => __('Type of Display'),
+        'displayTechnology' => __('Display Technology'),
+        'screenSize' => __('Screen Size'),
+        'currentLutIndex' => __('Current LUT Index'),
+        'resolutionHorizontal' => __('Resolution Horizontal'),
+        'resolutionVertical' => __('Resolution Vertical'),
+        'installationDate' => __('Installation Date'),
+        'calibrationOptions' => __('Calibration Options'),
+        'excludeDisplayFromTesting' => __('Exclude display from testing / calibration'),
+        'useGraphicboardLutsOnly' => __('Use graphicboard LUTs only'),
+        'useInternalSensorIfPossible' => __('Use internal sensor if possible'),
+        'financial' => __('Financial'),
+        'lifecycleValues' => __('Lifecycle values'),
+        'purchaseDate' => __('Purchase Date'),
+        'expectedReplacementDate' => __('Expected Replacement Date'),
+        'initialValue' => __('Initial Value'),
+        'expectedValue' => __('Expected Value'),
+        'annualStraightLine' => __('Annual Straight Line'),
+        'monthlyStraightLine' => __('Monthly Straight Line'),
+        'currentValue' => __('Current Value'),
+        'deleteThisDisplay' => __('Delete this display?'),
+        'thisActionWillPermanentlyRemove' => __('This action will permanently remove'),
+        'unableToLoadDisplayForm' => __('Unable to load display form.'),
+        'unableToUpdateDisplay' => __('Unable to update display.'),
+        'unableToDeleteDisplay' => __('Unable to delete display.'),
+    ];
 @endphp
 
 <div class="flex flex-col gap-6 pb-8">
-    <x-page-header title="All Displays" description="Manage and monitor all diagnostic displays across facilities." icon="monitor">
+    <x-page-header title="{{ __('All Displays') }}" description="{{ __('Manage and monitor all diagnostic displays across facilities.') }}" icon="monitor">
         <x-slot name="actions">
             <x-export-dropdown
                 excel-url="{{ url('reports/displays?export_type=excel&type=' . $type) }}"
                 pdf-url="{{ url('reports/displays?export_type=pdf&type=' . $type) }}"
-                label="Export Report" />
+                label="{{ __('Export Report') }}" />
         </x-slot>
     </x-page-header>
 
     <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_-32px_rgba(15,23,42,0.18)]">
         <div class="flex flex-wrap items-end gap-4 xl:flex-nowrap">
             <div class="min-w-0 flex-1 space-y-2 xl:w-[220px] xl:flex-none">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Facility</label>
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Facility') }}</label>
                 <div class="relative">
                     <button
                         id="display-facility-trigger"
                         type="button"
                         class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
-                        <span id="display-facility-label" class="truncate">All facilities</span>
+                        <span id="display-facility-label" class="truncate">{{ __('All facilities') }}</span>
                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                     </button>
                     <div id="display-facility-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                        <input id="display-facility-search" type="text" placeholder="Search facilities..." class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                        <input id="display-facility-search" type="text" placeholder="{{ __('Search facilities...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         <p id="display-facility-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="display-facility-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                     </div>
@@ -38,17 +102,17 @@
             </div>
 
             <div class="min-w-0 flex-1 space-y-2 xl:w-[220px] xl:flex-none">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Workgroup</label>
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Workgroup') }}</label>
                 <div class="relative">
                     <button
                         id="display-workgroup-trigger"
                         type="button"
                         class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
-                        <span id="display-workgroup-label" class="truncate">All workgroups</span>
+                        <span id="display-workgroup-label" class="truncate">{{ __('All workgroups') }}</span>
                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                     </button>
                     <div id="display-workgroup-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                        <input id="display-workgroup-search" type="text" placeholder="Search workgroups..." class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                        <input id="display-workgroup-search" type="text" placeholder="{{ __('Search workgroups...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         <p id="display-workgroup-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="display-workgroup-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                     </div>
@@ -56,17 +120,17 @@
             </div>
 
             <div class="min-w-0 flex-1 space-y-2 xl:w-[220px] xl:flex-none">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Workstation</label>
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Workstation') }}</label>
                 <div class="relative">
                     <button
                         id="display-workstation-trigger"
                         type="button"
                         class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
-                        <span id="display-workstation-label" class="truncate">All workstations</span>
+                        <span id="display-workstation-label" class="truncate">{{ __('All workstations') }}</span>
                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                     </button>
                     <div id="display-workstation-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                        <input id="display-workstation-search" type="text" placeholder="Search workstations..." class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                        <input id="display-workstation-search" type="text" placeholder="{{ __('Search workstations...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         <p id="display-workstation-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="display-workstation-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                     </div>
@@ -74,7 +138,7 @@
             </div>
 
             <div class="min-w-0 flex-1 space-y-2 xl:w-[280px] xl:flex-none">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Status</label>
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Status') }}</label>
                 <div class="grid h-12 grid-cols-3 rounded-2xl border border-slate-200 bg-white p-1">
                     <button
                         id="display-status-all"
@@ -83,7 +147,7 @@
                         class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
                         <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <i data-lucide="layers-3" class="h-4 w-4"></i>
-                            <span>All</span>
+                            <span>{{ __('All') }}</span>
                         </span>
                     </button>
                     <button
@@ -93,7 +157,7 @@
                         class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
                         <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <i data-lucide="badge-check" class="h-4 w-4"></i>
-                            <span>OK</span>
+                            <span>{{ __('OK') }}</span>
                         </span>
                     </button>
                     <button
@@ -103,7 +167,7 @@
                         class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
                         <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <i data-lucide="triangle-alert" class="h-4 w-4"></i>
-                            <span>Not OK</span>
+                            <span>{{ __('Not OK') }}</span>
                         </span>
                     </button>
                 </div>
@@ -115,7 +179,7 @@
                     type="button"
                     class="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900">
                     <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
-                    Reset Filters
+                    {{ __('Reset Filters') }}
                 </button>
             </div>
         </div>
@@ -129,11 +193,11 @@
         @if($canManageDisplays)
             <button id="display-action-edit" type="button" class="flex w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-sky-50 hover:text-sky-700">
                 <i data-lucide="pencil-line" class="h-4 w-4"></i>
-                Edit Display
+                {{ __('Edit Display') }}
             </button>
             <button id="display-action-delete" type="button" class="flex w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
                 <i data-lucide="trash-2" class="h-4 w-4"></i>
-                Delete Display
+                {{ __('Delete Display') }}
             </button>
         @endif
     </div>
@@ -143,8 +207,8 @@
     <div class="flex max-h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]">
         <div class="flex shrink-0 items-start justify-between border-b border-slate-200 px-6 py-5">
             <div>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Edit Display</p>
-                <h3 class="mt-2 text-2xl font-semibold text-slate-900">Quick display update</h3>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Edit Display') }}</p>
+                <h3 class="mt-2 text-2xl font-semibold text-slate-900">{{ __('Quick display update') }}</h3>
                 <p id="display-edit-subtitle" class="mt-2 text-sm text-slate-500"></p>
             </div>
             <button id="display-edit-close" type="button" class="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700">
@@ -154,7 +218,7 @@
 
         <form id="display-edit-form" class="flex min-h-0 flex-1 flex-col px-6 py-6">
             <div id="display-edit-loading" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-                Loading display form...
+                {{ __('Loading display form...') }}
             </div>
             <div id="display-edit-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700"></div>
 
@@ -162,70 +226,70 @@
                 <section class="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
                     <div class="mb-4 flex items-center justify-between">
                         <div>
-                            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Calibration</p>
-                            <h4 class="mt-1 text-base font-semibold text-slate-900">General settings</h4>
+                            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Calibration') }}</p>
+                            <h4 class="mt-1 text-base font-semibold text-slate-900">{{ __('General settings') }}</h4>
                         </div>
                     </div>
 
                     <div class="grid gap-4 lg:grid-cols-2">
                         <label class="space-y-2">
-                            <span class="block text-sm font-medium text-slate-700">Manufacturer</span>
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Manufacturer') }}</span>
                             <input name="Manufacturer" type="text" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
                         </label>
                         <label class="space-y-2">
-                            <span class="block text-sm font-medium text-slate-700">Model</span>
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Model') }}</span>
                             <input name="Model" type="text" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
                         </label>
                         <label class="space-y-2">
-                            <span class="block text-sm font-medium text-slate-700">Serial Number</span>
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Serial Number') }}</span>
                             <input name="SerialNumber" type="text" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
                         </label>
                         <label class="space-y-2">
-                            <span class="block text-sm font-medium text-slate-700">Inventory Number</span>
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Inventory Number') }}</span>
                             <input name="InventoryNumber" type="text" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
                         </label>
                         <label class="space-y-2">
-                            <span class="block text-sm font-medium text-slate-700">Type of Display</span>
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Type of Display') }}</span>
                             <select name="TypeOfDisplay" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"></select>
                         </label>
                         <label class="space-y-2">
-                            <span class="block text-sm font-medium text-slate-700">Display Technology</span>
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Display Technology') }}</span>
                             <select name="DisplayTechnology" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"></select>
                         </label>
                         <label class="space-y-2">
-                            <span class="block text-sm font-medium text-slate-700">Screen Size</span>
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Screen Size') }}</span>
                             <input name="ScreenSize" type="text" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
                         </label>
                         <label class="space-y-2">
-                            <span class="block text-sm font-medium text-slate-700">Current LUT Index</span>
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Current LUT Index') }}</span>
                             <input name="CurrentLUTIndex" type="text" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
                         </label>
                         <label class="space-y-2">
-                            <span class="block text-sm font-medium text-slate-700">Resolution Horizontal</span>
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Resolution Horizontal') }}</span>
                             <input name="ResolutionHorizontal" type="text" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
                         </label>
                         <label class="space-y-2">
-                            <span class="block text-sm font-medium text-slate-700">Resolution Vertical</span>
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Resolution Vertical') }}</span>
                             <input name="ResolutionVertical" type="text" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
                         </label>
                         <label class="space-y-2">
-                            <span class="block text-sm font-medium text-slate-700">Installation Date</span>
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Installation Date') }}</span>
                             <input name="InstalationDate" type="date" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
                         </label>
                         <div class="rounded-2xl border border-slate-200 bg-white p-4 lg:col-span-2">
-                            <p class="text-sm font-medium text-slate-700">Calibration Options</p>
+                            <p class="text-sm font-medium text-slate-700">{{ __('Calibration Options') }}</p>
                             <div class="mt-4 space-y-3">
                                 <label class="flex items-center gap-3 text-sm text-slate-600">
                                     <input name="exclude" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500">
-                                    Exclude display from testing / calibration
+                                    {{ __('Exclude display from testing / calibration') }}
                                 </label>
                                 <label class="flex items-center gap-3 text-sm text-slate-600">
                                     <input name="graphicboardOnly" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500">
-                                    Use graphicboard LUTs only
+                                    {{ __('Use graphicboard LUTs only') }}
                                 </label>
                                 <label class="flex items-center gap-3 text-sm text-slate-600">
                                     <input name="InternalSensor" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500">
-                                    Use internal sensor if possible
+                                    {{ __('Use internal sensor if possible') }}
                                 </label>
                             </div>
                         </div>
@@ -234,36 +298,36 @@
 
                 <section class="rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
                     <div class="mb-4">
-                        <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Financial</p>
-                        <h4 class="mt-1 text-base font-semibold text-slate-900">Lifecycle values</h4>
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Financial') }}</p>
+                        <h4 class="mt-1 text-base font-semibold text-slate-900">{{ __('Lifecycle values') }}</h4>
                     </div>
                     <div class="grid gap-4 lg:grid-cols-2">
                         <label class="space-y-2">
-                            <span class="block text-sm font-medium text-slate-700">Purchase Date</span>
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Purchase Date') }}</span>
                             <input name="purchase_date" type="date" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
                         </label>
                         <label class="space-y-2">
-                            <span class="block text-sm font-medium text-slate-700">Expected Replacement Date</span>
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Expected Replacement Date') }}</span>
                             <input name="expected_replacement_date" type="date" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
                         </label>
                         <label class="space-y-2">
-                            <span class="block text-sm font-medium text-slate-700">Initial Value</span>
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Initial Value') }}</span>
                             <input name="initial_value" type="number" step="0.01" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
                         </label>
                         <label class="space-y-2">
-                            <span class="block text-sm font-medium text-slate-700">Expected Value</span>
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Expected Value') }}</span>
                             <input name="expected_value" type="number" step="0.01" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
                         </label>
                         <label class="space-y-2">
-                            <span class="block text-sm font-medium text-slate-700">Annual Straight Line</span>
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Annual Straight Line') }}</span>
                             <input name="annual_straight_line" type="number" step="0.01" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
                         </label>
                         <label class="space-y-2">
-                            <span class="block text-sm font-medium text-slate-700">Monthly Straight Line</span>
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Monthly Straight Line') }}</span>
                             <input name="monthly_straight_line" type="number" step="0.01" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
                         </label>
                         <label class="space-y-2 lg:col-span-2">
-                            <span class="block text-sm font-medium text-slate-700">Current Value</span>
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Current Value') }}</span>
                             <input name="current_value" type="number" step="0.01" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
                         </label>
                     </div>
@@ -272,10 +336,10 @@
 
             <div class="mt-5 flex shrink-0 justify-end gap-3 border-t border-slate-200 pt-5">
                 <button id="display-edit-cancel" type="button" class="inline-flex h-11 items-center rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
-                    Cancel
+                    {{ __('Cancel') }}
                 </button>
                 <button id="display-edit-save" type="submit" class="inline-flex h-11 items-center rounded-2xl bg-sky-500 px-4 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60">
-                    Save Changes
+                    {{ __('Save Changes') }}
                 </button>
             </div>
         </form>
@@ -285,19 +349,19 @@
 <div id="display-delete-modal" class="fixed inset-0 z-[1300] hidden items-center justify-center bg-slate-950/40 p-6">
     <div class="w-full max-w-lg rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]">
         <div class="border-b border-slate-200 px-6 py-5">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-rose-400">Delete Display</p>
-            <h3 class="mt-2 text-2xl font-semibold text-slate-900">Delete this display?</h3>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-rose-400">{{ __('Delete Display') }}</p>
+            <h3 class="mt-2 text-2xl font-semibold text-slate-900">{{ __('Delete this display?') }}</h3>
             <p class="mt-3 text-sm text-slate-500">
-                This action will permanently remove <span id="display-delete-name" class="font-semibold text-slate-700"></span>.
+                {{ __('This action will permanently remove') }} <span id="display-delete-name" class="font-semibold text-slate-700"></span>.
             </p>
         </div>
 
         <div class="flex justify-end gap-3 px-6 py-5">
             <button id="display-delete-cancel" type="button" class="inline-flex h-11 items-center rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
-                Cancel
+                {{ __('Cancel') }}
             </button>
             <button id="display-delete-confirm" type="button" class="inline-flex h-11 items-center rounded-2xl bg-rose-500 px-4 text-sm font-semibold text-white transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-60">
-                Delete Display
+                {{ __('Delete Display') }}
             </button>
         </div>
     </div>
@@ -306,6 +370,7 @@
 <script id="display-filters-data" type="application/json">@json($filters)</script>
 <script>
 (function () {
+    const text = @json($displayText);
     const canManageDisplays = @json($canManageDisplays);
     let initialized = false;
     const state = {
@@ -487,9 +552,9 @@
         els.workgroupTrigger.disabled = !workgroups.length;
         els.workstationTrigger.disabled = !workstations.length;
 
-        els.facilityLabel.textContent = state.selectedFacilityId ? findOptionLabel(facilities, state.selectedFacilityId, 'Select facility') : 'All facilities';
-        els.workgroupLabel.textContent = state.selectedWorkgroupId ? findOptionLabel(workgroups, state.selectedWorkgroupId, 'Select workgroup') : 'All workgroups';
-        els.workstationLabel.textContent = state.selectedWorkstationId ? findOptionLabel(workstations, state.selectedWorkstationId, 'Select workstation') : 'All workstations';
+        els.facilityLabel.textContent = state.selectedFacilityId ? findOptionLabel(facilities, state.selectedFacilityId, text.selectFacility) : text.allFacilities;
+        els.workgroupLabel.textContent = state.selectedWorkgroupId ? findOptionLabel(workgroups, state.selectedWorkgroupId, text.selectWorkgroup) : text.allWorkgroups;
+        els.workstationLabel.textContent = state.selectedWorkstationId ? findOptionLabel(workstations, state.selectedWorkstationId, text.selectWorkstation) : text.allWorkstations;
 
         renderFacilityOptions();
         renderWorkgroupOptions();
@@ -524,12 +589,12 @@
         const facilities = getFacilityOptions();
         const query = state.facilitySearch.trim().toLowerCase();
         let options = facilities.filter((item) => item.name.toLowerCase().includes(query));
-        if (state.config.canChooseFacility) options = [{ id: '', name: 'All facilities' }, ...options];
-        els.facilityHint.textContent = options.length ? `${options.length} option${options.length === 1 ? '' : 's'}` : 'No options found';
+        if (state.config.canChooseFacility) options = [{ id: '', name: text.allFacilities }, ...options];
+        els.facilityHint.textContent = options.length ? `${options.length} ${options.length === 1 ? text.option : text.options}` : text.noOptionsFound;
         els.facilityOptions.innerHTML = options.length ? options.map((item) => `
             <button type="button" data-id="${String(item.id)}" class="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm ${String(item.id) === String(state.selectedFacilityId) ? 'bg-sky-50 text-sky-700' : 'text-slate-700 hover:bg-sky-50 hover:text-sky-700'}">
                 ${Perfectlum.escapeHtml(item.name)}
-            </button>`).join('') : `<div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">No options found</div>`;
+            </button>`).join('') : `<div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">${Perfectlum.escapeHtml(text.noOptionsFound)}</div>`;
 
         els.facilityOptions.querySelectorAll('button[data-id]').forEach((button) => {
             button.addEventListener('click', () => {
@@ -550,12 +615,12 @@
     function renderWorkgroupOptions() {
         const workgroups = getWorkgroupOptions();
         const query = state.workgroupSearch.trim().toLowerCase();
-        const options = [{ id: '', name: 'All workgroups' }, ...workgroups.filter((item) => item.name.toLowerCase().includes(query))];
-        els.workgroupHint.textContent = options.length ? `${options.length} option${options.length === 1 ? '' : 's'}` : 'No options found';
+        const options = [{ id: '', name: text.allWorkgroups }, ...workgroups.filter((item) => item.name.toLowerCase().includes(query))];
+        els.workgroupHint.textContent = options.length ? `${options.length} ${options.length === 1 ? text.option : text.options}` : text.noOptionsFound;
         els.workgroupOptions.innerHTML = options.length ? options.map((item) => `
             <button type="button" data-id="${String(item.id)}" class="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm ${String(item.id) === String(state.selectedWorkgroupId) ? 'bg-sky-50 text-sky-700' : 'text-slate-700 hover:bg-sky-50 hover:text-sky-700'}">
                 ${Perfectlum.escapeHtml(item.name)}
-            </button>`).join('') : `<div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">No options found</div>`;
+            </button>`).join('') : `<div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">${Perfectlum.escapeHtml(text.noOptionsFound)}</div>`;
 
         els.workgroupOptions.querySelectorAll('button[data-id]').forEach((button) => {
             button.addEventListener('click', () => {
@@ -574,12 +639,12 @@
     function renderWorkstationOptions() {
         const workstations = getWorkstationOptions();
         const query = state.workstationSearch.trim().toLowerCase();
-        const options = [{ id: '', name: 'All workstations' }, ...workstations.filter((item) => item.name.toLowerCase().includes(query))];
-        els.workstationHint.textContent = options.length ? `${options.length} option${options.length === 1 ? '' : 's'}` : 'No options found';
+        const options = [{ id: '', name: text.allWorkstations }, ...workstations.filter((item) => item.name.toLowerCase().includes(query))];
+        els.workstationHint.textContent = options.length ? `${options.length} ${options.length === 1 ? text.option : text.options}` : text.noOptionsFound;
         els.workstationOptions.innerHTML = options.length ? options.map((item) => `
             <button type="button" data-id="${String(item.id)}" class="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm ${String(item.id) === String(state.selectedWorkstationId) ? 'bg-sky-50 text-sky-700' : 'text-slate-700 hover:bg-sky-50 hover:text-sky-700'}">
                 ${Perfectlum.escapeHtml(item.name)}
-            </button>`).join('') : `<div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">No options found</div>`;
+            </button>`).join('') : `<div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">${Perfectlum.escapeHtml(text.noOptionsFound)}</div>`;
 
         els.workstationOptions.querySelectorAll('button[data-id]').forEach((button) => {
             button.addEventListener('click', () => {
@@ -656,7 +721,7 @@
         state.grid = Perfectlum.createGrid(els.grid, {
             columns: [
                 {
-                    name: 'Display Name',
+                    name: text.displayName,
                     formatter: (cell) => gridjs.html(`
                         <button type="button" onclick="window.openDisplayModal(${cell.id})" class="cursor-pointer font-medium text-sky-600 transition hover:text-sky-700 hover:underline">
                             ${Perfectlum.escapeHtml(cell.displayName)}
@@ -664,29 +729,29 @@
                     `),
                 },
                 {
-                    name: 'Workstation',
+                    name: text.workstation,
                     formatter: (cell) => !cell.wsName || cell.wsName === '-'
                         ? '-'
                         : gridjs.html(`<button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'workstation',id:${cell.wsId}}}))" class="cursor-pointer text-gray-600 transition hover:text-sky-500 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(cell.wsName)}</button>`),
                 },
                 {
-                    name: 'Workgroup',
+                    name: text.workgroup,
                     formatter: (cell) => !cell.wgName || cell.wgName === '-'
                         ? '-'
                         : gridjs.html(`<button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'workgroup',id:${cell.wgId}}}))" class="cursor-pointer text-gray-600 transition hover:text-sky-500 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(cell.wgName)}</button>`),
                 },
                 {
-                    name: 'Facility',
+                    name: text.facility,
                     formatter: (cell) => !cell.facName || cell.facName === '-'
                         ? '-'
                         : gridjs.html(`<button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'facility',id:${cell.facId}}}))" class="cursor-pointer text-gray-600 transition hover:text-sky-500 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(cell.facName)}</button>`),
                 },
                 {
-                    name: 'Status',
+                    name: text.status,
                     formatter: (cell) => gridjs.html(Perfectlum.badge(Number(cell) === 1 ? 'OK' : 'Failed', Number(cell) === 1 ? 'success' : 'danger')),
                 },
                 {
-                    name: 'Actions',
+                    name: text.actions,
                     sort: false,
                     width: '112px',
                     formatter: (c) => !canManageDisplays ? '' : gridjs.html(`
@@ -719,7 +784,18 @@
                 },
             },
             sort: { multiColumn: false },
-            language: { search: { placeholder: 'Search displays...' } },
+            language: {
+                search: { placeholder: text.searchDisplays },
+                pagination: {
+                    previous: text.previous,
+                    next: text.next,
+                    showing: text.showing,
+                    results: () => text.results,
+                },
+                loading: text.loading,
+                noRecordsFound: text.noMatchingRecordsFound,
+                error: text.unableToLoadData,
+            },
         });
     }
 
@@ -795,7 +871,7 @@
         els.editError.classList.add('hidden');
         els.editError.textContent = '';
         els.editSave.disabled = false;
-        els.editSave.textContent = 'Save Changes';
+        els.editSave.textContent = text.saveChanges;
 
         try {
             const payload = await Perfectlum.request(`/api/display-modal/${id}/edit`);
@@ -830,7 +906,7 @@
             els.editBody.classList.remove('hidden');
         } catch (error) {
             els.editLoading.classList.add('hidden');
-            els.editError.textContent = error.message || 'Unable to load display form.';
+            els.editError.textContent = error.message || text.unableToLoadDisplayForm;
             els.editError.classList.remove('hidden');
         }
     }
@@ -848,7 +924,7 @@
         fillSelect(els.editForm.querySelector('[name="TypeOfDisplay"]'), [], '');
         fillSelect(els.editForm.querySelector('[name="DisplayTechnology"]'), [], '');
         els.editSave.disabled = false;
-        els.editSave.textContent = 'Save Changes';
+        els.editSave.textContent = text.saveChanges;
     }
 
     async function submitEditForm(event) {
@@ -856,7 +932,7 @@
         if (!state.editTarget?.id || els.editSave.disabled) return;
 
         els.editSave.disabled = true;
-        els.editSave.textContent = 'Saving...';
+        els.editSave.textContent = text.saving;
         els.editError.classList.add('hidden');
         els.editError.textContent = '';
 
@@ -869,14 +945,14 @@
             formData.delete('graphicboardOnly');
 
             const payload = await Perfectlum.postForm(`/api/display-modal/${state.editTarget.id}/save`, formData);
-            if (!payload.success) throw new Error(payload.message || 'Unable to update display.');
+            if (!payload.success) throw new Error(payload.message || text.unableToUpdateDisplay);
             closeEditModal();
             reloadGrid();
         } catch (error) {
-            els.editError.textContent = error.message || 'Unable to update display.';
+            els.editError.textContent = error.message || text.unableToUpdateDisplay;
             els.editError.classList.remove('hidden');
             els.editSave.disabled = false;
-            els.editSave.textContent = 'Save Changes';
+            els.editSave.textContent = text.saveChanges;
         }
     }
 
@@ -894,25 +970,25 @@
         els.deleteModal.classList.add('hidden');
         els.deleteModal.classList.remove('flex');
         els.deleteConfirm.disabled = false;
-        els.deleteConfirm.textContent = 'Delete Display';
+        els.deleteConfirm.textContent = text.deleteDisplay;
     }
 
     async function confirmDelete() {
         if (!state.deleteTarget?.id || els.deleteConfirm.disabled) return;
         els.deleteConfirm.disabled = true;
-        els.deleteConfirm.textContent = 'Deleting...';
+        els.deleteConfirm.textContent = text.saving;
         try {
             const formData = new FormData();
             formData.append('_token', csrfToken());
             formData.append('id', state.deleteTarget.id);
             const payload = await Perfectlum.postForm('/delete-display', formData);
-            if (!payload.success) throw new Error(payload.msg || 'Unable to delete display.');
+            if (!payload.success) throw new Error(payload.msg || text.unableToDeleteDisplay);
             closeDeleteModal();
             reloadGrid();
         } catch (error) {
-            window.alert(error.message || 'Unable to delete display.');
+            window.alert(error.message || text.unableToDeleteDisplay);
             els.deleteConfirm.disabled = false;
-            els.deleteConfirm.textContent = 'Delete Display';
+            els.deleteConfirm.textContent = text.deleteDisplay;
         }
     }
 

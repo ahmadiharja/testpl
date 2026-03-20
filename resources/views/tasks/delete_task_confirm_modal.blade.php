@@ -6,18 +6,18 @@
                 <i data-lucide="trash-2" class="h-5 w-5"></i>
             </div>
             <div class="min-w-0 flex-1">
-                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Delete Task</p>
-                <h3 id="task-delete-confirm-title" class="mt-1 text-xl font-bold tracking-tight text-slate-900">Remove this scheduled task?</h3>
-                <p id="task-delete-confirm-description" class="mt-2 text-sm leading-6 text-slate-500">This action removes the task from the maintenance pipeline. Continue only if you are sure.</p>
+                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">{{ __('Delete Task') }}</p>
+                <h3 id="task-delete-confirm-title" class="mt-1 text-xl font-bold tracking-tight text-slate-900">{{ __('Remove this scheduled task?') }}</h3>
+                <p id="task-delete-confirm-description" class="mt-2 text-sm leading-6 text-slate-500">{{ __('This action removes the task from the maintenance pipeline. Continue only if you are sure.') }}</p>
             </div>
         </div>
         <div class="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
             <button type="button" id="task-delete-confirm-cancel" class="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
-                Cancel
+                {{ __('Cancel') }}
             </button>
             <button type="button" id="task-delete-confirm-submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700">
                 <i data-lucide="trash-2" class="h-4 w-4"></i>
-                Delete Task
+                {{ __('Delete Task') }}
             </button>
         </div>
     </div>
@@ -47,10 +47,10 @@
 
         window.openTaskDeleteConfirm = function (options = {}) {
             if (title) {
-                title.textContent = options.title || 'Remove this scheduled task?';
+                title.textContent = options.title || @js(__('Remove this scheduled task?'));
             }
             if (description) {
-                description.textContent = options.description || 'This action removes the task from the maintenance pipeline. Continue only if you are sure.';
+                description.textContent = options.description || @js(__('This action removes the task from the maintenance pipeline. Continue only if you are sure.'));
             }
 
             onConfirm = typeof options.onConfirm === 'function' ? options.onConfirm : null;

@@ -42,7 +42,7 @@
 
         <div class="flex-1 overflow-y-auto px-1 no-scrollbar">
             <div class="mb-3 px-3" x-show="!sidebarCollapsed" x-cloak>
-                <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Workspace</p>
+                <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">{{ __('Workspace') }}</p>
             </div>
 
             <div class="space-y-1">
@@ -55,9 +55,9 @@
                                ? (theme === 'perfectlum' ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' : 'bg-sky-500 text-white shadow-[0_0_30px_-8px_rgba(14,165,233,0.6)]')
                                : (theme === 'perfectlum' ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-900' : 'text-white/45 hover:bg-white/5 hover:text-white')
                        ]"
-                       title="{{ $item['name'] }}">
+                       title="{{ __($item['name']) }}">
                         <i data-lucide="{{ $item['icon'] }}" class="h-[18px] w-[18px] shrink-0"></i>
-                        <span x-show="!sidebarCollapsed" x-cloak class="text-[13px] font-semibold tracking-wide">{{ $item['name'] }}</span>
+                        <span x-show="!sidebarCollapsed" x-cloak class="text-[13px] font-semibold tracking-wide">{{ __($item['name']) }}</span>
                     </a>
                 @endforeach
             </div>
@@ -74,9 +74,9 @@
                                 ? (theme === 'perfectlum' ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' : 'bg-sky-500 text-white shadow-[0_0_30px_-8px_rgba(14,165,233,0.6)]')
                                 : (theme === 'perfectlum' ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-900' : 'text-white/45 hover:bg-white/5 hover:text-white')
                         ]"
-                        title="Settings">
+                        title="{{ __('Settings') }}">
                     <i data-lucide="settings" class="h-[18px] w-[18px] shrink-0"></i>
-                    <span x-show="!sidebarCollapsed" x-cloak class="text-[13px] font-semibold tracking-wide">Settings</span>
+                    <span x-show="!sidebarCollapsed" x-cloak class="text-[13px] font-semibold tracking-wide">{{ __('Settings') }}</span>
                     <i x-show="!sidebarCollapsed" x-cloak data-lucide="chevron-down" class="ml-auto h-4 w-4 transition-transform" :class="settingsExpanded ? 'rotate-180' : ''"></i>
                 </button>
 
@@ -93,7 +93,7 @@
                                 ? (theme === 'perfectlum' ? 'bg-slate-100 text-slate-900' : 'bg-white/10 text-white')
                                 : (theme === 'perfectlum' ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-900' : 'text-white/45 hover:bg-white/5 hover:text-white')">
                             <i data-lucide="{{ $item['icon'] }}" class="h-4 w-4 shrink-0"></i>
-                            <span>{{ $item['name'] }}</span>
+                            <span>{{ __($item['name']) }}</span>
                         </a>
                     @endforeach
                 </div>
@@ -102,7 +102,7 @@
 
         <div class="mt-6 px-3" x-show="!sidebarCollapsed" x-cloak>
             <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Powered by
+                {{ __('Powered by') }}
             </p>
             <img
                 src="{{ asset('assets/images/qubyx-black.png') }}"

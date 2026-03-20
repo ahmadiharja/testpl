@@ -1,10 +1,43 @@
 @php
     $user = auth()->user();
-    $displayName = $user?->fullname ?: $user?->name ?: 'User';
+    $displayName = $user?->fullname ?: $user?->name ?: __('User');
     $nameParts = preg_split('/\s+/', trim($displayName)) ?: [];
     $firstInitial = strtoupper(substr($nameParts[0] ?? 'U', 0, 1));
     $secondInitial = strtoupper(substr($nameParts[1] ?? ($user?->name ?: ''), 0, 1));
     $avatarInitials = trim($firstInitial . $secondInitial) ?: 'U';
+    $supportedLocales = config('app.supported_locales', []);
+    $currentLocale = app()->getLocale();
+    $localeOptions = collect($supportedLocales)->map(function ($meta, $code) {
+        return [
+            'code' => $code,
+            'label' => $meta['label'] ?? strtoupper($code),
+            'native' => $meta['native'] ?? ($meta['label'] ?? strtoupper($code)),
+            'flag' => $meta['flag'] ?? '🌐',
+            'flagUrl' => isset($meta['flag_asset']) ? asset($meta['flag_asset']) : null,
+        ];
+    })->values()->all();
+    $currentLocaleMeta = [
+        'code' => $currentLocale,
+        'label' => $supportedLocales[$currentLocale]['label'] ?? strtoupper($currentLocale),
+        'native' => $supportedLocales[$currentLocale]['native'] ?? strtoupper($currentLocale),
+        'flag' => $supportedLocales[$currentLocale]['flag'] ?? '🌐',
+        'flagUrl' => isset($supportedLocales[$currentLocale]['flag_asset']) ? asset($supportedLocales[$currentLocale]['flag_asset']) : null,
+    ];
+    $notificationTranslations = [
+        'noUnreadNotifications' => __('No unread notifications'),
+        'noNotificationsYet' => __('No notifications yet'),
+    ];
+    $languageSwitcherTranslations = [
+        'language' => __('Language'),
+    ];
+    $globalSearchTranslations = [
+        'facility' => __('Facility'),
+        'workgroup' => __('Workgroup'),
+        'workstation' => __('Workstation'),
+        'display' => __('Display'),
+        'record' => __('Record'),
+        'openRecord' => __('Open record'),
+    ];
 @endphp
 
 <!-- TOP HEADER -->
@@ -25,7 +58,7 @@
             :class="theme === 'perfectlum'
                 ? 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                 : 'border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'"
-            :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+            :title="sidebarCollapsed ? @js(__('Expand sidebar')) : @js(__('Collapse sidebar'))">
             <i data-lucide="panel-left-close" class="h-4 w-4 transition-transform" :class="sidebarCollapsed ? 'rotate-180' : ''"></i>
         </button>
 
@@ -38,11 +71,11 @@
             
             <div class="flex flex-col">
                 <div class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.1em] opacity-30">
-                    <span>Admin Console</span>
+                    <span>{{ __('Admin Console') }}</span>
                     <i data-lucide="chevron-right" class="w-3 h-3"></i>
-                    <span x-text="activeMenu"></span>
+                    <span x-text="menuLabel(activeMenu)"></span>
                 </div>
-                <h1 class="text-[15px] font-bold tracking-tight" :class="theme === 'perfectlum' ? 'text-gray-900' : 'text-white'" x-text="activeMenu"></h1>
+                <h1 class="text-[15px] font-bold tracking-tight" :class="theme === 'perfectlum' ? 'text-gray-900' : 'text-white'" x-text="menuLabel(activeMenu)"></h1>
             </div>
         </div>
     </div>
@@ -65,7 +98,7 @@
                     @keydown.arrow-up.prevent="focusPrev()"
                     @keydown.enter.prevent="confirmSelection()"
                     type="text"
-                    placeholder="Search facilities, workgroups, workstations, displays..."
+                    placeholder="{{ __('Search facilities, workgroups, workstations, displays...') }}"
                     class="w-80 h-11 pl-11 pr-12 rounded-2xl text-[13px] font-semibold border transition-all placeholder-white/20"
                     :class="theme === 'perfectlum' ? 'bg-gray-50 border-gray-100 focus:bg-white focus:ring-4 focus:ring-gray-100 text-gray-900' : 'bg-white/[0.03] border-white/5 focus:bg-white/[0.07] focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/30 text-white'"
                 >
@@ -98,13 +131,13 @@
             >
                 <div class="flex items-start justify-between gap-4 px-1 pb-3">
                     <div>
-                        <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Global Search</p>
-                        <h3 class="mt-1 text-lg font-semibold text-slate-900">Jump to workspace records</h3>
-                        <p class="mt-1 text-xs text-slate-500">Search across facilities, workgroups, workstations, and displays inside your current scope.</p>
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Global Search') }}</p>
+                        <h3 class="mt-1 text-lg font-semibold text-slate-900">{{ __('Jump to workspace records') }}</h3>
+                        <p class="mt-1 text-xs text-slate-500">{{ __('Search across facilities, workgroups, workstations, and displays inside your current scope.') }}</p>
                     </div>
                     <span class="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold text-slate-500">
                         <span x-text="results.length"></span>
-                        <span class="ml-1">results</span>
+                        <span class="ml-1">{{ __('results') }}</span>
                     </span>
                 </div>
 
@@ -112,8 +145,8 @@
                     <template x-if="query.trim().length < 2">
                         <div class="rounded-[1.25rem] border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
                             <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-400 shadow-sm" x-html="iconSvg('search')"></div>
-                            <p class="mt-4 text-sm font-semibold text-slate-700">Start typing to search</p>
-                            <p class="mt-2 text-xs leading-5 text-slate-500">Use at least two characters to search facilities, workgroups, workstations, or displays.</p>
+                            <p class="mt-4 text-sm font-semibold text-slate-700">{{ __('Start typing to search') }}</p>
+                            <p class="mt-2 text-xs leading-5 text-slate-500">{{ __('Use at least two characters to search facilities, workgroups, workstations, or displays.') }}</p>
                         </div>
                     </template>
 
@@ -132,8 +165,8 @@
                     <template x-if="query.trim().length >= 2 && !loading && results.length === 0">
                         <div class="rounded-[1.25rem] border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
                             <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-400 shadow-sm" x-html="iconSvg('search-x')"></div>
-                            <p class="mt-4 text-sm font-semibold text-slate-700">No matching records</p>
-                            <p class="mt-2 text-xs leading-5 text-slate-500">Try a different keyword or broaden the visible scope from the current workspace filters.</p>
+                            <p class="mt-4 text-sm font-semibold text-slate-700">{{ __('No matching records') }}</p>
+                            <p class="mt-2 text-xs leading-5 text-slate-500">{{ __('Try a different keyword or broaden the visible scope from the current workspace filters.') }}</p>
                         </div>
                     </template>
 
@@ -151,7 +184,7 @@
                                     <div class="flex items-start justify-between gap-3">
                                         <div class="min-w-0">
                                             <p class="truncate text-sm font-semibold text-slate-900" x-text="item.title"></p>
-                                            <p class="mt-1 truncate text-xs text-slate-500" x-text="item.subtitle || 'Open record'"></p>
+                                            <p class="mt-1 truncate text-xs text-slate-500" x-text="item.subtitle || translations.openRecord"></p>
                                         </div>
                                         <span class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold" :class="typeTag(item.type)" x-text="typeLabel(item.type)"></span>
                                     </div>
@@ -159,6 +192,60 @@
                             </button>
                         </template>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="relative" x-data="languageSwitcher()" @click.outside="close()" @keydown.escape.window="close()">
+            <button
+                type="button"
+                @click="toggle()"
+                class="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                :title="translations.language"
+            >
+                <span class="inline-flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 shadow-sm">
+                    <template x-if="current.flagUrl">
+                        <img :src="current.flagUrl" :alt="current.native" class="h-full w-full object-cover">
+                    </template>
+                    <template x-if="!current.flagUrl">
+                        <span class="text-[15px] leading-none" x-text="current.flag"></span>
+                    </template>
+                </span>
+                <span class="hidden lg:inline-block whitespace-nowrap" x-text="current.native"></span>
+                <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
+            </button>
+
+            <div
+                x-cloak
+                x-show="open"
+                x-transition:enter="transition ease-out duration-150"
+                x-transition:enter-start="opacity-0 translate-y-1 scale-95"
+                x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                x-transition:leave="transition ease-in duration-100"
+                x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                x-transition:leave-end="opacity-0 translate-y-1 scale-95"
+                class="absolute right-0 top-[calc(100%+0.75rem)] z-[1450] w-60 rounded-[1.5rem] border border-slate-200 bg-white p-2 shadow-[0_24px_60px_-30px_rgba(15,23,42,0.35)]"
+            >
+                <div class="space-y-1">
+                    <template x-for="item in locales" :key="item.code">
+                        <button
+                            type="button"
+                            @click="select(item.code)"
+                            class="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition"
+                            :class="item.code === current.code ? 'bg-sky-50 text-sky-700' : 'text-slate-700 hover:bg-slate-50'"
+                        >
+                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm">
+                                <template x-if="item.flagUrl">
+                                    <img :src="item.flagUrl" :alt="item.native" class="h-full w-full object-cover">
+                                </template>
+                                <template x-if="!item.flagUrl">
+                                    <span class="text-base leading-none" x-text="item.flag"></span>
+                                </template>
+                            </span>
+                            <span class="min-w-0 flex-1 truncate text-sm font-semibold" x-text="item.native"></span>
+                            <i x-show="item.code === current.code" data-lucide="check" class="h-4 w-4"></i>
+                        </button>
+                    </template>
                 </div>
             </div>
         </div>
@@ -192,22 +279,22 @@
                 class="absolute right-0 top-[calc(100%+0.75rem)] z-[1400] w-[25rem] rounded-[1.6rem] border border-slate-200 bg-white p-3 shadow-[0_28px_80px_-36px_rgba(15,23,42,0.35)]">
                 <div class="flex items-start justify-between gap-4 px-1 pb-3">
                     <div>
-                        <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Notifications</p>
-                        <h3 class="mt-1 text-lg font-semibold text-slate-900">Workspace updates</h3>
-                        <p class="mt-1 text-xs text-slate-500">Alerts, account reminders, and activity assigned to your scope.</p>
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Notifications') }}</p>
+                        <h3 class="mt-1 text-lg font-semibold text-slate-900">{{ __('Workspace updates') }}</h3>
+                        <p class="mt-1 text-xs text-slate-500">{{ __('Alerts, account reminders, and activity assigned to your scope.') }}</p>
                     </div>
                     <button
                         x-show="unreadCount > 0"
                         type="button"
                         @click="markAllRead()"
                         class="inline-flex shrink-0 items-center rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50">
-                        Mark all read
+                        {{ __('Mark all read') }}
                     </button>
                 </div>
 
                 <div class="mb-3 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-1">
-                    <button type="button" @click="setFilter('unread')" class="flex-1 rounded-[0.9rem] px-3 py-2 text-sm font-semibold transition" :class="tabClasses('unread')">Unread</button>
-                    <button type="button" @click="setFilter('all')" class="flex-1 rounded-[0.9rem] px-3 py-2 text-sm font-semibold transition" :class="tabClasses('all')">All</button>
+                    <button type="button" @click="setFilter('unread')" class="flex-1 rounded-[0.9rem] px-3 py-2 text-sm font-semibold transition" :class="tabClasses('unread')">{{ __('Unread') }}</button>
+                    <button type="button" @click="setFilter('all')" class="flex-1 rounded-[0.9rem] px-3 py-2 text-sm font-semibold transition" :class="tabClasses('all')">{{ __('All') }}</button>
                 </div>
 
                 <div class="max-h-[26rem] overflow-y-auto pr-1">
@@ -226,8 +313,8 @@
                     <template x-if="!loading && items.length === 0">
                         <div class="rounded-[1.25rem] border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
                             <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-400 shadow-sm" x-html="iconSvg('bell')"></div>
-                            <p class="mt-4 text-sm font-semibold text-slate-700" x-text="filter === 'unread' ? 'No unread notifications' : 'No notifications yet'"></p>
-                            <p class="mt-2 text-xs leading-5 text-slate-500">New alerts and account reminders assigned to your workspace will appear here.</p>
+                            <p class="mt-4 text-sm font-semibold text-slate-700" x-text="filter === 'unread' ? translations.noUnreadNotifications : translations.noNotificationsYet"></p>
+                            <p class="mt-2 text-xs leading-5 text-slate-500">{{ __('New alerts and account reminders assigned to your workspace will appear here.') }}</p>
                         </div>
                     </template>
 
@@ -262,7 +349,7 @@
                     <a
                         href="{{ url('notifications') }}"
                         class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">
-                        View all notifications
+                        {{ __('View all notifications') }}
                         <i data-lucide="arrow-right" class="h-4 w-4"></i>
                     </a>
                 </div>
@@ -285,7 +372,7 @@
 
                 <div class="hidden min-w-0 text-left lg:block">
                     <p class="truncate text-[13px] font-semibold" :class="theme === 'perfectlum' ? 'text-slate-900' : 'text-white'">{{ $displayName }}</p>
-                    <p class="truncate text-[11px] font-medium text-slate-400">{{ $user?->email ?: 'Profile' }}</p>
+                    <p class="truncate text-[11px] font-medium text-slate-400">{{ $user?->email ?: __('Profile') }}</p>
                 </div>
 
                 <i data-lucide="chevron-down" class="hidden h-4 w-4 text-slate-400 lg:block"></i>
@@ -307,7 +394,7 @@
                     </div>
                     <div class="min-w-0">
                         <p class="truncate text-sm font-semibold text-slate-900">{{ $displayName }}</p>
-                        <p class="truncate text-xs text-slate-500">{{ $user?->email ?: 'No email configured' }}</p>
+                        <p class="truncate text-xs text-slate-500">{{ $user?->email ?: __('No email configured') }}</p>
                     </div>
                 </div>
 
@@ -316,13 +403,13 @@
                         href="{{ url('profile-settings') }}"
                         class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-sky-50 hover:text-sky-700">
                         <i data-lucide="user-round" class="h-4 w-4"></i>
-                        Profile Settings
+                        {{ __('Profile Settings') }}
                     </a>
                     <a
                         href="{{ url('logout') }}"
                         class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-rose-600 transition hover:bg-rose-50">
                         <i data-lucide="log-out" class="h-4 w-4"></i>
-                        Logout
+                        {{ __('Logout') }}
                     </a>
                 </div>
             </div>
@@ -343,6 +430,7 @@ if (!window.notificationBell) {
             apiUrl: @json(url('api/notifications')),
             readAllUrl: @json(url('api/notifications/read-all')),
             csrf: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+            translations: @json($notificationTranslations),
 
             init() {
                 this.load(true);
@@ -488,6 +576,51 @@ if (!window.notificationBell) {
     };
 }
 
+if (!window.languageSwitcher) {
+    window.languageSwitcher = function () {
+        return {
+            open: false,
+            locales: @json($localeOptions),
+            current: @json($currentLocaleMeta),
+            endpoint: @json(route('locale.update')),
+            csrf: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+            translations: @json($languageSwitcherTranslations),
+
+            toggle() {
+                this.open = !this.open;
+            },
+
+            close() {
+                this.open = false;
+            },
+
+            async select(code) {
+                if (!code || code === this.current.code) {
+                    this.close();
+                    return;
+                }
+
+                const response = await fetch(this.endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': this.csrf,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({ locale: code }),
+                });
+
+                if (!response.ok) {
+                    return;
+                }
+
+                window.location.reload();
+            },
+        };
+    };
+}
+
 if (!window.globalWorkspaceSearch) {
     window.globalWorkspaceSearch = function () {
         return {
@@ -498,6 +631,7 @@ if (!window.globalWorkspaceSearch) {
             activeIndex: -1,
             debounceHandle: null,
             searchUrl: @json(url('api/global-search')),
+            translations: @json($globalSearchTranslations),
 
             init() {
                 window.addEventListener('keydown', (event) => {
@@ -623,11 +757,11 @@ if (!window.globalWorkspaceSearch) {
 
             typeLabel(type) {
                 switch (type) {
-                    case 'facility': return 'Facility';
-                    case 'workgroup': return 'Workgroup';
-                    case 'workstation': return 'Workstation';
-                    case 'display': return 'Display';
-                    default: return 'Record';
+                    case 'facility': return this.translations.facility;
+                    case 'workgroup': return this.translations.workgroup;
+                    case 'workstation': return this.translations.workstation;
+                    case 'display': return this.translations.display;
+                    default: return this.translations.record;
                 }
             },
 

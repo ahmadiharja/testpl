@@ -3,31 +3,38 @@
 <main class="main-vertical-layout">
     <div class="container-fluid">
         <section class="py-3">
+            @php
+                $alertText = [
+                    'searchAlertEmails' => __('Search alert emails...'),
+                    'deleteThisAlert' => __('Delete this alert?'),
+                    'failedToUpdateSmtpSettings' => __('Failed to update SMTP settings.'),
+                ];
+            @endphp
             <div x-data="alertSettingsPage()" x-init="init()" class="space-y-4">
                 <x-page-header
-                    title="Alert Settings"
-                    description="Configure alert recipients, error thresholds, and SMTP delivery for this remote calibration platform."
+                    :title="__('Alert Settings')"
+                    :description="__('Configure alert recipients, error thresholds, and SMTP delivery for this remote calibration platform.')"
                     icon="bell-ring"
                 />
 
                 <div class="rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-2.5 text-xs text-slate-600 shadow-sm">
-                    <p class="font-semibold text-slate-700">Manage notifications in three layers: recipients, threshold values, and outbound mail delivery.</p>
-                    <p class="mt-0.5 text-slate-500">Changes saved here apply to future alert emails, daily reports, and test messages.</p>
+                    <p class="font-semibold text-slate-700">{{ __('Manage notifications in three layers: recipients, threshold values, and outbound mail delivery.') }}</p>
+                    <p class="mt-0.5 text-slate-500">{{ __('Changes saved here apply to future alert emails, daily reports, and test messages.') }}</p>
                 </div>
 
                 <div class="grid gap-4 xl:grid-cols-[20rem_minmax(0,1fr)]">
                     <aside class="space-y-4">
                         <div class="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
-                            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">Configuration Areas</p>
-                            <h2 class="mt-1 text-[1.15rem] font-bold tracking-tight text-slate-900">Choose a section</h2>
-                            <p class="mt-1 text-sm leading-6 text-slate-500">The workspace on the right updates based on the selected configuration area.</p>
+                            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">{{ __('Configuration Areas') }}</p>
+                            <h2 class="mt-1 text-[1.15rem] font-bold tracking-tight text-slate-900">{{ __('Choose a section') }}</h2>
+                            <p class="mt-1 text-sm leading-6 text-slate-500">{{ __('The workspace on the right updates based on the selected configuration area.') }}</p>
 
                             <div class="mt-4 space-y-2">
                                 <button type="button" @click="activeTab='alerts'" :class="tabClass('alerts')" class="flex w-full items-start gap-3 rounded-xl border px-3.5 py-3 text-left transition">
                                     <span class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-500"><i data-lucide="mail" class="h-4.5 w-4.5"></i></span>
                                     <span class="min-w-0">
-                                        <span class="block text-sm font-semibold">Alert Emails</span>
-                                        <span class="mt-0.5 block text-xs leading-5 text-slate-500">Control the recipients who receive alert notifications.</span>
+                                        <span class="block text-sm font-semibold">{{ __('Alert Emails') }}</span>
+                                        <span class="mt-0.5 block text-xs leading-5 text-slate-500">{{ __('Control the recipients who receive alert notifications.') }}</span>
                                     </span>
                                 </button>
 
@@ -35,8 +42,8 @@
                                     <button type="button" @click="activeTab='limits'" :class="tabClass('limits')" class="flex w-full items-start gap-3 rounded-xl border px-3.5 py-3 text-left transition">
                                         <span class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-500"><i data-lucide="triangle-alert" class="h-4.5 w-4.5"></i></span>
                                         <span class="min-w-0">
-                                            <span class="block text-sm font-semibold">Error Limits</span>
-                                            <span class="mt-0.5 block text-xs leading-5 text-slate-500">Define threshold values that classify alert conditions.</span>
+                                            <span class="block text-sm font-semibold">{{ __('Error Limits') }}</span>
+                                            <span class="mt-0.5 block text-xs leading-5 text-slate-500">{{ __('Define threshold values that classify alert conditions.') }}</span>
                                         </span>
                                     </button>
                                 @endif
@@ -45,8 +52,8 @@
                                     <button type="button" @click="activeTab='smtp'" :class="tabClass('smtp')" class="flex w-full items-start gap-3 rounded-xl border px-3.5 py-3 text-left transition">
                                         <span class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-500"><i data-lucide="server-cog" class="h-4.5 w-4.5"></i></span>
                                         <span class="min-w-0">
-                                            <span class="block text-sm font-semibold">SMTP Delivery</span>
-                                            <span class="mt-0.5 block text-xs leading-5 text-slate-500">Configure the transport used for outgoing mail.</span>
+                                            <span class="block text-sm font-semibold">{{ __('SMTP Delivery') }}</span>
+                                            <span class="mt-0.5 block text-xs leading-5 text-slate-500">{{ __('Configure the transport used for outgoing mail.') }}</span>
                                         </span>
                                     </button>
                                 @endif
@@ -54,15 +61,15 @@
                         </div>
 
                         <div class="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
-                            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Current Access</p>
+                            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Current Access') }}</p>
                             <div class="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-                                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Role</p>
+                                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{{ __('Role') }}</p>
                                 <p class="mt-1 font-semibold capitalize text-slate-900">{{ $role }}</p>
                             </div>
                             <ul class="mt-3 space-y-1.5 text-xs leading-5 text-slate-500">
-                                <li>Users can review recipients.</li>
-                                <li>Admins can manage recipients and error limits inside their facility scope.</li>
-                                <li>Super users can also configure SMTP delivery.</li>
+                                <li>{{ __('Users can review recipients.') }}</li>
+                                <li>{{ __('Admins can manage recipients and error limits inside their facility scope.') }}</li>
+                                <li>{{ __('Super users can also configure SMTP delivery.') }}</li>
                             </ul>
                         </div>
                     </aside>
@@ -72,13 +79,13 @@
                             <section class="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
                                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                     <div>
-                                        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">Alert Email Routing</p>
-                                        <h2 class="mt-1 text-[1.2rem] font-bold tracking-tight text-slate-900">Recipient rules</h2>
-                                        <p class="mt-1 text-sm leading-6 text-slate-500">Review, search, and update the recipient rules used for alerts and daily summaries.</p>
+                                        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">{{ __('Alert Email Routing') }}</p>
+                                        <h2 class="mt-1 text-[1.2rem] font-bold tracking-tight text-slate-900">{{ __('Recipient rules') }}</h2>
+                                        <p class="mt-1 text-sm leading-6 text-slate-500">{{ __('Review, search, and update the recipient rules used for alerts and daily summaries.') }}</p>
                                     </div>
                                     @if($role != 'user')
                                         <button type="button" @click="openForm(0)" class="inline-flex shrink-0 items-center justify-center rounded-2xl bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-400">
-                                            Add Alert
+                                            {{ __('Add Alert') }}
                                         </button>
                                     @endif
                                 </div>
@@ -86,11 +93,11 @@
 
                             <div x-show="alertsInfoVisible" x-cloak class="flex items-start justify-between gap-3 rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 text-xs text-slate-600 shadow-sm">
                                 <div class="min-w-0 space-y-1">
-                                    <p class="font-semibold text-slate-700">How it works</p>
-                                    <p class="text-slate-500">Add one recipient per rule, use Daily Report for summary emails, and disable Active to keep a rule without deleting it.</p>
+                                    <p class="font-semibold text-slate-700">{{ __('How it works') }}</p>
+                                    <p class="text-slate-500">{{ __('Add one recipient per rule, use Daily Report for summary emails, and disable Active to keep a rule without deleting it.') }}</p>
                                     <p class="text-slate-500">{{ $role === 'super' ? 'You can manage alert recipients across the full platform.' : ($role === 'admin' ? 'You can manage recipients and thresholds inside your assigned facility scope.' : 'You can review alert recipient rules, but editing is disabled for your role.') }}</p>
                                 </div>
-                                <button type="button" @click="alertsInfoVisible = false" class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition hover:border-slate-300 hover:text-slate-700" aria-label="Dismiss alert info">
+                                <button type="button" @click="alertsInfoVisible = false" class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition hover:border-slate-300 hover:text-slate-700" aria-label="{{ __('Dismiss alert info') }}">
                                     <span class="text-base leading-none">&times;</span>
                                 </button>
                             </div>
@@ -120,7 +127,7 @@
 
                                     <div class="flex justify-end">
                                         <button type="submit" :disabled="savingLimits" class="inline-flex items-center justify-center rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60">
-                                            <span x-text="savingLimits ? 'Saving...' : 'Save Error Limits'"></span>
+                                            <span x-text="savingLimits ? @js(__('Saving...')) : @js(__('Save Error Limits'))"></span>
                                         </button>
                                     </div>
                                 </form>
@@ -129,9 +136,9 @@
 
                         @if($role == 'super')
                             <div x-show="activeTab === 'smtp'" x-cloak class="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
-                                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">Mail Delivery</p>
-                                <h2 class="mt-1 text-[1.2rem] font-bold tracking-tight text-slate-900">SMTP transport</h2>
-                                <p class="mt-1 text-sm leading-6 text-slate-500">Configure the outbound mail server used for alert notifications and test email.</p>
+                                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">{{ __('Mail Delivery') }}</p>
+                                <h2 class="mt-1 text-[1.2rem] font-bold tracking-tight text-slate-900">{{ __('SMTP transport') }}</h2>
+                                <p class="mt-1 text-sm leading-6 text-slate-500">{{ __('Configure the outbound mail server used for alert notifications and test email.') }}</p>
 
                                 <form id="smtp-form" @submit.prevent="submitSmtp" class="mt-4 space-y-4">
                                     {{ csrf_field() }}
@@ -140,27 +147,27 @@
 
                                     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                                         <label class="block rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5">
-                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Sender Email</span>
+                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('Sender Email') }}</span>
                                             {{ Form::text('senderemail', $smtp->senderemail, ['class' => 'h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20']) }}
                                         </label>
                                         <label class="block rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5">
-                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Sender Name</span>
+                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('Sender Name') }}</span>
                                             {{ Form::text('sendername', $smtp->sendername, ['class' => 'h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20']) }}
                                         </label>
                                         <label class="block rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5">
-                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">SMTP Server</span>
+                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('SMTP Server') }}</span>
                                             {{ Form::text('smtpserver', $smtp->host, ['class' => 'h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20']) }}
                                         </label>
                                         <label class="block rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5">
-                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">SMTP Port</span>
+                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('SMTP Port') }}</span>
                                             {{ Form::text('smtpport', $smtp->port, ['class' => 'h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20']) }}
                                         </label>
                                         <label class="block rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5">
-                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">SMTP User</span>
+                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('SMTP User') }}</span>
                                             {{ Form::text('smtpuser', $smtp->username, ['class' => 'h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20', 'autocomplete' => 'off']) }}
                                         </label>
                                         <label class="block rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5">
-                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">SMTP Password</span>
+                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('SMTP Password') }}</span>
                                             <input type="text" id="smtppassword" name="smtppassword" value="{{ $smtp->password }}" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                                         </label>
                                     </div>
@@ -168,20 +175,20 @@
                                     <label class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
                                         <input class="mt-1 h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500/30" type="checkbox" value="1" name="usetls" @if ($smtp->encryption == 'tls') checked @endif>
                                         <span>
-                                            <span class="block font-semibold text-slate-900">Use TLS encryption</span>
-                                            <span class="mt-0.5 block text-xs leading-5 text-slate-500">Enable TLS if the SMTP provider requires secure transport.</span>
+                                            <span class="block font-semibold text-slate-900">{{ __('Use TLS encryption') }}</span>
+                                            <span class="mt-0.5 block text-xs leading-5 text-slate-500">{{ __('Enable TLS if the SMTP provider requires secure transport.') }}</span>
                                         </span>
                                     </label>
 
                                     <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
-                                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Test Delivery</p>
+                                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('Test Delivery') }}</p>
                                         <div class="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
                                             <label class="block">
-                                                <span class="mb-2 block text-sm font-medium text-slate-700">Send Test Email To</span>
-                                                <input x-model="testEmail" type="email" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20" placeholder="name@example.com">
+                                                <span class="mb-2 block text-sm font-medium text-slate-700">{{ __('Send Test Email To') }}</span>
+                                                <input x-model="testEmail" type="email" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20" placeholder="{{ __('name@example.com') }}">
                                             </label>
                                             <button type="button" @click="sendTestEmail" :disabled="sendingTest" class="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60">
-                                                <span x-text="sendingTest ? 'Sending...' : 'Send Test Email'"></span>
+                                                <span x-text="sendingTest ? @js(__('Sending...')) : @js(__('Send Test Email'))"></span>
                                             </button>
                                         </div>
                                         <p class="mt-3 text-sm" :class="testResultType === 'error' ? 'text-rose-600' : 'text-emerald-600'" x-text="testResult"></p>
@@ -189,7 +196,7 @@
 
                                     <div class="flex justify-end">
                                         <button type="submit" :disabled="savingSmtp" class="inline-flex items-center justify-center rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60">
-                                            <span x-text="savingSmtp ? 'Saving...' : 'Save SMTP Settings'"></span>
+                                            <span x-text="savingSmtp ? @js(__('Saving...')) : @js(__('Save SMTP Settings'))"></span>
                                         </button>
                                     </div>
                                 </form>
@@ -215,18 +222,18 @@
                              class="pointer-events-auto w-full max-w-xl overflow-y-auto bg-white shadow-2xl">
                         <div class="sticky top-0 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
                             <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">Alert Rule</p>
-                                <h3 class="mt-1 text-lg font-semibold text-slate-900">Add or edit alert routing</h3>
-                                <p class="text-sm text-slate-500">Set the recipient, activation status, and facility scope for this alert rule.</p>
+                                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">{{ __('Alert Rule') }}</p>
+                                <h3 class="mt-1 text-lg font-semibold text-slate-900">{{ __('Add or edit alert routing') }}</h3>
+                                <p class="text-sm text-slate-500">{{ __('Set the recipient, activation status, and facility scope for this alert rule.') }}</p>
                             </div>
                             <button type="button" @click="closeForm" class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700">
-                                <span class="sr-only">Close panel</span>
+                                <span class="sr-only">{{ __('Close panel') }}</span>
                                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                             </button>
                         </div>
 
                         <div class="p-6">
-                            <div x-show="formLoading" class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">Loading form...</div>
+                            <div x-show="formLoading" class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">{{ __('Loading form...') }}</div>
                             <div id="alert-form-box" x-show="!formLoading" x-html="formHtml"></div>
                         </div>
                     </div>
@@ -282,7 +289,7 @@ function alertSettingsPage() {
                 pagination: { enabled: true, limit: 10, server: { url: (prev, page, limit) => `${prev}${prev.includes('?') ? '&' : '?'}page=${page + 1}&limit=${limit}` } },
                 sort: true,
                 className: { td: 'align-middle' },
-                language: { search: { placeholder: 'Search alert emails...' } }
+                language: { search: { placeholder: @json($alertText['searchAlertEmails']) } }
             });
         },
         renderToggle(id, enabled, column) {
@@ -298,13 +305,13 @@ function alertSettingsPage() {
             this.formOpen = true; this.formLoading = true; this.formHtml = '';
             const formData = new FormData(); formData.append('_token', @json(csrf_token())); formData.append('id', id);
             try { const payload = await Perfectlum.postForm(@json(url('alert-form')), formData); this.formHtml = payload.content || ''; this.$nextTick(() => this.bindLoadedForm()); }
-            catch (_) { this.formHtml = '<div class=\"rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600\">Failed to load the alert form.</div>'; }
+            catch (_) { this.formHtml = `<div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">${@json(__('Failed to load the alert form.'))}</div>`; }
             finally { this.formLoading = false; }
         },
         bindLoadedForm() {
             const form = document.querySelector('#alert-form-box form'); if (!form) return;
             this.initLoadedFormUi(form);
-            form.addEventListener('submit', async (event) => { event.preventDefault(); await Perfectlum.postForm(@json(url('alert-settings')), new FormData(form)); this.closeForm(); this.reloadAlertsGrid(); notify('success', 'Alert saved successfully.'); }, { once: true });
+            form.addEventListener('submit', async (event) => { event.preventDefault(); await Perfectlum.postForm(@json(url('alert-settings')), new FormData(form)); this.closeForm(); this.reloadAlertsGrid(); notify('success', @json(__('Alert saved successfully.'))); }, { once: true });
         },
         initLoadedFormUi(form) {
             const root = form.querySelector('[data-searchable-select="facility"]');
@@ -319,7 +326,7 @@ function alertSettingsPage() {
 
             const syncLabel = () => {
                 const current = options.find((item) => item.dataset.value === String(hiddenInput?.value ?? ''));
-                if (label) label.textContent = current?.dataset.label || 'All facilities';
+                if (label) label.textContent = current?.dataset.label || @json(__('All facilities'));
             };
 
             const applySearch = () => {
@@ -378,7 +385,7 @@ function alertSettingsPage() {
             }, 240);
         },
         async deleteAlert(id) {
-            if (!confirm('Delete this alert?')) return;
+            if (!confirm(@json($alertText['deleteThisAlert']))) return;
             const formData = new FormData(); formData.append('_token', @json(csrf_token())); formData.append('id', id);
             try { const payload = await Perfectlum.postForm(@json(url('delete-alert')), formData); if (!payload.success) { notify('error', payload.msg || 'Failed to delete alert.'); return; } this.reloadAlertsGrid(); notify('success', payload.msg || 'Alert deleted successfully.'); }
             catch (_) { notify('error', 'Failed to delete alert.'); }
@@ -397,8 +404,8 @@ function alertSettingsPage() {
         },
         async submitSmtp() {
             this.savingSmtp = true;
-            try { const payload = await Perfectlum.postForm(@json(url('errorsmtp-update')), new FormData(document.getElementById('smtp-form'))); notify(payload.success ? 'success' : 'error', payload.msg || 'Failed to update SMTP settings.'); }
-            catch (_) { notify('error', 'Failed to update SMTP settings.'); }
+            try { const payload = await Perfectlum.postForm(@json(url('errorsmtp-update')), new FormData(document.getElementById('smtp-form'))); notify(payload.success ? 'success' : 'error', payload.msg || @json($alertText['failedToUpdateSmtpSettings'])); }
+            catch (_) { notify('error', @json($alertText['failedToUpdateSmtpSettings'])); }
             finally { this.savingSmtp = false; }
         },
         async sendTestEmail() {

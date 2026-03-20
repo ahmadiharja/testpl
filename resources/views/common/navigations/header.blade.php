@@ -5,12 +5,12 @@
         : 'bg-[#0A0A0C] text-[#E2E1E6] theme-chroma';
 @endphp
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title ?? 'PerfectLum' }} | PerfectLum</title>
+    <title>{{ __($title ?? 'PerfectLum') }} | PerfectLum</title>
     <!-- Tailwind & Lucide -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

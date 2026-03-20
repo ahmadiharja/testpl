@@ -2,11 +2,11 @@
 <div id="task-editor-panel" class="fixed inset-y-0 right-0 z-[111] hidden w-full max-w-2xl overflow-y-auto bg-white shadow-2xl">
     <div class="sticky top-0 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
         <div>
-            <h3 class="text-lg font-semibold text-slate-900">Schedule Task</h3>
-            <p class="text-sm text-slate-500">Edit or create task without Bootstrap modal dependency.</p>
+            <h3 class="text-lg font-semibold text-slate-900">{{ __('Schedule Task') }}</h3>
+            <p class="text-sm text-slate-500">{{ __('Edit or create task without Bootstrap modal dependency.') }}</p>
         </div>
         <button type="button" onclick="window.closeTaskEditor()" class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700">
-            <span class="sr-only">Close</span>
+            <span class="sr-only">{{ __('Close') }}</span>
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 6 6 18"/>
                 <path d="m6 6 12 12"/>
@@ -15,7 +15,7 @@
     </div>
     <div class="p-6">
         <div id="tasks_edit_box" class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-            Loading form...
+            {{ __('Loading form...') }}
         </div>
     </div>
 </div>
@@ -36,7 +36,7 @@
             overlay.classList.add('hidden');
             panel.classList.add('hidden');
             document.body.classList.remove('overflow-hidden');
-            box.innerHTML = '<div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">Loading form...</div>';
+            box.innerHTML = `<div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">${@json(__('Loading form...'))}</div>`;
         }
 
         function toggleTaskSections(selectValue) {
@@ -117,19 +117,19 @@
                 });
 
                 if (!response.ok) {
-                    notify('failed', 'Failed to save task.');
+                    notify('failed', @js(__('Failed to save task.')));
                     return;
                 }
 
                 const payload = await response.json();
                 if (!payload.success) {
-                    notify('failed', payload.msg || 'Failed to save task.');
+                    notify('failed', payload.msg || @js(__('Failed to save task.')));
                     return;
                 }
 
                 closePanel();
                 window.dispatchEvent(new CustomEvent('task-saved'));
-                notify('success', 'Task saved successfully.');
+                notify('success', @js(__('Task saved successfully.')));
             }, { once: true });
         }
 
@@ -143,12 +143,12 @@
                 });
                 const payload = await response.json();
                 if (!payload.success) {
-                    throw new Error('Failed to load task form.');
+                    throw new Error(@js(__('Failed to load task form.')));
                 }
                 box.innerHTML = payload.content;
                 await bindForm();
             } catch (error) {
-                box.innerHTML = '<div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">Failed to load task form.</div>';
+                box.innerHTML = `<div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">${@json(__('Failed to load task form.'))}</div>`;
             }
         }
 

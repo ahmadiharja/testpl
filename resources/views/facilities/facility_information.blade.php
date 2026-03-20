@@ -1,40 +1,40 @@
 @include('common.navigations.header')
 
 <div class="flex flex-col gap-6 pb-10" x-data="facilityPage()">
-    <x-page-header title="Facility Information" description="Update the facility and manage its workgroups from one place." icon="building-2">
+    <x-page-header title="{{ __('Facility Information') }}" description="{{ __('Update the facility and manage its workgroups from one place.') }}" icon="building-2">
         <x-slot name="actions">
             <button type="button" @click="openWorkgroupForm('0')" class="rounded-xl bg-sky-500 px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-sky-400">
-                Add Workgroup
+                {{ __('Add Workgroup') }}
             </button>
         </x-slot>
     </x-page-header>
 
-    <x-bento-card title="Facility Details" dot-color="sky">
+    <x-bento-card title="{{ __('Facility Details') }}" dot-color="sky">
         <div class="p-6">
             <form method="post" action="" class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
                 {{ csrf_field() }}
                 <input type="hidden" name="facility_update" value="{{ $item->id }}">
 
                 <div>
-                    <label class="mb-2 block text-[12px] font-semibold text-gray-500">Facility Name</label>
+                    <label class="mb-2 block text-[12px] font-semibold text-gray-500">{{ __('Facility Name') }}</label>
                     <input type="text" name="name" value="{{ $item->name }}" required class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-[13px] text-gray-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                 </div>
                 <div>
-                    <label class="mb-2 block text-[12px] font-semibold text-gray-500">Description</label>
+                    <label class="mb-2 block text-[12px] font-semibold text-gray-500">{{ __('Description') }}</label>
                     <input type="text" name="description" value="{{ $item->description }}" class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-[13px] text-gray-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                 </div>
                 <div>
-                    <label class="mb-2 block text-[12px] font-semibold text-gray-500">Location</label>
+                    <label class="mb-2 block text-[12px] font-semibold text-gray-500">{{ __('Location') }}</label>
                     <input type="text" name="location" value="{{ $item->location }}" class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-[13px] text-gray-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                 </div>
                 <div>
-                    <label class="mb-2 block text-[12px] font-semibold text-gray-500">Timezone</label>
-                    {!! Timezone::selectForm($item->timezone, '-- Select a timezone --', ['required' => 'true', 'class' => 'h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-[13px] text-gray-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20', 'name' => 'timezone', 'id' => 'timezone']) !!}
-                    <p class="mt-2 text-[12px] text-gray-500">Current time: {{ $item->currentTime }}</p>
+                    <label class="mb-2 block text-[12px] font-semibold text-gray-500">{{ __('Timezone') }}</label>
+                    {!! Timezone::selectForm($item->timezone, __('-- Select a timezone --'), ['required' => 'true', 'class' => 'h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-[13px] text-gray-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20', 'name' => 'timezone', 'id' => 'timezone']) !!}
+                    <p class="mt-2 text-[12px] text-gray-500">{{ __('Current time:') }} {{ $item->currentTime }}</p>
                 </div>
                 <div class="md:col-span-2 xl:col-span-4 flex justify-end">
                     <button type="submit" class="rounded-xl bg-sky-500 px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-sky-400">
-                        Update Facility
+                        {{ __('Update Facility') }}
                     </button>
                 </div>
             </form>
@@ -46,10 +46,10 @@
             <div class="mb-4 flex items-center justify-between gap-4">
                 <div>
                     <h3 class="text-[15px] font-bold text-gray-900" x-text="workgroupPanelTitle"></h3>
-                    <p class="text-[12px] text-gray-500">The form posts to the current Laravel workflow.</p>
+                    <p class="text-[12px] text-gray-500">{{ __('The form posts to the current Laravel workflow.') }}</p>
                 </div>
                 <button type="button" @click="closeWorkgroupPanel()" class="rounded-xl bg-black/5 px-3 py-2 text-[12px] font-semibold text-gray-600 transition hover:bg-black/10">
-                    Close
+                    {{ __('Close') }}
                 </button>
             </div>
             <div x-html="workgroupFormHtml"></div>
@@ -75,7 +75,7 @@ function facilityPage() {
             const data = await response.json();
             if (!data.success) return;
 
-            this.workgroupPanelTitle = id === '0' ? 'Add Workgroup' : 'Edit Workgroup';
+            this.workgroupPanelTitle = id === '0' ? @js(__('Add Workgroup')) : @js(__('Edit Workgroup'));
             this.workgroupFormHtml = data.content;
             this.showWorkgroupPanel = true;
         },

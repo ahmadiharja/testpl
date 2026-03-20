@@ -29,12 +29,12 @@
                 <i data-lucide="{{ $icon }}" class="h-5 w-5"></i>
             </div>
             <div class="min-w-0">
-                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Admin Workspace</p>
-                <h2 class="truncate text-2xl font-bold tracking-tight" :class="theme === 'perfectlum' ? 'text-slate-900' : 'text-white'">{{ $title }}</h2>
+                <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">{{ __('Admin Workspace') }}</p>
+                <h2 class="truncate text-2xl font-bold tracking-tight" :class="theme === 'perfectlum' ? 'text-slate-900' : 'text-white'">{{ __($title) }}</h2>
             </div>
         </div>
         @if($description)
-        <p class="mt-3 max-w-3xl text-[13px] leading-6" :class="theme === 'perfectlum' ? 'text-slate-500' : 'text-slate-300/80'">{{ $description }}</p>
+        <p class="mt-3 max-w-3xl text-[13px] leading-6" :class="theme === 'perfectlum' ? 'text-slate-500' : 'text-slate-300/80'">{{ __($description) }}</p>
         @endif
     </div>
 

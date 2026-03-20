@@ -10,10 +10,10 @@
                     <i data-lucide="monitor-play" class="h-6 w-6"></i>
                 </div>
                 <div class="space-y-2">
-                    <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Admin Workspace</p>
-                    <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Calibrate Display</h1>
+                    <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{{ __('Admin Workspace') }}</p>
+                    <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">{{ __('Calibrate Display') }}</h1>
                     <p class="max-w-3xl text-sm text-slate-500">
-                        Run immediate calibration tasks for selected displays and review the most recently created calibration jobs.
+                        {{ __('Run immediate calibration tasks for selected displays and review the most recently created calibration jobs.') }}
                     </p>
                 </div>
             </div>
@@ -23,7 +23,7 @@
                     <button @click="openDownload = !openDownload" @click.away="openDownload = false"
                             class="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
                         <i data-lucide="download" class="h-4 w-4"></i>
-                        Export
+                        {{ __('Export') }}
                         <i data-lucide="chevron-down" class="h-4 w-4"></i>
                     </button>
                     <div x-show="openDownload" x-cloak
@@ -32,12 +32,12 @@
                         <a href="{{ url('reports/display-calibration?export_type=excel') }}" target="_blank"
                            class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
                             <i data-lucide="file-spreadsheet" class="h-4 w-4 text-emerald-500"></i>
-                            Download Excel
+                            {{ __('Download Excel') }}
                         </a>
                         <a href="{{ url('reports/display-calibration?export_type=pdf') }}" target="_blank"
                            class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
                             <i data-lucide="file-text" class="h-4 w-4 text-rose-500"></i>
-                            Download PDF
+                            {{ __('Download PDF') }}
                         </a>
                     </div>
                 </div>
@@ -51,9 +51,9 @@
     {{-- ── NEW CALIBRATION TASK FORM ── --}}
     <div class="mb-6 rounded-[1.75rem] border border-slate-200 bg-slate-50/70 p-5 shadow-[0_12px_34px_rgba(15,23,42,0.05)]">
     <div class="mb-4">
-        <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Create Calibration</p>
-        <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">Run calibration by hierarchy</h2>
-        <p class="mt-1 text-sm text-slate-500">Pick a facility, workgroup, workstation, and one or more displays to create a new calibration task.</p>
+        <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{{ __('Create Calibration') }}</p>
+        <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">{{ __('Run calibration by hierarchy') }}</h2>
+        <p class="mt-1 text-sm text-slate-500">{{ __('Pick a facility, workgroup, workstation, and one or more displays to create a new calibration task.') }}</p>
     </div>
     <form method="post" action="" class="w-full">
         {{csrf_field()}}
@@ -64,10 +64,10 @@
             
             {{-- 1. Facility --}}
             <div class="flex flex-col gap-1.5">
-                <label class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Facility</label>
+                <label class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Facility') }}</label>
                 <div class="relative">
                     <select name="facility" id="calibrate-facility-native" required class="hidden" onchange="fetch_workgroups(this);">
-                        <option value="">Please select</option>
+                        <option value="">{{ __('Please select') }}</option>
                         @if (!$user->hasRole('super'))
                             @foreach($facilities as $fc)
                             <option value="{{$fc['id']}}">{{$fc['name']}}</option>
@@ -80,11 +80,11 @@
                     </select>
                     <button type="button" id="calibrate-facility-trigger"
                             class="flex w-full h-[42px] items-center justify-between rounded-lg border border-gray-200 bg-white px-4 text-[13px] text-gray-700 shadow-sm transition-all hover:border-gray-300 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 cursor-pointer">
-                        <span id="calibrate-facility-label" class="truncate">Please select</span>
+                        <span id="calibrate-facility-label" class="truncate">{{ __('Please select') }}</span>
                         <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
                     </button>
                     <div id="calibrate-facility-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-2xl border border-gray-200 bg-white p-3 shadow-xl">
-                        <input id="calibrate-facility-search" type="text" placeholder="Search facilities..." class="mb-2 h-10 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                        <input id="calibrate-facility-search" type="text" placeholder="{{ __('Search facilities...') }}" class="mb-2 h-10 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         <p id="calibrate-facility-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="calibrate-facility-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                     </div>
@@ -93,18 +93,18 @@
 
             {{-- 2. Workgroup --}}
             <div class="flex flex-col gap-1.5">
-                <label class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Workgroup</label>
+                <label class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Workgroup') }}</label>
                 <div class="relative">
                     <select name="workgroup" id="workgroups_field" onchange="fetch_workstations(this)" class="hidden">
-                        <option value="">Select Facility first</option>
+                        <option value="">{{ __('Select Facility first') }}</option>
                     </select>
                     <button type="button" id="calibrate-workgroup-trigger"
                             class="flex w-full h-[42px] items-center justify-between rounded-lg border border-gray-200 bg-white px-4 text-[13px] text-gray-700 shadow-sm transition-all hover:border-gray-300 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400">
-                        <span id="calibrate-workgroup-label" class="truncate">Select Facility first</span>
+                        <span id="calibrate-workgroup-label" class="truncate">{{ __('Select Facility first') }}</span>
                         <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
                     </button>
                     <div id="calibrate-workgroup-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-2xl border border-gray-200 bg-white p-3 shadow-xl">
-                        <input id="calibrate-workgroup-search" type="text" placeholder="Search workgroups..." class="mb-2 h-10 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                        <input id="calibrate-workgroup-search" type="text" placeholder="{{ __('Search workgroups...') }}" class="mb-2 h-10 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         <p id="calibrate-workgroup-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="calibrate-workgroup-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                     </div>
@@ -113,18 +113,18 @@
 
             {{-- 3. Workstation --}}
             <div class="flex flex-col gap-1.5">
-                <label class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Workstation</label>
+                <label class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Workstation') }}</label>
                 <div class="relative">
                     <select name="workstation" id="workstations_field" onchange="fetch_displays_checklist(this)" class="hidden">
-                        <option value="">Select Workgroup first</option>
+                        <option value="">{{ __('Select Workgroup first') }}</option>
                     </select>
                     <button type="button" id="calibrate-workstation-trigger"
                             class="flex w-full h-[42px] items-center justify-between rounded-lg border border-gray-200 bg-white px-4 text-[13px] text-gray-700 shadow-sm transition-all hover:border-gray-300 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400">
-                        <span id="calibrate-workstation-label" class="truncate">Select Workgroup first</span>
+                        <span id="calibrate-workstation-label" class="truncate">{{ __('Select Workgroup first') }}</span>
                         <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
                     </button>
                     <div id="calibrate-workstation-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-2xl border border-gray-200 bg-white p-3 shadow-xl">
-                        <input id="calibrate-workstation-search" type="text" placeholder="Search workstations..." class="mb-2 h-10 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                        <input id="calibrate-workstation-search" type="text" placeholder="{{ __('Search workstations...') }}" class="mb-2 h-10 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         <p id="calibrate-workstation-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="calibrate-workstation-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                     </div>
@@ -133,19 +133,19 @@
 
             {{-- 4. Display (Checklist Dropdown) --}}
             <div class="flex flex-col gap-1.5 relative">
-                <label class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Displays</label>
+                <label class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Displays') }}</label>
                 <button type="button" id="displays-dropdown"
                         class="w-full h-[42px] px-4 flex items-center justify-between rounded-lg text-[13px] outline-none border border-gray-200 bg-white text-gray-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 shadow-sm transition-all cursor-pointer">
-                    <span id="calibrate-displays-label">Select Workstation first</span>
+                    <span id="calibrate-displays-label">{{ __('Select Workstation first') }}</span>
                     <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
                 </button>
                 <div class="absolute z-50 top-[66px] left-0 w-full bg-white border border-gray-200 rounded-2xl shadow-xl hidden"
                      id="displays_field">
                     <div class="p-3 border-b border-gray-100">
-                        <input id="calibrate-displays-search" type="text" placeholder="Search displays..." class="h-10 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                        <input id="calibrate-displays-search" type="text" placeholder="{{ __('Search displays...') }}" class="h-10 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                     </div>
                     <div id="calibrate-displays-options" class="max-h-60 overflow-y-auto">
-                        <div class="px-4 py-3 text-[13px] text-gray-500">Select Workstation first</div>
+                        <div class="px-4 py-3 text-[13px] text-gray-500">{{ __('Select Workstation first') }}</div>
                     </div>
                 </div>
             </div>
@@ -154,7 +154,7 @@
                 <button type="submit" id="submit_btn"
                         class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-sky-500 px-6 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(14,165,233,0.24)] transition hover:bg-sky-400">
                     <i data-lucide="play" class="h-4 w-4"></i>
-                    Calibrate
+                    {{ __('Calibrate') }}
                 </button>
             </div>
         </div>
@@ -164,14 +164,14 @@
 
     <div class="mb-4 flex items-center justify-between gap-4">
         <div>
-            <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Calibration Tasks</p>
-            <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">Recent calibration jobs</h2>
-            <p class="mt-1 text-sm text-slate-500">Newest created calibration tasks appear first so recent actions are easier to verify.</p>
+            <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{{ __('Calibration Tasks') }}</p>
+            <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">{{ __('Recent calibration jobs') }}</h2>
+            <p class="mt-1 text-sm text-slate-500">{{ __('Newest created calibration tasks appear first so recent actions are easier to verify.') }}</p>
         </div>
 
         <div class="relative w-full max-w-[320px]">
             <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-            <input type="text" id="gridjs-custom-search" placeholder="Search" 
+            <input type="text" id="gridjs-custom-search" placeholder="{{ __('Search') }}" 
                    class="w-full h-[42px] pl-10 pr-4 rounded-full text-[13px] outline-none border border-gray-200 bg-white text-gray-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 shadow-sm transition-all placeholder-gray-400">
         </div>
     </div>
@@ -214,22 +214,51 @@
                     <div class="mx-auto flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-red-50 mb-4">
                         <i data-lucide="trash-2" class="h-6 w-6 text-red-500"></i>
                     </div>
-                    <h3 class="text-base font-semibold leading-6 text-gray-900">Delete Task</h3>
+                    <h3 class="text-base font-semibold leading-6 text-gray-900">{{ __('Delete Task') }}</h3>
                     <div class="mt-2 text-sm text-gray-500">
-                        This action cannot be undone. Are you sure?
+                        {{ __('This action cannot be undone. Are you sure?') }}
                     </div>
                 </div>
                 
                 <div class="bg-gray-50 px-4 py-3 flex items-center justify-center gap-3 sm:px-6">
-                    <button type="button" @click="open = false" class="inline-flex w-full justify-center rounded-full bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:w-auto min-w-[100px]">Cancel</button>
-                    <button type="button" @click="confirmDelete(taskId); open = false;" class="inline-flex w-full justify-center rounded-full bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:w-auto min-w-[100px]">Delete</button>
+                    <button type="button" @click="open = false" class="inline-flex w-full justify-center rounded-full bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:w-auto min-w-[100px]">{{ __('Cancel') }}</button>
+                    <button type="button" @click="confirmDelete(taskId); open = false;" class="inline-flex w-full justify-center rounded-full bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:w-auto min-w-[100px]">{{ __('Delete') }}</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+@php
+    $calibrationText = [
+        'display' => __('Display'),
+        'workstation' => __('Workstation'),
+        'workgroup' => __('Workgroup'),
+        'facility' => __('Facility'),
+        'taskType' => __('Task Type'),
+        'scheduleType' => __('Schedule Type'),
+        'dueDate' => __('Due Date'),
+        'actions' => __('Actions'),
+        'searchCalibrationTasks' => __('Search calibration tasks...'),
+        'previous' => __('Previous'),
+        'next' => __('Next'),
+        'showing' => __('Showing'),
+        'results' => __('results'),
+        'loading' => __('Loading...'),
+        'noMatchingRecordsFound' => __('No matching records found'),
+        'unableToLoadData' => __('Unable to load data'),
+        'selectWorkstation' => __('Select Workstation'),
+        'selectWorkgroupFirst' => __('Select Workgroup first'),
+        'selectWorkstationFirst' => __('Select Workstation first'),
+        'pleaseSelect' => __('Please select'),
+        'noOptionsFound' => __('No options found'),
+        'noWorkstationsFound' => __('No workstations found'),
+        'deletionFailed' => __('Deletion failed'),
+        'taskDeletedSuccessfully' => __('Task deleted successfully'),
+    ];
+@endphp
 <script>
+    const calibrationText = @json($calibrationText);
     const calibrateHierarchyState = {
         facilitySearch: '',
         workgroupSearch: '',
@@ -298,7 +327,7 @@
         document.querySelectorAll('[data-calibration-task-menu]').forEach((menu) => menu.classList.add('hidden'));
     }
 
-    function renderCalibrateNativeOptions(selectId, optionsId, hintId, query, onPick, emptyText = 'No options found') {
+    function renderCalibrateNativeOptions(selectId, optionsId, hintId, query, onPick, emptyText = calibrationText.noOptionsFound) {
         const items = parseNativeSelectOptions(selectId).filter((item, index) => index > 0);
         const filtered = items.filter((item) => item.label.toLowerCase().includes((query || '').trim().toLowerCase()));
         const hint = document.getElementById(hintId);
@@ -509,10 +538,10 @@
             renderCalibrateNativeOptions('workstations_field', 'calibrate-workstation-options', 'calibrate-workstation-hint', calibrateHierarchyState.workstationSearch, (value) => {
                 const select = document.getElementById('workstations_field');
                 select.value = value;
-                document.getElementById('calibrate-workstation-label').textContent = select.options[select.selectedIndex]?.textContent || 'Select Workstation';
+                document.getElementById('calibrate-workstation-label').textContent = select.options[select.selectedIndex]?.textContent || calibrationText.selectWorkstation;
                 fetch_displays_checklist(select);
                 closeCalibrateDropdowns();
-            }, 'No workstations found');
+            }, calibrationText.noWorkstationsFound);
         });
         document.getElementById('calibrate-displays-search')?.addEventListener('input', filterCalibrateDisplays);
 
@@ -544,35 +573,35 @@
         window.grid = Perfectlum.createGrid('tasks-grid', {
             columns: [
                 {
-                    name: 'Display',
+                    name: calibrationText.display,
                     formatter: (cell) => gridjs.html(`<a href="#" class="text-[#0ea5e9] hover:underline">${Perfectlum.escapeHtml(cell)}</a>`)
                 },
                 {
-                    name: 'Workstation',
+                    name: calibrationText.workstation,
                     formatter: (cell) => gridjs.html(`<a href="#" class="text-[#0ea5e9] hover:underline">${Perfectlum.escapeHtml(cell)}</a>`)
                 },
                 {
-                    name: 'Workgroup',
+                    name: calibrationText.workgroup,
                     formatter: (cell) => gridjs.html(`<a href="#" class="text-[#0ea5e9] hover:underline">${Perfectlum.escapeHtml(cell)}</a>`)
                 },
                 {
-                    name: 'Facility',
+                    name: calibrationText.facility,
                     formatter: (cell) => gridjs.html(`<a href="#" class="text-[#0ea5e9] hover:underline">${Perfectlum.escapeHtml(cell)}</a>`)
                 },
                 {
-                    name: 'Task Type',
+                    name: calibrationText.taskType,
                     formatter: (cell) => gridjs.html(`<span class="text-gray-600">${Perfectlum.escapeHtml(cell)}</span>`)
                 },
                 {
-                    name: 'Schedule Type',
+                    name: calibrationText.scheduleType,
                     formatter: (cell) => gridjs.html(`<span class="text-gray-600">${Perfectlum.escapeHtml(cell)}</span>`)
                 },
                 {
-                    name: 'Due Date',
+                    name: calibrationText.dueDate,
                     formatter: (cell) => gridjs.html(`<span class="text-gray-600">${Perfectlum.escapeHtml(cell)}</span>`)
                 },
                 {
-                    name: 'Actions',
+                    name: calibrationText.actions,
                     width: '112px',
                     sort: false,
                     formatter: (_, row) => gridjs.html(renderCalibrationTaskActions(row.cells[8].data))
@@ -606,7 +635,7 @@
                 handle: (res) => {
                     if (res.status === 404) return {data: []};
                     if (res.ok) return res.json();
-                    throw Error('network error');
+                    throw Error(calibrationText.unableToLoadData);
                 }
             },
             pagination: {
@@ -632,7 +661,18 @@
                 container: 'group',
                 pagination: 'flex justify-between items-center text-xs font-medium text-gray-500'
             },
-            language: { search: { placeholder: 'Search calibration tasks...' } }
+            language: {
+                search: { placeholder: calibrationText.searchCalibrationTasks },
+                pagination: {
+                    previous: calibrationText.previous,
+                    next: calibrationText.next,
+                    showing: calibrationText.showing,
+                    results: () => calibrationText.results,
+                },
+                loading: calibrationText.loading,
+                noRecordsFound: calibrationText.noMatchingRecordsFound,
+                error: calibrationText.unableToLoadData,
+            }
         });
 
         // Hide default gridjs search completely since we are using custom one 
@@ -679,10 +719,10 @@
             .then((res) => res.json())
             .then((data) => {
                 if (!data.success) {
-                    notify('failed', data.msg || 'Deletion failed');
+                    notify('failed', data.msg || calibrationText.deletionFailed);
                 } else {
                     window.grid.forceRender();
-                    notify('success', data.msg || 'Task deleted successfully');
+                    notify('success', data.msg || calibrationText.taskDeletedSuccessfully);
                 }
             });
     }

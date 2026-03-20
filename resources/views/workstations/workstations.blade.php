@@ -4,10 +4,90 @@
     $role = session('role');
     $canManageWorkstations = in_array($role, ['super', 'admin'], true);
     $initialWorkstationStatus = in_array(request('type'), ['ok', 'failed'], true) ? request('type') : '';
+    $workstationText = [
+        'allFacilities' => __('All facilities'),
+        'allWorkgroups' => __('All workgroups'),
+        'selectFacility' => __('Select facility'),
+        'selectWorkgroup' => __('Select workgroup'),
+        'option' => __('option'),
+        'options' => __('options'),
+        'noOptionsFound' => __('No options found'),
+        'display' => __('display'),
+        'displays' => __('displays'),
+        'needAttention' => __('need attention'),
+        'name' => __('Name'),
+        'workgroup' => __('Workgroup'),
+        'facility' => __('Facility'),
+        'sleepTime' => __('Sleep Time'),
+        'displaysLabel' => __('Displays'),
+        'lastConnected' => __('Last Connected'),
+        'actions' => __('Actions'),
+        'searchWorkstations' => __('Search workstations...'),
+        'searchFacilities' => __('Search facilities...'),
+        'searchWorkgroups' => __('Search workgroups...'),
+        'previous' => __('Previous'),
+        'next' => __('Next'),
+        'showing' => __('Showing'),
+        'results' => __('results'),
+        'loading' => __('Loading...'),
+        'noMatchingRecordsFound' => __('No matching records found'),
+        'unableToLoadData' => __('Unable to load data'),
+        'saveChanges' => __('Save Changes'),
+        'saving' => __('Saving...'),
+        'updateWorkstationDetails' => __('Update workstation details'),
+        'adjustWorkstationTable' => __('Adjust workstation information and settings without leaving the table.'),
+        'unableToLoadWorkstationSettings' => __('Unable to load workstation settings.'),
+        'unableToSaveWorkstation' => __('Unable to save workstation.'),
+        'deleteWorkstation' => __('Delete Workstation'),
+        'deleting' => __('Deleting...'),
+        'unableToDeleteWorkstation' => __('Unable to delete workstation.'),
+        'application' => __('Application'),
+        'displayCalibration' => __('Display Calibration'),
+        'qualityAssurance' => __('Quality Assurance'),
+        'location' => __('Location'),
+        'workstationName' => __('Workstation Name'),
+        'unitsOfLength' => __('Units of Length'),
+        'unitsOfLuminance' => __('Units of Luminance'),
+        'veilingLuminance' => __('Veiling Luminance'),
+        'ambientConditionsStable' => __('Ambient Conditions Stable'),
+        'energySaveStart' => __('Energy Save Start'),
+        'energySaveEnd' => __('Energy Save End'),
+        'selectLengthUnit' => __('Select length unit'),
+        'selectLuminanceUnit' => __('Select luminance unit'),
+        'selectValue' => __('Select value'),
+        'onlySuperUsersCanChangeWorkgroup' => __('Only super users can change workgroup.'),
+        'enableDisplayEnergySaveMode' => __('Enable Display Energy Save Mode'),
+        'preset' => __('Preset'),
+        'selectPreset' => __('Select preset'),
+        'luminanceResponse' => __('Luminance Response'),
+        'selectResponse' => __('Select response'),
+        'colorTemperature' => __('Color Temperature'),
+        'selectTemperature' => __('Select temperature'),
+        'maxLuminance' => __('Max Luminance'),
+        'selectMaxLuminance' => __('Select max luminance'),
+        'blackLevel' => __('Black Level'),
+        'gamut' => __('Gamut'),
+        'selectGamut' => __('Select gamut'),
+        'createDisplayIccProfile' => __('Create Display ICC Profile'),
+        'regulation' => __('Regulation'),
+        'selectRegulation' => __('Select regulation'),
+        'displayCategory' => __('Display Category'),
+        'selectCategory' => __('Select category'),
+        'bodyRegion' => __('Body Region'),
+        'startDailyTestsAutomatically' => __('Start daily tests automatically'),
+        'facilityLabel' => __('Facility Label'),
+        'department' => __('Department'),
+        'room' => __('Room'),
+        'responsiblePerson' => __('Responsible Person'),
+        'address' => __('Address'),
+        'city' => __('City'),
+        'email' => __('Email'),
+        'phoneNumber' => __('Phone Number'),
+    ];
 @endphp
 
 <div class="flex flex-col gap-6 pb-8">
-    <x-page-header title="All Workstations" description="Manage physical hardware clusters connecting your remote displays." icon="monitor-speaker">
+    <x-page-header title="{{ __('All Workstations') }}" description="{{ __('Manage physical hardware clusters connecting your remote displays.') }}" icon="monitor-speaker">
         <x-slot name="actions">
             <x-export-dropdown
                 excel-url="{{ url('reports/workstations?export_type=excel') }}"
@@ -18,13 +98,13 @@
     <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_-32px_rgba(15,23,42,0.18)]">
         <div class="grid gap-4 lg:grid-cols-[minmax(0,240px)_minmax(0,240px)_minmax(0,280px)_1fr]">
             <div class="space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Facility</label>
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Facility') }}</label>
                 <div class="relative">
                     <button
                         id="facility-filter-trigger"
                         type="button"
                         class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
-                        <span id="facility-filter-label" class="truncate">All facilities</span>
+                        <span id="facility-filter-label" class="truncate">{{ __('All facilities') }}</span>
                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                     </button>
 
@@ -34,7 +114,7 @@
                         <input
                             id="facility-filter-search"
                             type="text"
-                            placeholder="Search facilities..."
+                            placeholder="{{ __('Search facilities...') }}"
                             class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         <p id="facility-filter-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="facility-filter-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
@@ -43,13 +123,13 @@
             </div>
 
             <div class="space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Workgroup</label>
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Workgroup') }}</label>
                 <div class="relative">
                     <button
                         id="workgroup-filter-trigger"
                         type="button"
                         class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
-                        <span id="workgroup-filter-label" class="truncate">All workgroups</span>
+                        <span id="workgroup-filter-label" class="truncate">{{ __('All workgroups') }}</span>
                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                     </button>
 
@@ -59,7 +139,7 @@
                         <input
                             id="workgroup-filter-search"
                             type="text"
-                            placeholder="Search workgroups..."
+                            placeholder="{{ __('Search workgroups...') }}"
                             class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         <p id="workgroup-filter-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="workgroup-filter-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
@@ -68,7 +148,7 @@
             </div>
 
             <div class="space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Status</label>
+                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Status') }}</label>
                 <div class="grid h-12 grid-cols-3 rounded-2xl border border-slate-200 bg-white p-1">
                     <button
                         id="workstation-status-all"
@@ -77,7 +157,7 @@
                         class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
                         <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <i data-lucide="layers-3" class="h-4 w-4"></i>
-                            <span>All</span>
+                            <span>{{ __('All') }}</span>
                         </span>
                     </button>
                     <button
@@ -87,7 +167,7 @@
                         class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
                         <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <i data-lucide="badge-check" class="h-4 w-4"></i>
-                            <span>OK</span>
+                            <span>{{ __('OK') }}</span>
                         </span>
                     </button>
                     <button
@@ -97,7 +177,7 @@
                         class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
                         <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <i data-lucide="triangle-alert" class="h-4 w-4"></i>
-                            <span>Not OK</span>
+                            <span>{{ __('Not OK') }}</span>
                         </span>
                     </button>
                 </div>
@@ -109,7 +189,7 @@
                     type="button"
                     class="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900">
                     <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
-                    Reset Filters
+                    {{ __('Reset Filters') }}
                 </button>
             </div>
         </div>
@@ -128,14 +208,14 @@
                 type="button"
                 class="flex w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-sky-50 hover:text-sky-700">
                 <i data-lucide="pencil-line" class="h-4 w-4"></i>
-                Edit Workstation
+                {{ __('Edit Workstation') }}
             </button>
             <button
                 id="workstation-action-delete"
                 type="button"
                 class="flex w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
                 <i data-lucide="trash-2" class="h-4 w-4"></i>
-                Delete Workstation
+                {{ __('Delete Workstation') }}
             </button>
         @endif
     </div>
@@ -145,9 +225,9 @@
     <div class="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]">
         <div class="flex items-start justify-between border-b border-slate-200 px-6 py-5">
             <div>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Edit Workstation</p>
-                <h3 id="workstation-edit-title" class="mt-2 text-2xl font-semibold text-slate-900">Update workstation details</h3>
-                <p id="workstation-edit-subtitle" class="mt-2 text-sm text-slate-500">Adjust workstation information and settings without leaving the table.</p>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Edit Workstation') }}</p>
+                <h3 id="workstation-edit-title" class="mt-2 text-2xl font-semibold text-slate-900">{{ __('Update workstation details') }}</h3>
+                <p id="workstation-edit-subtitle" class="mt-2 text-sm text-slate-500">{{ __('Adjust workstation information and settings without leaving the table.') }}</p>
             </div>
             <button id="workstation-edit-close" type="button" class="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700">
                 <i data-lucide="x" class="h-5 w-5"></i>
@@ -160,7 +240,7 @@
 
         <div class="min-h-0 flex-1 overflow-y-auto px-6 py-6">
             <div id="workstation-edit-loading" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-                Loading workstation settings...
+                {{ __('Loading workstation settings...') }}
             </div>
             <div id="workstation-edit-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700"></div>
             <div id="workstation-edit-form" class="hidden"></div>
@@ -171,14 +251,14 @@
                 id="workstation-edit-cancel"
                 type="button"
                 class="inline-flex h-11 items-center rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
-                Cancel
+                {{ __('Cancel') }}
             </button>
             <button
                 id="workstation-edit-save"
                 type="button"
                 class="inline-flex h-11 items-center gap-2 rounded-2xl bg-sky-500 px-4 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60">
                 <i data-lucide="save" class="h-4 w-4"></i>
-                <span id="workstation-edit-save-label">Save Changes</span>
+                <span id="workstation-edit-save-label">{{ __('Save Changes') }}</span>
             </button>
         </div>
     </div>
@@ -187,11 +267,11 @@
 <div id="workstation-delete-modal" class="fixed inset-0 z-[1300] hidden items-center justify-center bg-slate-950/40 p-6">
     <div class="w-full max-w-lg rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]">
         <div class="border-b border-slate-200 px-6 py-5">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-rose-400">Delete Workstation</p>
-            <h3 class="mt-2 text-2xl font-semibold text-slate-900">Delete this workstation?</h3>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-rose-400">{{ __('Delete Workstation') }}</p>
+            <h3 class="mt-2 text-2xl font-semibold text-slate-900">{{ __('Delete this workstation?') }}</h3>
             <p class="mt-3 text-sm text-slate-500">
-                This action will permanently remove <span id="workstation-delete-name" class="font-semibold text-slate-700"></span>.
-                Workstations that still have displays attached cannot be deleted.
+                {{ __('This action will permanently remove') }} <span id="workstation-delete-name" class="font-semibold text-slate-700"></span>.
+                {{ __('Workstations that still have displays attached cannot be deleted.') }}
             </p>
         </div>
 
@@ -200,13 +280,13 @@
                 id="workstation-delete-cancel"
                 type="button"
                 class="inline-flex h-11 items-center rounded-2xl border border-slate-200 px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
-                Cancel
+                {{ __('Cancel') }}
             </button>
             <button
                 id="workstation-delete-confirm"
                 type="button"
                 class="inline-flex h-11 items-center rounded-2xl bg-rose-500 px-4 text-sm font-semibold text-white transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:opacity-60">
-                Delete Workstation
+                {{ __('Delete Workstation') }}
             </button>
         </div>
     </div>
@@ -215,6 +295,7 @@
 <script id="workstation-filters-data" type="application/json">@json($filters)</script>
 <script>
 (function () {
+    const text = @json($workstationText);
     const canManageWorkstations = @json($canManageWorkstations);
     let initialized = false;
     const state = {
@@ -401,11 +482,11 @@
         els.workgroupTrigger.disabled = !workgroups.length;
 
         els.facilityLabel.textContent = state.selectedFacilityId
-            ? findOptionLabel(facilities, state.selectedFacilityId, 'Select facility')
-            : 'All facilities';
+            ? findOptionLabel(facilities, state.selectedFacilityId, text.selectFacility)
+            : text.allFacilities;
         els.workgroupLabel.textContent = state.selectedWorkgroupId
-            ? findOptionLabel(workgroups, state.selectedWorkgroupId, 'Select workgroup')
-            : 'All workgroups';
+            ? findOptionLabel(workgroups, state.selectedWorkgroupId, text.selectWorkgroup)
+            : text.allWorkgroups;
 
         renderFacilityOptions();
         renderWorkgroupOptions();
@@ -440,12 +521,12 @@
         const query = state.facilitySearch.trim().toLowerCase();
         let options = facilities.filter((item) => item.name.toLowerCase().includes(query));
         if (state.config.canChooseFacility) {
-            options = [{ id: '', name: 'All facilities' }, ...options];
+            options = [{ id: '', name: text.allFacilities }, ...options];
         }
 
         els.facilityHint.textContent = options.length
-            ? `${options.length} option${options.length === 1 ? '' : 's'}`
-            : 'No options found';
+            ? `${options.length} ${options.length === 1 ? text.option : text.options}`
+            : text.noOptionsFound;
 
         els.facilityOptions.innerHTML = options.length
             ? options.map((item) => `
@@ -456,7 +537,7 @@
                     ${Perfectlum.escapeHtml(item.name)}
                 </button>
             `).join('')
-            : `<div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">No options found</div>`;
+            : `<div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">${Perfectlum.escapeHtml(text.noOptionsFound)}</div>`;
 
         els.facilityOptions.querySelectorAll('button[data-id]').forEach((button) => {
             button.addEventListener('click', () => {
@@ -476,11 +557,11 @@
     function renderWorkgroupOptions() {
         const workgroups = getWorkgroupOptions();
         const query = state.workgroupSearch.trim().toLowerCase();
-        const options = [{ id: '', name: 'All workgroups' }, ...workgroups.filter((item) => item.name.toLowerCase().includes(query))];
+        const options = [{ id: '', name: text.allWorkgroups }, ...workgroups.filter((item) => item.name.toLowerCase().includes(query))];
 
         els.workgroupHint.textContent = options.length
-            ? `${options.length} option${options.length === 1 ? '' : 's'}`
-            : 'No options found';
+            ? `${options.length} ${options.length === 1 ? text.option : text.options}`
+            : text.noOptionsFound;
 
         els.workgroupOptions.innerHTML = options.length
             ? options.map((item) => `
@@ -491,7 +572,7 @@
                     ${Perfectlum.escapeHtml(item.name)}
                 </button>
             `).join('')
-            : `<div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">No options found</div>`;
+            : `<div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">${Perfectlum.escapeHtml(text.noOptionsFound)}</div>`;
 
         els.workgroupOptions.querySelectorAll('button[data-id]').forEach((button) => {
             button.addEventListener('click', () => {
@@ -579,7 +660,7 @@
         state.grid = Perfectlum.createGrid(els.grid, {
             columns: [
                 {
-                    name: 'Name',
+                    name: text.name,
                     formatter: (c) => gridjs.html(`
                         <div class="flex items-center gap-2.5">
                             <span class="inline-flex h-2.5 w-2.5 shrink-0 rounded-full ${Number(c.failedDisplaysCount || 0) > 0 ? 'bg-rose-500 shadow-[0_0_0_4px_rgba(244,63,94,0.12)]' : (Number(c.okDisplaysCount || 0) > 0 ? 'bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]' : 'bg-slate-300 shadow-[0_0_0_4px_rgba(148,163,184,0.12)]')}"></span>
@@ -591,29 +672,29 @@
                                     ${Perfectlum.escapeHtml(c.name)}
                                 </button>
                                 ${Number(c.failedDisplaysCount || 0) > 0
-                                    ? `<p class="mt-1 text-[11px] font-medium text-rose-600">${Perfectlum.escapeHtml(String(c.failedDisplaysCount))} display${Number(c.failedDisplaysCount) === 1 ? '' : 's'} need attention</p>`
+                                    ? `<p class="mt-1 text-[11px] font-medium text-rose-600">${Perfectlum.escapeHtml(String(c.failedDisplaysCount))} ${Perfectlum.escapeHtml(Number(c.failedDisplaysCount) === 1 ? text.display : text.displays)} ${Perfectlum.escapeHtml(text.needAttention)}</p>`
                                     : ''}
                             </div>
                         </div>
                     `),
                 },
                 {
-                    name: 'Workgroup',
+                    name: text.workgroup,
                     formatter: (c) => !c.wgName || c.wgName === '-'
                         ? '-'
                         : gridjs.html(`<button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'workgroup',id:${c.wgId}}}))" class="cursor-pointer text-gray-600 transition hover:text-sky-500 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c.wgName)}</button>`),
                 },
                 {
-                    name: 'Facility',
+                    name: text.facility,
                     formatter: (c) => !c.facName || c.facName === '-'
                         ? '-'
                         : gridjs.html(`<button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'facility',id:${c.facId}}}))" class="cursor-pointer text-gray-600 transition hover:text-sky-500 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c.facName)}</button>`),
                 },
-                { name: 'Sleep Time', formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
-                { name: 'Displays', sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
-                { name: 'Last Connected', sort: false, formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
+                { name: text.sleepTime, formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
+                { name: text.displaysLabel, sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
+                { name: text.lastConnected, sort: false, formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
                 {
-                    name: 'Actions',
+                    name: text.actions,
                     sort: false,
                     width: '112px',
                     formatter: (c) => !canManageWorkstations ? '' : gridjs.html(`
@@ -654,7 +735,18 @@
                 },
             },
             sort: { multiColumn: false },
-            language: { search: { placeholder: 'Search workstations...' } },
+            language: {
+                search: { placeholder: text.searchWorkstations },
+                pagination: {
+                    previous: text.previous,
+                    next: text.next,
+                    showing: text.showing,
+                    results: () => text.results,
+                },
+                loading: text.loading,
+                noRecordsFound: text.noMatchingRecordsFound,
+                error: text.unableToLoadData,
+            },
         });
     }
 
@@ -779,10 +871,10 @@
 
     function renderEditTabs() {
         const tabs = [
-            { key: 'application', label: 'Application' },
-            { key: 'display-calibration', label: 'Display Calibration' },
-            { key: 'quality-assurance', label: 'Quality Assurance' },
-            { key: 'location', label: 'Location' },
+            { key: 'application', label: text.application },
+            { key: 'display-calibration', label: text.displayCalibration },
+            { key: 'quality-assurance', label: text.qualityAssurance },
+            { key: 'location', label: text.location },
         ];
 
         els.editTabs.innerHTML = tabs.map((tab) => `
@@ -814,52 +906,52 @@
                 <div class="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
                     <div class="mb-5 grid gap-5 md:grid-cols-2">
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Workstation Name</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.workstationName)}</span>
                             <input name="name" value="${inputValue('name', state.edit.meta?.name || '')}" type="text" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Workgroup</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.workgroup)}</span>
                             <select name="workgroup_id" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20" ${canChangeWorkgroup ? '' : 'disabled'}>
-                                ${selectOptionsHtml('workgroup_id', 'Select workgroup')}
+                                ${selectOptionsHtml('workgroup_id', text.selectWorkgroup)}
                             </select>
-                            ${canChangeWorkgroup ? '' : '<p class="text-xs text-slate-400">Only super users can change workgroup.</p>'}
+                            ${canChangeWorkgroup ? '' : `<p class="text-xs text-slate-400">${Perfectlum.escapeHtml(text.onlySuperUsersCanChangeWorkgroup)}</p>`}
                         </label>
                     </div>
                     <div class="grid gap-5 md:grid-cols-2">
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Units of Length</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.unitsOfLength)}</span>
                             <select name="units" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                                ${selectOptionsHtml('units', 'Select length unit')}
+                                ${selectOptionsHtml('units', text.selectLengthUnit)}
                             </select>
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Units of Luminance</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.unitsOfLuminance)}</span>
                             <select name="LumUnits" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                                ${selectOptionsHtml('LumUnits', 'Select luminance unit')}
+                                ${selectOptionsHtml('LumUnits', text.selectLuminanceUnit)}
                             </select>
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Veiling Luminance</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.veilingLuminance)}</span>
                             <input name="AmbientLight" value="${inputValue('AmbientLight')}" type="text" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Ambient Conditions Stable</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.ambientConditionsStable)}</span>
                             <select name="AmbientStable" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                                ${selectOptionsHtml('AmbientStable', 'Select value', ['no', 'yes', '0', '1'])}
+                                ${selectOptionsHtml('AmbientStable', text.selectValue, ['no', 'yes', '0', '1'])}
                             </select>
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Energy Save Start</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.energySaveStart)}</span>
                             <input name="StartEnergySaveMode" value="${inputValue('StartEnergySaveMode')}" type="text" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Energy Save End</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.energySaveEnd)}</span>
                             <input name="EndEnergySaveMode" value="${inputValue('EndEnergySaveMode')}" type="text" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                     </div>
                     <label class="mt-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-700">
                         <input name="PutDisplaysToEnergySaveMode" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500" ${checkedAttr('PutDisplaysToEnergySaveMode')}>
-                        Enable Display Energy Save Mode
+                        ${Perfectlum.escapeHtml(text.enableDisplayEnergySaveMode)}
                     </label>
                 </div>
             </div>
@@ -872,43 +964,43 @@
                 <div class="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
                     <div class="grid gap-5 md:grid-cols-2">
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Preset</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.preset)}</span>
                             <select name="CalibrationPresents" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                                ${selectOptionsHtml('CalibrationPresents', 'Select preset')}
+                                ${selectOptionsHtml('CalibrationPresents', text.selectPreset)}
                             </select>
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Luminance Response</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.luminanceResponse)}</span>
                             <select name="CalibrationType" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                                ${selectOptionsHtml('CalibrationType', 'Select response')}
+                                ${selectOptionsHtml('CalibrationType', text.selectResponse)}
                             </select>
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Color Temperature</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.colorTemperature)}</span>
                             <select name="ColorTemperatureAdjustment" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                                ${selectOptionsHtml('ColorTemperatureAdjustment_extcombo', 'Select temperature')}
+                                ${selectOptionsHtml('ColorTemperatureAdjustment_extcombo', text.selectTemperature)}
                             </select>
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Max Luminance</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.maxLuminance)}</span>
                             <select name="WhiteLevel" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                                ${selectOptionsHtml('WhiteLevel_u_extcombo', 'Select max luminance')}
+                                ${selectOptionsHtml('WhiteLevel_u_extcombo', text.selectMaxLuminance)}
                             </select>
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Black Level</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.blackLevel)}</span>
                             <input name="BlackLevel" value="${inputValue('BlackLevel')}" type="text" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Gamut</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.gamut)}</span>
                             <select name="gamut_name" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                                ${selectOptionsHtml('gamut_name', 'Select gamut')}
+                                ${selectOptionsHtml('gamut_name', text.selectGamut)}
                             </select>
                         </label>
                     </div>
                     <label class="mt-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-700">
                         <input name="CreateICCICMProfile" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500" ${checkedAttr('CreateICCICMProfile')}>
-                        Create Display ICC Profile
+                        ${Perfectlum.escapeHtml(text.createDisplayIccProfile)}
                     </label>
                 </div>
             </div>
@@ -921,25 +1013,25 @@
                 <div class="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
                     <div class="grid gap-5 md:grid-cols-2">
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Regulation</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.regulation)}</span>
                             <select id="workstation-edit-regulation" name="UsedRegulation" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                                ${selectOptionsHtml('UsedRegulation', 'Select regulation')}
+                                ${selectOptionsHtml('UsedRegulation', text.selectRegulation)}
                             </select>
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Display Category</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.displayCategory)}</span>
                             <select id="workstation-edit-classification" name="UsedClassification" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                                ${selectOptionsHtml('UsedClassification', 'Select category')}
+                                ${selectOptionsHtml('UsedClassification', text.selectCategory)}
                             </select>
                         </label>
                         <label class="space-y-2 md:col-span-2">
-                            <span class="text-sm font-semibold text-slate-700">Body Region</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.bodyRegion)}</span>
                             <input name="bodyRegion" value="${inputValue('bodyRegion')}" type="text" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                     </div>
                     <label class="mt-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-700">
                         <input name="AutoDailyTests" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500" ${checkedAttr('AutoDailyTests')}>
-                        Start daily tests automatically
+                        ${Perfectlum.escapeHtml(text.startDailyTestsAutomatically)}
                     </label>
                 </div>
             </div>
@@ -952,35 +1044,35 @@
                 <div class="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
                     <div class="grid gap-5 md:grid-cols-2">
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Facility Label</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.facilityLabel)}</span>
                             <input name="Facility" value="${inputValue('Facility')}" type="text" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Department</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.department)}</span>
                             <input name="Department" value="${inputValue('Department')}" type="text" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Room</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.room)}</span>
                             <input name="Room" value="${inputValue('Room')}" type="text" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Responsible Person</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.responsiblePerson)}</span>
                             <input name="ResponsiblePersonName" value="${inputValue('ResponsiblePersonName')}" type="text" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Address</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.address)}</span>
                             <input name="ResponsiblePersonAddress" value="${inputValue('ResponsiblePersonAddress')}" type="text" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">City</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.city)}</span>
                             <input name="ResponsiblePersonCity" value="${inputValue('ResponsiblePersonCity')}" type="text" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Email</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.email)}</span>
                             <input name="ResponsiblePersonEmail" value="${inputValue('ResponsiblePersonEmail')}" type="email" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Phone Number</span>
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.phoneNumber)}</span>
                             <input name="ResponsiblePersonPhoneNumber" value="${inputValue('ResponsiblePersonPhoneNumber')}" type="text" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                     </div>
@@ -1026,7 +1118,7 @@
                 ${renderEditFormBody()}
             </form>
         `;
-        els.editSaveLabel.textContent = state.edit.saving ? 'Saving…' : 'Save Changes';
+        els.editSaveLabel.textContent = state.edit.saving ? text.saving : text.saveChanges;
         bindEditFormInputs();
         window.lucide?.createIcons();
     }
@@ -1071,8 +1163,8 @@
         els.editForm.classList.add('hidden');
         els.editForm.innerHTML = '';
         els.editTabs.innerHTML = '';
-        els.editTitle.textContent = 'Update workstation details';
-        els.editSubtitle.textContent = 'Adjust workstation information and settings without leaving the table.';
+        els.editTitle.textContent = text.updateWorkstationDetails;
+        els.editSubtitle.textContent = text.adjustWorkstationTable;
 
         try {
             const [meta, payload] = await Promise.all([
@@ -1089,13 +1181,13 @@
                 AutoDailyTests: boolValue(payload.data?.AutoDailyTests),
             };
             state.edit.options = payload.options || {};
-            els.editTitle.textContent = meta.name || 'Update workstation details';
+            els.editTitle.textContent = meta.name || text.updateWorkstationDetails;
             els.editSubtitle.textContent = `${meta.facility?.name || '-'} / ${meta.workgroup?.name || '-'} / ${meta.name || '-'}`;
             els.editLoading.classList.add('hidden');
             renderEditModal();
         } catch (error) {
             els.editLoading.classList.add('hidden');
-            els.editError.textContent = error.message || 'Unable to load workstation settings.';
+            els.editError.textContent = error.message || text.unableToLoadWorkstationSettings;
             els.editError.classList.remove('hidden');
         }
     }
@@ -1105,7 +1197,7 @@
         captureEditFormState();
         state.edit.saving = true;
         els.editSave.disabled = true;
-        els.editSaveLabel.textContent = 'Saving…';
+        els.editSaveLabel.textContent = text.saving;
         els.editError.classList.add('hidden');
 
         const formData = new FormData();
@@ -1136,12 +1228,12 @@
             closeEditModal();
             reloadGrid();
         } catch (error) {
-            els.editError.textContent = error.message || 'Unable to save workstation.';
+            els.editError.textContent = error.message || text.unableToSaveWorkstation;
             els.editError.classList.remove('hidden');
         } finally {
             state.edit.saving = false;
             els.editSave.disabled = false;
-            els.editSaveLabel.textContent = 'Save Changes';
+            els.editSaveLabel.textContent = text.saveChanges;
         }
     }
 
@@ -1155,7 +1247,7 @@
         els.editForm.classList.add('hidden');
         els.editTabs.innerHTML = '';
         els.editSave.disabled = false;
-        els.editSaveLabel.textContent = 'Save Changes';
+        els.editSaveLabel.textContent = text.saveChanges;
         state.edit = {
             id: null,
             meta: null,
@@ -1179,13 +1271,13 @@
         els.deleteModal.classList.add('hidden');
         els.deleteModal.classList.remove('flex');
         els.deleteConfirm.disabled = false;
-        els.deleteConfirm.textContent = 'Delete Workstation';
+        els.deleteConfirm.textContent = text.deleteWorkstation;
     }
 
     async function confirmDelete() {
         if (!state.deleteTarget?.id || els.deleteConfirm.disabled) return;
         els.deleteConfirm.disabled = true;
-        els.deleteConfirm.textContent = 'Deleting...';
+        els.deleteConfirm.textContent = text.deleting;
 
         try {
             const formData = new FormData();
@@ -1193,14 +1285,14 @@
             formData.append('id', state.deleteTarget.id);
             const payload = await Perfectlum.postForm('/delete-workstation', formData);
             if (!payload.success) {
-                throw new Error(payload.msg || 'Unable to delete workstation.');
+                throw new Error(payload.msg || text.unableToDeleteWorkstation);
             }
             closeDeleteModal();
             reloadGrid();
         } catch (error) {
-            window.alert(error.message || 'Unable to delete workstation.');
+            window.alert(error.message || text.unableToDeleteWorkstation);
             els.deleteConfirm.disabled = false;
-            els.deleteConfirm.textContent = 'Delete Workstation';
+            els.deleteConfirm.textContent = text.deleteWorkstation;
         }
     }
 

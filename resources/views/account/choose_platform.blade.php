@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Qubyx - Choose Platform</title>
+    <title>{{ __('Qubyx - Choose Platform') }}</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -71,9 +71,9 @@
         <!-- Content Section -->
         <div class="w-full p-8 md:p-12 flex flex-col items-center justify-center relative -mt-20 z-20">
             
-            <h1 class="text-3xl font-semibold text-white mb-2 text-center">Choose your workspace</h1>
+            <h1 class="text-3xl font-semibold text-white mb-2 text-center">{{ __('Choose your workspace') }}</h1>
             <p class="text-[#A19FAD] text-sm mb-10 text-center max-w-md">
-                Your account is linked to multiple platforms. Please select the environment you wish to enter.
+                {{ __('Your account is linked to multiple platforms. Please select the environment you wish to enter.') }}
             </p>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
@@ -83,7 +83,7 @@
                     <div class="h-20 flex items-center justify-center mb-4">
                         <img src="{{ asset('assets/images/perfectlum-logo.png') }}" alt="PerfectLum" class="h-10 w-auto opacity-90 group-hover:opacity-100 transition-opacity">
                     </div>
-                    <p class="text-[#A19FAD] text-sm mt-1 leading-relaxed">Tailored for healthcare professionals. Calibrates displays to strict DICOM standards and ensures compliance with medical QA protocols like AAPM.</p>
+                    <p class="text-[#A19FAD] text-sm mt-1 leading-relaxed">{{ __('Tailored for healthcare professionals. Calibrates displays to strict DICOM standards and ensures compliance with medical QA protocols like AAPM.') }}</p>
                 </a>
                 
                 <!-- PerfectChroma Option -->
@@ -91,14 +91,14 @@
                     <div class="h-20 flex items-center justify-center mb-4">
                         <img src="{{ asset('assets/images/perfectchroma-logo.png') }}" alt="PerfectChroma" class="h-10 w-auto opacity-90 group-hover:opacity-100 transition-opacity">
                     </div>
-                    <p class="text-[#A19FAD] text-sm mt-1 leading-relaxed">Designed for photographers and creative artists. Delivers precise gamma curves and wider color gamut calibration for flawless visual reproduction.</p>
+                    <p class="text-[#A19FAD] text-sm mt-1 leading-relaxed">{{ __('Designed for photographers and creative artists. Delivers precise gamma curves and wider color gamut calibration for flawless visual reproduction.') }}</p>
                 </a>
 
             </div>
 
             <div class="mt-10">
                 <a href="{{ url('logout') }}" class="text-sm text-[#A19FAD] hover:text-white transition-colors underline decoration-transparent hover:decoration-white underline-offset-2">
-                    Sign out
+                    {{ __('Sign out') }}
                 </a>
             </div>
 

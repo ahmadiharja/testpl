@@ -8,6 +8,7 @@ use App\Http\Controllers\DisplaysController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FacilityController;
 use App\Http\Controllers\HistoriesController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\QualityAssuranceController;
 use App\Http\Controllers\ReportsController;
@@ -42,6 +43,7 @@ Route::post('create-account', [AccountController::class, 'create_account']);
 Route::get('forgot-password', [AccountController::class, 'forgot_password']);
 Route::post('reset-password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
 Route::get('logout', [AccountController::class, 'logout']);
+Route::post('locale', [LocaleController::class, 'update'])->name('locale.update');
 Route::get('choose-platform', [AccountController::class, 'choose_platform']);
 Route::get('select-platform/{platform}', [AccountController::class, 'select_platform']);
 

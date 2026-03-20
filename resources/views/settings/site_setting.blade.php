@@ -7,14 +7,14 @@
 @endphp
 
 <div class="flex flex-col gap-6 pb-8" x-data='{ activeTab: @json(request("tab") === "release" ? "release" : (request("tab") === "smtp" ? "smtp" : "branding")), releaseType: "build" }'>
-    <x-page-header title="Site Settings" description="Configure branding assets and outbound email defaults for the remote calibration platform." icon="settings" />
+    <x-page-header :title="__('Site Settings')" :description="__('Configure branding assets and outbound email defaults for the remote calibration platform.')" icon="settings" />
 
     <div class="grid gap-6 xl:grid-cols-[20rem_minmax(0,1fr)]">
         <aside class="space-y-5">
             <section class="rounded-[1.9rem] border border-slate-200 bg-white p-5 shadow-[0_18px_60px_-32px_rgba(15,23,42,0.18)]">
-                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-500">Site Setup</p>
-                <h2 class="mt-2 text-[1.25rem] font-semibold tracking-tight text-slate-900">Manage branding, mail delivery, and release creation</h2>
-                <p class="mt-2 text-sm leading-6 text-slate-500">Keep the platform identity, email transport, and application release flow in one settings workspace.</p>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-500">{{ __('Site Setup') }}</p>
+                <h2 class="mt-2 text-[1.25rem] font-semibold tracking-tight text-slate-900">{{ __('Manage branding, mail delivery, and release creation') }}</h2>
+                <p class="mt-2 text-sm leading-6 text-slate-500">{{ __('Keep the platform identity, email transport, and application release flow in one settings workspace.') }}</p>
 
                 <div class="mt-4 space-y-2">
                     <button
@@ -24,8 +24,8 @@
                         class="flex w-full items-start gap-3 rounded-xl border px-3.5 py-3 text-left transition">
                         <span class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-500"><i data-lucide="image" class="h-4.5 w-4.5"></i></span>
                         <span class="min-w-0">
-                            <span class="block text-sm font-semibold">Brand Identity</span>
-                            <span class="mt-0.5 block text-xs leading-5 text-slate-500">Manage site name, logo, favicon, and default sender details.</span>
+                            <span class="block text-sm font-semibold">{{ __('Brand Identity') }}</span>
+                            <span class="mt-0.5 block text-xs leading-5 text-slate-500">{{ __('Manage site name, logo, favicon, and default sender details.') }}</span>
                         </span>
                     </button>
 
@@ -36,8 +36,8 @@
                         class="flex w-full items-start gap-3 rounded-xl border px-3.5 py-3 text-left transition">
                         <span class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-500"><i data-lucide="server-cog" class="h-4.5 w-4.5"></i></span>
                         <span class="min-w-0">
-                            <span class="block text-sm font-semibold">SMTP Delivery</span>
-                            <span class="mt-0.5 block text-xs leading-5 text-slate-500">Configure outbound mail used by alerts, test email, and other notifications.</span>
+                            <span class="block text-sm font-semibold">{{ __('SMTP Delivery') }}</span>
+                            <span class="mt-0.5 block text-xs leading-5 text-slate-500">{{ __('Configure outbound mail used by alerts, test email, and other notifications.') }}</span>
                         </span>
                     </button>
 
@@ -48,8 +48,8 @@
                         class="flex w-full items-start gap-3 rounded-xl border px-3.5 py-3 text-left transition">
                         <span class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-500"><i data-lucide="package-plus" class="h-4.5 w-4.5"></i></span>
                         <span class="min-w-0">
-                            <span class="block text-sm font-semibold">Release Builder</span>
-                            <span class="mt-0.5 block text-xs leading-5 text-slate-500">Create the next application version for the remote calibration client and server stack.</span>
+                            <span class="block text-sm font-semibold">{{ __('Release Builder') }}</span>
+                            <span class="mt-0.5 block text-xs leading-5 text-slate-500">{{ __('Create the next application version for the remote calibration client and server stack.') }}</span>
                         </span>
                     </button>
                 </div>
@@ -124,7 +124,7 @@
                                 class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Default Sender Email</span>
+                            <span class="text-sm font-semibold text-slate-700">{{ __('Default Sender Email') }}</span>
                             <input
                                 type="email"
                                 name="email"
@@ -132,7 +132,7 @@
                                 class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Default Sender Name</span>
+                            <span class="text-sm font-semibold text-slate-700">{{ __('Default Sender Name') }}</span>
                             <input
                                 type="text"
                                 name="sender"
@@ -146,7 +146,7 @@
                             type="submit"
                             class="inline-flex h-11 items-center gap-2 rounded-2xl bg-sky-500 px-5 text-sm font-semibold text-white transition hover:bg-sky-400">
                             <i data-lucide="save" class="h-4 w-4"></i>
-                            Save Site Settings
+                            {{ __('Save Site Settings') }}
                         </button>
                     </div>
                 </form>
@@ -157,9 +157,9 @@
                 x-cloak
                 class="rounded-[1.9rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_-32px_rgba(15,23,42,0.18)]">
                 <div class="mb-6">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-500">SMTP Delivery</p>
-                    <h2 class="mt-2 text-[1.7rem] font-semibold tracking-tight text-slate-900">Email transport configuration</h2>
-                    <p class="mt-2 text-sm text-slate-500">Define the SMTP connection used by alerts, test email, password recovery, and other notification flows.</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-500">{{ __('SMTP Delivery') }}</p>
+                    <h2 class="mt-2 text-[1.7rem] font-semibold tracking-tight text-slate-900">{{ __('Email transport configuration') }}</h2>
+                    <p class="mt-2 text-sm text-slate-500">{{ __('Define the SMTP connection used by alerts, test email, password recovery, and other notification flows.') }}</p>
                 </div>
 
                 <form method="post" class="space-y-6">
@@ -167,39 +167,39 @@
 
                     <div class="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Host</span>
+                            <span class="text-sm font-semibold text-slate-700">{{ __('Host') }}</span>
                             <input type="text" name="host" value="{{ $smtp_details->host }}" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Port</span>
+                            <span class="text-sm font-semibold text-slate-700">{{ __('Port') }}</span>
                             <input type="text" name="port" value="{{ $smtp_details->port }}" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Username</span>
+                            <span class="text-sm font-semibold text-slate-700">{{ __('Username') }}</span>
                             <input type="text" name="username" value="{{ $smtp_details->username }}" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Password</span>
+                            <span class="text-sm font-semibold text-slate-700">{{ __('Password') }}</span>
                             <input type="password" name="password" value="{{ $smtp_details->password }}" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Sender Email</span>
+                            <span class="text-sm font-semibold text-slate-700">{{ __('Sender Email') }}</span>
                             <input type="text" name="sender_email" value="{{ $smtp_details->senderemail }}" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                         <label class="space-y-2">
-                            <span class="text-sm font-semibold text-slate-700">Sender Name</span>
+                            <span class="text-sm font-semibold text-slate-700">{{ __('Sender Name') }}</span>
                             <input type="text" name="sender_name" value="{{ $smtp_details->sendername }}" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                     </div>
 
                     <div class="rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                        These SMTP values are used by alert routing, test email, and any other outbound mail sent by the platform.
+                        {{ __('These SMTP values are used by alert routing, test email, and any other outbound mail sent by the platform.') }}
                     </div>
 
                     <div class="flex justify-end">
                         <button type="submit" class="inline-flex h-11 items-center gap-2 rounded-2xl bg-sky-500 px-5 text-sm font-semibold text-white transition hover:bg-sky-400">
                             <i data-lucide="save" class="h-4 w-4"></i>
-                            Save SMTP Settings
+                            {{ __('Save SMTP Settings') }}
                         </button>
                     </div>
                 </form>
@@ -210,9 +210,9 @@
                 x-cloak
                 class="rounded-[1.9rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_-32px_rgba(15,23,42,0.18)]">
                 <div class="mb-6">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-500">Release Builder</p>
-                    <h2 class="mt-2 text-[1.7rem] font-semibold tracking-tight text-slate-900">Prepare the next application version</h2>
-                    <p class="mt-2 text-sm text-slate-500">Choose how the version should increment, review the semantic version preview, and add a short release comment.</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-500">{{ __('Release Builder') }}</p>
+                    <h2 class="mt-2 text-[1.7rem] font-semibold tracking-tight text-slate-900">{{ __('Prepare the next application version') }}</h2>
+                    <p class="mt-2 text-sm text-slate-500">{{ __('Choose how the version should increment, review the semantic version preview, and add a short release comment.') }}</p>
                 </div>
 
                 <form method="post" action="{{ url('create-build') }}" class="space-y-6">
@@ -220,14 +220,14 @@
 
                     <div class="grid gap-6 xl:grid-cols-[20rem_minmax(0,1fr)]">
                         <div class="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-                            <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Version Preview</p>
+                            <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">{{ __('Version Preview') }}</p>
                             <div class="mt-5 space-y-4">
                                 <div class="rounded-2xl border border-slate-200 bg-white p-4">
-                                    <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Current Version</p>
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{{ __('Current Version') }}</p>
                                     <p id="current_version" class="mt-3 text-2xl font-black tracking-tight text-slate-900">{{ CommonHelper::appVersion('') }}</p>
                                 </div>
                                 <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                                    <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-600">Next Version</p>
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-600">{{ __('Next Version') }}</p>
                                     <p id="next_version" class="mt-3 text-2xl font-black tracking-tight text-emerald-600"></p>
                                     <input type="hidden" name="next_version" id="hidden_next_version">
                                 </div>
@@ -236,29 +236,29 @@
 
                         <div class="space-y-6">
                             <div class="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-                                <p class="text-sm font-semibold text-slate-900">Release Type</p>
-                                <p class="mt-1 text-sm text-slate-500">Select how the version should change relative to the current release.</p>
+                                <p class="text-sm font-semibold text-slate-900">{{ __('Release Type') }}</p>
+                                <p class="mt-1 text-sm text-slate-500">{{ __('Select how the version should change relative to the current release.') }}</p>
 
                                 <div class="mt-5 grid gap-4 md:grid-cols-3">
                                     <label class="flex cursor-pointer items-start gap-3 rounded-[1.25rem] border border-slate-200 bg-white p-4 transition hover:border-sky-200 hover:bg-sky-50/40">
                                         <input class="mt-1 h-4 w-4 border-slate-300 text-sky-500 focus:ring-sky-500" type="radio" value="build" name="type" x-model="releaseType">
                                         <div>
-                                            <p class="text-sm font-semibold text-slate-900">Build Number</p>
-                                            <p class="mt-1 text-xs leading-5 text-slate-500">Increment the patch/build segment only.</p>
+                                            <p class="text-sm font-semibold text-slate-900">{{ __('Build Number') }}</p>
+                                            <p class="mt-1 text-xs leading-5 text-slate-500">{{ __('Increment the patch/build segment only.') }}</p>
                                         </div>
                                     </label>
                                     <label class="flex cursor-pointer items-start gap-3 rounded-[1.25rem] border border-slate-200 bg-white p-4 transition hover:border-sky-200 hover:bg-sky-50/40">
                                         <input class="mt-1 h-4 w-4 border-slate-300 text-sky-500 focus:ring-sky-500" type="radio" value="minor" name="type" x-model="releaseType">
                                         <div>
-                                            <p class="text-sm font-semibold text-slate-900">Minor</p>
-                                            <p class="mt-1 text-xs leading-5 text-slate-500">Increment the middle version and reset build.</p>
+                                            <p class="text-sm font-semibold text-slate-900">{{ __('Minor') }}</p>
+                                            <p class="mt-1 text-xs leading-5 text-slate-500">{{ __('Increment the middle version and reset build.') }}</p>
                                         </div>
                                     </label>
                                     <label class="flex cursor-pointer items-start gap-3 rounded-[1.25rem] border border-slate-200 bg-white p-4 transition hover:border-sky-200 hover:bg-sky-50/40">
                                         <input class="mt-1 h-4 w-4 border-slate-300 text-sky-500 focus:ring-sky-500" type="radio" value="major" name="type" x-model="releaseType">
                                         <div>
-                                            <p class="text-sm font-semibold text-slate-900">Major</p>
-                                            <p class="mt-1 text-xs leading-5 text-slate-500">Increment the major version and reset lower segments.</p>
+                                            <p class="text-sm font-semibold text-slate-900">{{ __('Major') }}</p>
+                                            <p class="mt-1 text-xs leading-5 text-slate-500">{{ __('Increment the major version and reset lower segments.') }}</p>
                                         </div>
                                     </label>
                                 </div>
@@ -266,12 +266,12 @@
 
                             <div class="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
                                 <label class="space-y-2">
-                                    <span class="text-sm font-semibold text-slate-700">Build Comment</span>
+                                    <span class="text-sm font-semibold text-slate-700">{{ __('Build Comment') }}</span>
                                     <textarea
                                         class="min-h-[140px] w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
                                         name="comment"
                                         id="comment"
-                                        placeholder="Summarize what changed in this release..."></textarea>
+                                        placeholder="{{ __('Summarize what changed in this release...') }}"></textarea>
                                 </label>
                             </div>
                         </div>
@@ -283,7 +283,7 @@
                             type="submit"
                             id="create-build-submit">
                             <i data-lucide="save" class="h-4 w-4"></i>
-                            Create Build
+                            {{ __('Create Build') }}
                         </button>
                     </div>
                 </form>

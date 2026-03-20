@@ -6,6 +6,45 @@
     'optionCatalog' => [],
 ])
 
+@php
+    $settingsText = [
+        'application' => __('Application'),
+        'displayCalibration' => __('Display Calibration'),
+        'qualityAssurance' => __('Quality Assurance'),
+        'location' => __('Location'),
+        'moveToWorkgroup' => __('Move to Workgroup'),
+        'moveWorkstations' => __('Move workstations'),
+        'facility' => __('Facility'),
+        'workgroup' => __('Workgroup'),
+        'workstation' => __('Workstation'),
+        'selectableFacilities' => __('Selectable facilities'),
+        'selectableWorkgroups' => __('Selectable workgroups'),
+        'selectableWorkstations' => __('Selectable workstations'),
+        'unitsOfLength' => __('Units of Length'),
+        'unitsOfLuminance' => __('Units of Luminance'),
+        'ambientConditionsStable' => __('Ambient Conditions Stable'),
+        'preset' => __('Preset'),
+        'luminanceResponse' => __('Luminance Response'),
+        'maxLuminance' => __('Max Luminance'),
+        'regulation' => __('Regulation'),
+        'displayCategory' => __('Display Category'),
+        'enableDisplayEnergySaveMode' => __('Enable Display Energy Save Mode'),
+        'start' => __('Start'),
+        'end' => __('End'),
+        'createDisplayIccProfile' => __('Create Display ICC Profile'),
+        'facilityLabel' => __('Facility Label'),
+        'destinationWorkgroup' => __('Destination Workgroup'),
+        'noOptionsFound' => __('No options found'),
+        'noMatchingTargets' => __('No matching targets were found for the current search.'),
+        'selectRegulation' => __('Select regulation'),
+        'selectDestinationWorkgroup' => __('Select a destination workgroup'),
+        'moveUnavailable' => __('Move unavailable'),
+        'loadingWorkstationSettings' => __('Loading workstation settings...'),
+        'failedToLoadWorkstationSettings' => __('Failed to load workstation settings.'),
+        'failedToSaveSettings' => __('Failed to save settings for one or more selected targets.'),
+    ];
+@endphp
+
 <section class="py-3">
     <style>
         #settings-browser-panel summary {
@@ -39,7 +78,7 @@
             </svg>
         </span>
         <div class="min-w-0">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Application Settings</p>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Application Settings') }}</p>
             <h1 class="mt-0.5 text-[1.85rem] font-bold tracking-tight text-slate-900">{{ $title }}</h1>
             <p class="mt-0.5 text-sm text-slate-500">{{ $description }}</p>
         </div>
@@ -47,10 +86,10 @@
 
     <div id="settings-scope-banner" class="mb-3 flex items-start justify-between gap-3 rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-2.5 text-xs text-slate-600 shadow-sm">
         <div class="min-w-0">
-            <p class="font-semibold text-slate-700">Bulk editing resolves to workstation preferences under the selected targets.</p>
-            <p class="mt-0.5 text-slate-500">Choose a target type, check one or more items, review the affected workstation count, then open Bulk Configure.</p>
+            <p class="font-semibold text-slate-700">{{ __('Bulk editing resolves to workstation preferences under the selected targets.') }}</p>
+            <p class="mt-0.5 text-slate-500">{{ __('Choose a target type, check one or more items, review the affected workstation count, then open Bulk Configure.') }}</p>
         </div>
-        <button id="settings-banner-close" type="button" class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition hover:border-slate-300 hover:text-slate-700" aria-label="Dismiss help banner">
+        <button id="settings-banner-close" type="button" class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition hover:border-slate-300 hover:text-slate-700" aria-label="{{ __('Dismiss help banner') }}">
             <span class="text-base leading-none">&times;</span>
         </button>
     </div>
@@ -59,30 +98,30 @@
         <aside class="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
             <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">Target Browser</p>
-                    <h2 class="mt-1 text-[1.15rem] font-bold tracking-tight text-slate-900">Choose bulk edit targets</h2>
-                    <p class="mt-1 text-sm leading-6 text-slate-500">Only the selected target level will show checkboxes.</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">{{ __('Target Browser') }}</p>
+                    <h2 class="mt-1 text-[1.15rem] font-bold tracking-tight text-slate-900">{{ __('Choose bulk edit targets') }}</h2>
+                    <p class="mt-1 text-sm leading-6 text-slate-500">{{ __('Only the selected target level will show checkboxes.') }}</p>
                 </div>
                 <span id="settings-browser-count" class="inline-flex min-w-[5.5rem] items-center justify-center text-center rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold leading-tight text-slate-500">0 targets</span>
             </div>
 
             <div class="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-1">
                 <div class="grid grid-cols-3 gap-1" id="settings-target-type-buttons">
-                    <button type="button" data-target-type="facility" class="settings-target-type rounded-lg px-3 py-2 text-sm font-semibold transition">Facility</button>
-                    <button type="button" data-target-type="workgroup" class="settings-target-type rounded-lg px-3 py-2 text-sm font-semibold transition">Workgroup</button>
-                    <button type="button" data-target-type="workstation" class="settings-target-type rounded-lg px-3 py-2 text-sm font-semibold transition">Workstation</button>
+                    <button type="button" data-target-type="facility" class="settings-target-type rounded-lg px-3 py-2 text-sm font-semibold transition">{{ __('Facility') }}</button>
+                    <button type="button" data-target-type="workgroup" class="settings-target-type rounded-lg px-3 py-2 text-sm font-semibold transition">{{ __('Workgroup') }}</button>
+                    <button type="button" data-target-type="workstation" class="settings-target-type rounded-lg px-3 py-2 text-sm font-semibold transition">{{ __('Workstation') }}</button>
                 </div>
             </div>
 
             <div class="mt-3 flex items-center gap-2">
                 <div class="relative min-w-0 flex-1">
-                    <input id="settings-browser-search" type="text" placeholder="Search the visible level..." class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 pr-9 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                    <input id="settings-browser-search" type="text" placeholder="{{ __('Search the visible level...') }}" class="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 pr-9 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                     <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
                     </span>
                 </div>
-                <button id="settings-expand-all" type="button" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50">Expand</button>
-                <button id="settings-collapse-all" type="button" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50">Collapse</button>
+                <button id="settings-expand-all" type="button" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50">{{ __('Expand') }}</button>
+                <button id="settings-collapse-all" type="button" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50">{{ __('Collapse') }}</button>
             </div>
 
             <div class="mt-3 flex items-center text-xs font-semibold text-slate-400">
@@ -97,11 +136,11 @@
             <div class="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">Bulk selection</p>
-                        <h2 class="mt-1 text-[1.2rem] font-bold tracking-tight text-slate-900">Prepare the bulk configuration set</h2>
-                        <p class="mt-1 text-sm leading-6 text-slate-500">Selected targets turn into workstation sets at save time. The configuration form opens only when you are ready.</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">{{ __('Bulk selection') }}</p>
+                    <h2 class="mt-1 text-[1.2rem] font-bold tracking-tight text-slate-900">{{ __('Prepare the bulk configuration set') }}</h2>
+                    <p class="mt-1 text-sm leading-6 text-slate-500">{{ __('Selected targets turn into workstation sets at save time. The configuration form opens only when you are ready.') }}</p>
                     </div>
-                    <button id="settings-clear-selection" type="button" class="hidden rounded-full border border-sky-200 bg-white px-3.5 py-2 text-xs font-semibold text-sky-700 transition hover:bg-sky-50">Clear all</button>
+                    <button id="settings-clear-selection" type="button" class="hidden rounded-full border border-sky-200 bg-white px-3.5 py-2 text-xs font-semibold text-sky-700 transition hover:bg-sky-50">{{ __('Clear all') }}</button>
                 </div>
 
                 <div class="mt-3 grid gap-3 sm:grid-cols-3">
@@ -120,7 +159,7 @@
                 </div>
 
                 <div id="settings-selected-empty" class="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
-                    No target has been checked yet.
+                    {{ __('No target has been checked yet.') }}
                 </div>
                 <div id="settings-selected-list" class="mt-3 flex flex-wrap gap-2"></div>
 
@@ -130,17 +169,17 @@
                         <div id="settings-config-chips" class="mt-2 flex flex-wrap gap-2"></div>
                     </div>
                     <button id="settings-open-config" type="button" class="inline-flex items-center justify-center rounded-full bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none" disabled>
-                        Bulk Configure
+                        {{ __('Bulk Configure') }}
                     </button>
                 </div>
             </div>
 
             <div class="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">Rules</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">{{ __('Rules') }}</p>
                 <ul class="mt-2 space-y-1.5 text-sm leading-6 text-slate-500">
-                    <li>Facility and Workgroup targets expose Application and Display Calibration only.</li>
-                    <li>Workstation targets also expose Quality Assurance, Location, and Move to Workgroup.</li>
-                    <li>Move to Workgroup stays disabled when selected workstations belong to different facilities.</li>
+                    <li>{{ __('Facility and Workgroup targets expose Application and Display Calibration only.') }}</li>
+                    <li>{{ __('Workstation targets also expose Quality Assurance, Location, and Move to Workgroup.') }}</li>
+                    <li>{{ __('Move to Workgroup stays disabled when selected workstations belong to different facilities.') }}</li>
                 </ul>
             </div>
         </div>
@@ -153,17 +192,17 @@
                 <div class="border-b border-slate-200 px-5 py-4">
                     <div class="flex items-start justify-between gap-4">
                         <div class="min-w-0">
-                            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">Bulk Configure</p>
-                            <h3 id="settings-modal-title" class="mt-1 text-[1.35rem] font-bold tracking-tight text-slate-900">Configure workstation preferences</h3>
-                            <p id="settings-modal-subtitle" class="mt-1 text-sm text-slate-500">Review the allowed tabs for the selected targets, then save the current section.</p>
+                            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">{{ __('Bulk Configure') }}</p>
+                            <h3 id="settings-modal-title" class="mt-1 text-[1.35rem] font-bold tracking-tight text-slate-900">{{ __('Configure workstation preferences') }}</h3>
+                            <p id="settings-modal-subtitle" class="mt-1 text-sm text-slate-500">{{ __('Review the allowed tabs for the selected targets, then save the current section.') }}</p>
                         </div>
-                        <button id="settings-modal-close" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition hover:border-slate-300 hover:text-slate-700" aria-label="Close bulk configure modal">
+                        <button id="settings-modal-close" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition hover:border-slate-300 hover:text-slate-700" aria-label="{{ __('Close bulk configure modal') }}">
                             <span class="text-xl leading-none">&times;</span>
                         </button>
                     </div>
                     <div id="settings-modal-summary-chips" class="mt-3 flex flex-wrap gap-2"></div>
                     <div id="settings-modal-mixed-hint" class="mt-3 hidden rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                        Some fields show Mixed values because the selected targets do not share the same value.
+                        {{ __('Some fields show Mixed values because the selected targets do not share the same value.') }}
                     </div>
                 </div>
 
@@ -178,16 +217,16 @@
                         <form id="settings-modal-form-application" class="space-y-4">
                             {{ csrf_field() }}
                             <div class="grid gap-4 lg:grid-cols-2">
-                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">Units of Length</span><select id="units" name="units" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
-                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">Units of Luminance</span><select id="LumUnits" name="LumUnits" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
+                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">{{ __('Units of Length') }}</span><select id="units" name="units" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
+                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">{{ __('Units of Luminance') }}</span><select id="LumUnits" name="LumUnits" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
                                 <label class="space-y-2"><span class="text-sm font-medium text-slate-700">Veiling Luminance</span><input id="AmbientLight" name="AmbientLight" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></label>
-                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">Ambient Conditions Stable</span><select id="AmbientStable" name="AmbientStable" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
+                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">{{ __('Ambient Conditions Stable') }}</span><select id="AmbientStable" name="AmbientStable" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
                             </div>
                             <div class="rounded-xl border border-slate-200 p-3.5">
-                                <label class="flex items-center gap-3 text-sm font-medium text-slate-700"><input id="PutDisplaysToEnergySaveMode" name="PutDisplaysToEnergySaveMode" type="checkbox" value="1" class="h-4 w-4 rounded border-slate-300 text-sky-500">Enable Display Energy Save Mode</label>
+                                <label class="flex items-center gap-3 text-sm font-medium text-slate-700"><input id="PutDisplaysToEnergySaveMode" name="PutDisplaysToEnergySaveMode" type="checkbox" value="1" class="h-4 w-4 rounded border-slate-300 text-sky-500">{{ __('Enable Display Energy Save Mode') }}</label>
                                 <div id="settings-energy-fields" class="mt-3 grid gap-4 lg:grid-cols-2">
-                                    <label class="space-y-2"><span class="text-sm font-medium text-slate-700">Start</span><input id="StartEnergySaveMode" name="StartEnergySaveMode" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></label>
-                                    <label class="space-y-2"><span class="text-sm font-medium text-slate-700">End</span><input id="EndEnergySaveMode" name="EndEnergySaveMode" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></label>
+                                    <label class="space-y-2"><span class="text-sm font-medium text-slate-700">{{ __('Start') }}</span><input id="StartEnergySaveMode" name="StartEnergySaveMode" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></label>
+                                    <label class="space-y-2"><span class="text-sm font-medium text-slate-700">{{ __('End') }}</span><input id="EndEnergySaveMode" name="EndEnergySaveMode" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></label>
                                 </div>
                             </div>
                         </form>
@@ -195,7 +234,7 @@
 
                     <section data-panel="calibration" class="settings-modal-panel hidden space-y-4">
                         <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                            <p class="text-sm font-semibold text-slate-900">Display Calibration</p>
+                            <p class="text-sm font-semibold text-slate-900">{{ __('Display Calibration') }}</p>
                             <p class="mt-1 text-sm text-slate-500">Shared calibration presets, response targets, and luminance defaults.</p>
                         </div>
                         <form id="settings-modal-form-calibration" class="space-y-4">
@@ -205,31 +244,31 @@
                             <input id="BlackLevel" name="BlackLevel" type="hidden">
                             <input id="SetBlackLevel" name="SetBlackLevel" type="hidden">
                             <div class="grid gap-4 lg:grid-cols-2">
-                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">Preset</span><select id="CalibrationPresents" name="CalibrationPresents" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
-                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">Luminance Response</span><select id="CalibrationType" name="CalibrationType" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
+                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">{{ __('Preset') }}</span><select id="CalibrationPresents" name="CalibrationPresents" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
+                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">{{ __('Luminance Response') }}</span><select id="CalibrationType" name="CalibrationType" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
                                 <label class="space-y-2"><span class="text-sm font-medium text-slate-700">Color Temperature</span><select id="ColorTemperatureAdjustment" name="ColorTemperatureAdjustment" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
                                 <label id="settings-color-temp-custom-wrap" class="space-y-2"><span class="text-sm font-medium text-slate-700">Custom Color Temperature</span><input id="ColorTemperatureAdjustment_ext" name="ColorTemperatureAdjustment_ext" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></label>
-                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">Max Luminance</span><select id="WhiteLevel_u_extcombo" name="WhiteLevel_u_extcombo" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
+                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">{{ __('Max Luminance') }}</span><select id="WhiteLevel_u_extcombo" name="WhiteLevel_u_extcombo" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
                                 <label id="settings-white-level-custom-wrap" class="space-y-2"><span class="text-sm font-medium text-slate-700">Custom White Level</span><input id="WhiteLevel_u_input" name="WhiteLevel_u_input" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></label>
                             </div>
                             <input id="WhiteLevel" name="WhiteLevel" type="hidden">
                             <input id="SetWhiteLevel" name="SetWhiteLevel" type="hidden">
-                            <label class="flex items-center gap-3 text-sm font-medium text-slate-700"><input id="CreateICCICMProfile" name="CreateICCICMProfile" type="checkbox" value="1" class="h-4 w-4 rounded border-slate-300 text-sky-500">Create Display ICC Profile</label>
+                            <label class="flex items-center gap-3 text-sm font-medium text-slate-700"><input id="CreateICCICMProfile" name="CreateICCICMProfile" type="checkbox" value="1" class="h-4 w-4 rounded border-slate-300 text-sky-500">{{ __('Create Display ICC Profile') }}</label>
                         </form>
                     </section>
 
                     <section data-panel="qa" class="settings-modal-panel hidden space-y-4">
                         <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                             <p class="text-sm font-semibold text-slate-900">Quality Assurance</p>
-                            <p class="mt-1 text-sm text-slate-500">Regulation defaults, display category, and QA automation.</p>
+                            <p class="mt-1 text-sm text-slate-500">{{ __('Regulation defaults, display category, and QA automation.') }}</p>
                         </div>
                         <form id="settings-modal-form-qa" class="space-y-4">
                             {{ csrf_field() }}
                             <input id="UsedClassificationForLastScheduling" name="UsedClassificationForLastScheduling" type="hidden">
                             <input id="UsedRegulationForLastScheduling" name="UsedRegulationForLastScheduling" type="hidden">
                             <div class="grid gap-4 lg:grid-cols-2">
-                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">Regulation</span><select id="UsedRegulation" name="UsedRegulation" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
-                                <label class="space-y-2"><span id="settings-classification-label" class="text-sm font-medium text-slate-700">Display Category</span><select id="UsedClassification" name="UsedClassification" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
+                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">{{ __('Regulation') }}</span><select id="UsedRegulation" name="UsedRegulation" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
+                                <label class="space-y-2"><span id="settings-classification-label" class="text-sm font-medium text-slate-700">{{ __('Display Category') }}</span><select id="UsedClassification" name="UsedClassification" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
                                 <label class="space-y-2 lg:col-span-2" id="settings-body-region-wrap"><span class="text-sm font-medium text-slate-700">Body Region</span><input id="bodyRegion" name="bodyRegion" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></label>
                             </div>
                             <label class="flex items-center gap-3 text-sm font-medium text-slate-700"><input id="AutoDailyTests" name="AutoDailyTests" type="checkbox" value="1" class="h-4 w-4 rounded border-slate-300 text-sky-500">Start daily tests automatically</label>
@@ -244,7 +283,7 @@
                         <form id="settings-modal-form-location" class="space-y-4">
                             {{ csrf_field() }}
                             <div class="grid gap-4 lg:grid-cols-2">
-                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">Facility Label</span><input id="Facility" name="Facility" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></label>
+                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">{{ __('Facility Label') }}</span><input id="Facility" name="Facility" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></label>
                                 <label class="space-y-2"><span class="text-sm font-medium text-slate-700">Department</span><input id="Department" name="Department" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></label>
                                 <label class="space-y-2"><span class="text-sm font-medium text-slate-700">Room</span><input id="Room" name="Room" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></label>
                                 <label class="space-y-2"><span class="text-sm font-medium text-slate-700">Responsible Person</span><input id="ResponsiblePersonName" name="ResponsiblePersonName" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></label>
@@ -258,7 +297,7 @@
 
                     <section data-panel="move" class="settings-modal-panel hidden space-y-4">
                         <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                            <p class="text-sm font-semibold text-slate-900">Move to Workgroup</p>
+                            <p class="text-sm font-semibold text-slate-900">{{ __('Move to Workgroup') }}</p>
                             <p class="mt-1 text-sm text-slate-500">Reassign the selected workstations to a different workgroup inside the same facility.</p>
                         </div>
                         <div id="settings-move-warning" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -266,7 +305,7 @@
                         </div>
                         <form id="settings-modal-form-move" class="space-y-4">
                             {{ csrf_field() }}
-                            <label class="space-y-2"><span class="text-sm font-medium text-slate-700">Destination Workgroup</span><select id="workgroup_id" name="workgroup_id" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
+                            <label class="space-y-2"><span class="text-sm font-medium text-slate-700">{{ __('Destination Workgroup') }}</span><select id="workgroup_id" name="workgroup_id" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
                         </form>
                     </section>
                 </div>
@@ -274,8 +313,8 @@
                 <div class="flex items-center justify-between gap-4 border-t border-slate-200 px-5 py-3">
                     <p id="settings-modal-status" class="text-sm text-slate-500">Choose a tab, review the values, then save the current section.</p>
                     <div class="flex items-center gap-2">
-                        <button id="settings-modal-cancel" type="button" class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50">Cancel</button>
-                        <button id="settings-modal-save" type="button" class="rounded-full bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-600">Save changes</button>
+                        <button id="settings-modal-cancel" type="button" class="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50">{{ __('Cancel') }}</button>
+                        <button id="settings-modal-save" type="button" class="rounded-full bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-600">{{ __('Save changes') }}</button>
                     </div>
                 </div>
             </div>
@@ -292,12 +331,13 @@ const config = {
     csrf: @json(csrf_token()),
 };
 
+const text = @json($settingsText);
 const tabDefinitions = {
-    application: { label: 'Application', action: 'app' },
-    calibration: { label: 'Display Calibration', action: 'dc' },
-    qa: { label: 'Quality Assurance', action: 'qa' },
-    location: { label: 'Location', action: 'location' },
-    move: { label: 'Move to Workgroup', action: 'move' },
+    application: { label: text.application, action: 'app' },
+    calibration: { label: text.displayCalibration, action: 'dc' },
+    qa: { label: text.qualityAssurance, action: 'qa' },
+    location: { label: text.location, action: 'location' },
+    move: { label: text.moveToWorkgroup, action: 'move' },
 };
 
 const fieldIds = [
@@ -471,7 +511,7 @@ const ensureSearchableSelect = (id) => {
 
     const empty = document.createElement('div');
     empty.className = 'hidden rounded-xl border border-dashed border-slate-200 px-3 py-3 text-sm text-slate-400';
-    empty.textContent = 'No options found.';
+    empty.textContent = text.noOptionsFound;
 
     panel.appendChild(search);
     panel.appendChild(options);
@@ -572,7 +612,7 @@ const syncConditionalFields = () => {
     const bodyWrap = byId('settings-body-region-wrap');
     if (bodyWrap) bodyWrap.classList.toggle('hidden', regulation !== 'DIN 6868-157');
     const classificationLabel = byId('settings-classification-label');
-    if (classificationLabel) classificationLabel.textContent = regulation === 'DIN 6868-157' ? 'Room Class' : 'Display Category';
+    if (classificationLabel) classificationLabel.textContent = regulation === 'DIN 6868-157' ? @js(__('Room Class')) : text.displayCategory;
 };
 
 const buildHierarchy = () => {
@@ -655,9 +695,9 @@ const allVisibleWorkstationCount = () => {
 };
 
 const targetTypeMeta = {
-    facility: { label: 'Facility', caption: 'Selectable facilities' },
-    workgroup: { label: 'Workgroup', caption: 'Selectable workgroups' },
-    workstation: { label: 'Workstation', caption: 'Selectable workstations' },
+    facility: { label: text.facility, caption: text.selectableFacilities },
+    workgroup: { label: text.workgroup, caption: text.selectableWorkgroups },
+    workstation: { label: text.workstation, caption: text.selectableWorkstations },
 };
 
 const itemMatches = (...parts) => parts.some((part) => normalizeSearch(part).includes(normalizeSearch(state.search)));
@@ -806,7 +846,7 @@ const renderBrowser = () => {
     }
 
     if (!html) {
-        html = '<div class="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-5 text-sm text-slate-500">No matching targets were found for the current search.</div>';
+        html = `<div class="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-5 text-sm text-slate-500">${escapeHtml(text.noMatchingTargets)}</div>`;
     }
 
     container.innerHTML = html;
@@ -899,7 +939,7 @@ const renderModalPanels = () => {
         saveButton.disabled = state.saving || disabled;
         saveButton.classList.toggle('opacity-50', disabled);
         saveButton.classList.toggle('cursor-not-allowed', disabled);
-        saveButton.textContent = state.modalTab === 'move' ? 'Move workstations' : `Save ${tabDefinitions[state.modalTab].label}`;
+        saveButton.textContent = state.modalTab === 'move' ? text.moveWorkstations : `Save ${tabDefinitions[state.modalTab].label}`;
     }
     const moveWarning = byId('settings-move-warning');
     if (moveWarning) moveWarning.classList.toggle('hidden', moveEnabled());
@@ -946,8 +986,8 @@ const applyPayloadToFields = async () => {
     populateSelect('CalibrationType', resolvedOptions.CalibrationType, data.CalibrationType, isMixed('CalibrationType'), 'Select luminance response');
     populateSelect('ColorTemperatureAdjustment', resolvedOptions.ColorTemperatureAdjustment, data.ColorTemperatureAdjustment, isMixed('ColorTemperatureAdjustment'), 'Select a color temperature');
     populateSelect('WhiteLevel_u_extcombo', resolvedOptions.WhiteLevel_u_extcombo, data.WhiteLevel_u_extcombo || data.WhiteLevel, isMixed('WhiteLevel_u_extcombo') || isMixed('WhiteLevel'), 'Select max luminance');
-    populateSelect('UsedRegulation', resolvedOptions.UsedRegulation, data.UsedRegulation, isMixed('UsedRegulation'), 'Select regulation');
-    populateSelect('workgroup_id', resolvedOptions.workgroup_id, data.workgroup_id, false, moveEnabled() ? 'Select a destination workgroup' : 'Move unavailable');
+    populateSelect('UsedRegulation', resolvedOptions.UsedRegulation, data.UsedRegulation, isMixed('UsedRegulation'), text.selectRegulation);
+    populateSelect('workgroup_id', resolvedOptions.workgroup_id, data.workgroup_id, false, moveEnabled() ? text.selectDestinationWorkgroup : text.moveUnavailable);
     const moveSelect = byId('workgroup_id');
     if (moveSelect) moveSelect.disabled = !moveEnabled();
 
@@ -995,11 +1035,11 @@ const openModal = async () => {
     state.modalTab = availableTabs()[0];
     renderModalTabs();
     renderModalPanels();
-    setStatus('Loading workstation settings...', 'neutral');
+    setStatus(text.loadingWorkstationSettings, 'neutral');
     resetForms();
     const response = await fetch(`/app-settings/${state.currentScope}`);
     if (!response.ok) {
-        setStatus('Failed to load workstation settings.', 'error');
+        setStatus(text.failedToLoadWorkstationSettings, 'error');
         return;
     }
     state.currentPayload = await response.json();
@@ -1048,7 +1088,7 @@ const saveCurrentTab = async () => {
         if (!response.ok) {
             state.saving = false;
             renderModalPanels();
-            setStatus('Failed to save settings for one or more selected targets.', 'error');
+            setStatus(text.failedToSaveSettings, 'error');
             return;
         }
     }

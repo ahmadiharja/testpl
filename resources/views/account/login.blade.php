@@ -176,9 +176,9 @@
                     </div>
 
                     <div class="flex items-center justify-between mt-4">
-                        <label class="flex items-center space-x-5 cursor-pointer group">
-                            <input name="remember" value="1" type="checkbox" class="custom-checkbox w-4 h-4 rounded appearance-none group-hover:ring-2 ring-white/20 transition-all">
-                            <span class="text-sm font-medium text-muted mt-0.5">{{ __('Remember me') }}</span>
+                        <label class="inline-flex items-center gap-2.5 cursor-pointer group select-none">
+                            <input name="remember" value="1" type="checkbox" class="custom-checkbox w-4 h-4 shrink-0 rounded appearance-none group-hover:ring-2 ring-white/20 transition-all">
+                            <span class="text-sm font-medium leading-none text-muted">{{ __('Remember me') }}</span>
                         </label>
                         <a href="{{ url('forgot-password') }}" class="text-sm text-muted hover:text-white transition-colors underline decoration-transparent hover:decoration-[#8a8899] underline-offset-2">{{ __('Forgot password?') }}</a>
                     </div>
@@ -223,9 +223,9 @@
                     </div>
 
                     <div class="flex items-start mt-4 mb-2">
-                        <label class="flex items-center space-x-5 cursor-pointer group mt-1">
-                            <input type="checkbox" required class="custom-checkbox flex-shrink-0 w-4 h-4 rounded appearance-none group-hover:ring-2 ring-white/20 transition-all">
-                            <span class="text-sm font-medium text-muted">{{ __('I agree to the') }} <a href="#" class="underline decoration-[#8a8899] hover:text-white transition-colors">{{ __('Terms & Conditions') }}</a></span>
+                        <label class="inline-flex items-center gap-2.5 cursor-pointer group select-none mt-1">
+                            <input type="checkbox" required class="custom-checkbox shrink-0 w-4 h-4 rounded appearance-none group-hover:ring-2 ring-white/20 transition-all">
+                            <span class="text-sm font-medium leading-relaxed text-muted">{{ __('I agree to the') }} <a href="#" class="underline decoration-[#8a8899] hover:text-white transition-colors">{{ __('Terms & Conditions') }}</a></span>
                         </label>
                     </div>
                     

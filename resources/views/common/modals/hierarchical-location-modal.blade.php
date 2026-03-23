@@ -1128,6 +1128,103 @@
                                                     </div>
                                                 </div>
                                             </div>
+
+                                            <div class="rounded-[1.25rem] border border-gray-200 bg-white p-6 shadow-sm">
+                                                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                                    <div>
+                                                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">{{ __('Backlight / Running Hours') }}</p>
+                                                        <h4 class="mt-2 text-lg font-extrabold text-gray-900">{{ __('Synced runtime snapshots') }}</h4>
+                                                        <p class="mt-1 text-sm text-slate-500">{{ __('Based on synchronized display usage data from the remote client.') }}</p>
+                                                    </div>
+                                                    <span class="inline-flex items-center rounded-full bg-sky-50 px-3 py-1 text-[11px] font-semibold text-sky-700" x-text="displayDetail.runningHours.available ? @js(__('Runtime data available')) : @js(__('No runtime data'))"></span>
+                                                </div>
+
+                                                <template x-if="displayDetail.runningHours.available">
+                                                    <div class="mt-5 space-y-4">
+                                                        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                                            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                                                <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{{ __('Latest reported hours') }}</p>
+                                                                <p class="mt-2 text-sm font-bold text-slate-900" x-text="displayDetail.runningHours.latestReported"></p>
+                                                            </div>
+                                                            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                                                <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{{ __('Highest reported hours') }}</p>
+                                                                <p class="mt-2 text-sm font-bold text-slate-900" x-text="displayDetail.runningHours.peakReported"></p>
+                                                            </div>
+                                                            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                                                <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{{ __('Log entries') }}</p>
+                                                                <p class="mt-2 text-sm font-bold text-slate-900" x-text="displayDetail.runningHours.recordCount"></p>
+                                                            </div>
+                                                            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                                                <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{{ __('Last reported at') }}</p>
+                                                                <p class="mt-2 text-sm font-bold text-slate-900" x-text="displayDetail.runningHours.lastReportedAt"></p>
+                                                            </div>
+                                                            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                                                <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{{ __('Last sync update') }}</p>
+                                                                <p class="mt-2 text-sm font-bold text-slate-900" x-text="displayDetail.runningHours.lastSyncUpdate"></p>
+                                                            </div>
+                                                            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                                                <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{{ __('Tracking window') }}</p>
+                                                                <p class="mt-2 text-sm font-bold leading-snug text-slate-900 break-words" x-text="displayDetail.runningHours.trackingWindow"></p>
+                                                            </div>
+                                                        </div>
+
+                                                        <template x-if="(displayDetail.runningHours.trend || []).length >= 2">
+                                                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                                                <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
+                                                                    <div>
+                                                                        <p class="text-xs font-semibold text-slate-700">{{ __('Reported runtime trend') }}</p>
+                                                                        <p class="mt-1 text-[11px] text-slate-500">{{ __('Latest synced runtime points') }}</p>
+                                                                    </div>
+                                                                    <p class="text-[11px] font-semibold text-slate-500">
+                                                                        {{ __('Latest reported hours') }}:
+                                                                        <span class="text-slate-700" x-text="displayDetail.runningHours.latestReported"></span>
+                                                                    </p>
+                                                                </div>
+                                                                <div class="relative">
+                                                                    <div x-html="runningHoursTrendSvg(displayDetail.runningHours.trend)"></div>
+                                                                    <div class="pointer-events-none absolute inset-0">
+                                                                        <template x-for="(point, index) in displayDetail.runningHours.trend" :key="`runtime-point-${point.fullLabel}`">
+                                                                            <button type="button"
+                                                                                    class="pointer-events-auto absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-transparent"
+                                                                                    :style="runningHoursPointStyle(index, displayDetail.runningHours.trend)"
+                                                                                    @mouseenter="showRunningHoursTooltip(point, $event)"
+                                                                                    @mousemove="moveRunningHoursTooltip(point, $event)"
+                                                                                    @mouseleave="hideRunningHoursTooltip()"
+                                                                                    @focus="showRunningHoursTooltip(point, $event)"
+                                                                                    @blur="hideRunningHoursTooltip()"
+                                                                                    :aria-label="`${point.fullLabel}: ${point.formatted}`">
+                                                                            </button>
+                                                                        </template>
+                                                                    </div>
+                                                                    <div x-show="runningHoursTooltip.visible"
+                                                                         x-cloak
+                                                                         class="pointer-events-none absolute z-20 w-52 rounded-2xl border border-slate-200 bg-white/98 p-3 shadow-[0_18px_50px_rgba(15,23,42,0.2)] backdrop-blur-sm"
+                                                                         :style="`left:${runningHoursTooltip.x}px; top:${runningHoursTooltip.y}px;`">
+                                                                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400" x-text="runningHoursTooltip.point?.fullLabel || '-'"></p>
+                                                                        <div class="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                                                                            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">{{ __('Latest reported hours') }}</p>
+                                                                            <p class="mt-1 text-base font-extrabold text-slate-900" x-text="runningHoursTooltip.point?.formatted || '-'"></p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="relative mt-1 h-8">
+                                                                    <template x-for="label in runningHoursAxisLabels(displayDetail.runningHours.trend)" :key="`runtime-axis-${label.fullLabel}`">
+                                                                        <p class="absolute top-0 whitespace-nowrap text-[10px] font-semibold tracking-[0.01em] text-slate-400"
+                                                                           :style="`left:${label.position}%; transform: translateX(-50%);`"
+                                                                           x-text="label.label"></p>
+                                                                    </template>
+                                                                </div>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </template>
+
+                                                <template x-if="!displayDetail.runningHours.available">
+                                                    <div class="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-sm text-slate-500">
+                                                        {{ __('No runtime records have been synced for this display yet.') }}
+                                                    </div>
+                                                </template>
+                                            </div>
                                         </div>
 
                                         <div x-show="activeDisplayTab === 'settings' && !isEditingDisplaySettings" x-cloak class="space-y-6 pb-10">
@@ -2273,6 +2370,12 @@
                 x: 0,
                 y: 0,
                 bucket: null,
+            },
+            runningHoursTooltip: {
+                visible: false,
+                x: 0,
+                y: 0,
+                point: null,
             },
             selectedPerformanceTrendBucket: null,
             moveOptions: {
@@ -4034,6 +4137,134 @@
                 `;
             },
 
+            runningHoursLayout(points) {
+                const count = points?.length || 0;
+                const step = count > 1 ? 100 / (count - 1) : 100;
+                return { count, step };
+            },
+
+            runningHoursAxisLabels(points) {
+                const count = points?.length || 0;
+                if (!count) {
+                    return [];
+                }
+
+                if (count <= 5) {
+                    return points.map((point, index) => ({
+                        label: point.label,
+                        fullLabel: point.fullLabel,
+                        position: count === 1 ? 50 : (index / (count - 1)) * 100,
+                    }));
+                }
+
+                const candidateIndexes = [0, Math.floor((count - 1) * 0.33), Math.floor((count - 1) * 0.66), count - 1];
+                const uniqueIndexes = [...new Set(candidateIndexes)].sort((a, b) => a - b);
+
+                return uniqueIndexes.map((index) => ({
+                    label: points[index]?.label ?? '',
+                    fullLabel: points[index]?.fullLabel ?? String(index),
+                    position: count === 1 ? 50 : (index / (count - 1)) * 100,
+                }));
+            },
+
+            runningHoursPointStyle(index, points) {
+                const position = this.runningHoursPointPosition(index, points);
+                return `left:${position.left}%; top:${position.top}%;`;
+            },
+
+            runningHoursPointPosition(index, points) {
+                const chartHeight = 52;
+                const topPad = 7;
+                const bottomPad = 3;
+                const drawableHeight = chartHeight - topPad - bottomPad;
+                const values = (points || []).map((point) => Number(point.value) || 0);
+                const min = values.length ? Math.min(...values) : 0;
+                const max = values.length ? Math.max(...values) : 0;
+                const range = max - min || 1;
+                const count = points?.length || 0;
+                const left = count <= 1 ? 50 : (index / (count - 1)) * 100;
+                const value = Number(points?.[index]?.value) || 0;
+                const y = topPad + (drawableHeight - ((value - min) / range) * drawableHeight);
+                const top = (y / chartHeight) * 100;
+
+                return { left, top };
+            },
+
+            showRunningHoursTooltip(point, event) {
+                this.runningHoursTooltip.visible = true;
+                this.runningHoursTooltip.point = point;
+                this.moveRunningHoursTooltip(point, event);
+            },
+
+            moveRunningHoursTooltip(point, event) {
+                this.runningHoursTooltip.point = point;
+                const container = event.currentTarget?.offsetParent;
+                const rect = container?.getBoundingClientRect();
+                const localX = rect ? (event.clientX - rect.left + 18) : 18;
+                const localY = rect ? (event.clientY - rect.top - 18) : 18;
+                const maxX = rect ? Math.max(12, rect.width - 220) : 12;
+                const maxY = rect ? Math.max(12, rect.height - 96) : 12;
+
+                this.runningHoursTooltip.x = Math.max(12, Math.min(maxX, localX));
+                this.runningHoursTooltip.y = Math.max(12, Math.min(maxY, localY));
+            },
+
+            hideRunningHoursTooltip() {
+                this.runningHoursTooltip.visible = false;
+                this.runningHoursTooltip.point = null;
+            },
+
+            runningHoursTrendSvg(points) {
+                if (!points || points.length < 2) {
+                    return `<div class="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">${@js(__('No runtime trend available yet.'))}</div>`;
+                }
+
+                const chartHeight = 52;
+                const topPad = 7;
+                const bottomPad = 3;
+                const drawableHeight = chartHeight - topPad - bottomPad;
+                const values = points.map((point) => Number(point.value) || 0);
+                const min = Math.min(...values);
+                const max = Math.max(...values);
+                const range = max - min || 1;
+                const { step } = this.runningHoursLayout(points);
+
+                const gridLines = [0, 25, 50, 75, 100].map((pct) => {
+                    const y = topPad + ((100 - pct) / 100) * drawableHeight;
+                    return `<line x1="0" y1="${y}" x2="100" y2="${y}" stroke="rgba(148,163,184,0.12)" stroke-width="0.25" />`;
+                }).join('');
+
+                const linePoints = points.map((point, index) => {
+                    const x = points.length === 1 ? 50 : index * step;
+                    const y = topPad + (drawableHeight - (((Number(point.value) || 0) - min) / range) * drawableHeight);
+                    return `${x},${Math.max(topPad, Math.min(topPad + drawableHeight, y))}`;
+                }).join(' ');
+
+                const areaPoints = `0,${topPad + drawableHeight} ${linePoints} 100,${topPad + drawableHeight}`;
+
+                const guideLines = points.map((point, index) => {
+                    const x = points.length === 1 ? 50 : index * step;
+                    const y = topPad + (drawableHeight - (((Number(point.value) || 0) - min) / range) * drawableHeight);
+                    return `<line x1="${x}" y1="${y + 1.2}" x2="${x}" y2="${topPad + drawableHeight}" stroke="rgba(14,165,233,0.14)" stroke-width="0.22" />`;
+                }).join('');
+
+                const dots = points.map((point, index) => {
+                    const x = points.length === 1 ? 50 : index * step;
+                    const y = topPad + (drawableHeight - (((Number(point.value) || 0) - min) / range) * drawableHeight);
+                    return `<circle cx="${x}" cy="${y}" r="1.05" fill="#0ea5e9" stroke="#ffffff" stroke-width="0.32"><title>${point.fullLabel}: ${point.formatted}</title></circle>`;
+                }).join('');
+
+                return `
+                    <svg viewBox="0 0 100 ${chartHeight}" preserveAspectRatio="xMidYMid meet" class="aspect-[100/52] h-auto w-full overflow-visible">
+                        ${gridLines}
+                        <polygon points="${areaPoints}" fill="rgba(14,165,233,0.12)"></polygon>
+                        ${guideLines}
+                        <polyline fill="none" stroke="#0ea5e9" stroke-width="0.48" stroke-linecap="round" stroke-linejoin="round" points="${linePoints}"></polyline>
+                        ${dots}
+                    </svg>
+                `;
+            },
+
             historyBarClass(tone) {
                 if (tone === 'success') return 'bg-emerald-500';
                 if (tone === 'danger') return 'bg-rose-500';
@@ -4178,6 +4409,7 @@
                     this.moveConfirmOpen = false;
                     this.moveLoading = false;
                     this.performanceTrendTooltip = { visible: false, x: 0, y: 0, bucket: null };
+                    this.runningHoursTooltip = { visible: false, x: 0, y: 0, point: null };
                     this.selectedPerformanceTrendBucket = null;
                     this.moveOptions = { facilities: [], workgroups: [], workstations: [] };
                     this.moveForm = { facilityId: '', workgroupId: '', workstationId: '' };

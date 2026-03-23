@@ -968,6 +968,58 @@ class DisplaysController extends Controller
                 : $lastError;
         }
 
+        $hoursBaseQuery = \App\Models\DisplayHour::where('display_id', $display->id);
+        $hoursCount = (int) (clone $hoursBaseQuery)->count();
+        $latestHoursEntry = (clone $hoursBaseQuery)
+            ->orderByDesc('start')
+            ->orderByDesc('id')
+            ->first();
+        $firstHoursEntry = (clone $hoursBaseQuery)
+            ->orderBy('start')
+            ->orderBy('id')
+            ->first();
+        $peakHours = (clone $hoursBaseQuery)->max('duration');
+
+        $formatHours = function ($value) {
+            if ($value === null || $value === '') {
+                return '-';
+            }
+
+            $hours = (float) $value;
+            $formatted = floor($hours) == $hours
+                ? number_format($hours, 0)
+                : number_format($hours, 1);
+
+            return $formatted . ' h';
+        };
+
+        $latestHoursActivityAt = $latestHoursEntry?->updated_at
+            ?? $latestHoursEntry?->created_at
+            ?? $latestHoursEntry?->start;
+
+        $trackingWindow = '-';
+        if ($firstHoursEntry && $latestHoursEntry) {
+            $trackingWindow = Carbon::parse($firstHoursEntry->start)->format('d M Y')
+                . ' - '
+                . Carbon::parse($latestHoursActivityAt)->format('d M Y H:i');
+        }
+
+        $runningHoursTrend = (clone $hoursBaseQuery)
+            ->orderByDesc('start')
+            ->orderByDesc('id')
+            ->limit(12)
+            ->get()
+            ->sortBy('start')
+            ->values()
+            ->map(function ($entry) use ($formatHours) {
+                return [
+                    'label' => Carbon::parse($entry->start)->format('d M'),
+                    'fullLabel' => Carbon::parse($entry->start)->format('d M Y'),
+                    'value' => (float) ($entry->duration ?? 0),
+                    'formatted' => $formatHours($entry->duration),
+                ];
+            });
+
         $chart = $recentHistories
             ->sortBy('time')
             ->values()
@@ -1282,6 +1334,22 @@ class DisplaysController extends Controller
             'expectedReplacementDate' => $display->expected_replacement_date ?: '-',
             'lastSync' => $display->updated_at ? Carbon::parse($display->updated_at)->format('d M Y H:i') : '-',
             'latestError' => $latestError,
+            'runningHours' => [
+                'available' => $hoursCount > 0,
+                'latestReported' => $formatHours($latestHoursEntry?->duration),
+                'latestRaw' => $latestHoursEntry?->duration,
+                'peakReported' => $formatHours($peakHours),
+                'peakRaw' => $peakHours,
+                'recordCount' => $hoursCount,
+                'lastReportedAt' => $latestHoursEntry
+                    ? Carbon::parse($latestHoursEntry->start)->format('d M Y H:i')
+                    : '-',
+                'lastSyncUpdate' => $latestHoursActivityAt
+                    ? Carbon::parse($latestHoursActivityAt)->format('d M Y H:i')
+                    : '-',
+                'trackingWindow' => $trackingWindow,
+                'trend' => $runningHoursTrend,
+            ],
             'links' => [
                 'settings' => url('display-settings/' . $display->id),
                 'histories' => url('histories-reports?display_id=' . $display->id),

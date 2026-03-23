@@ -27,7 +27,7 @@ class Display extends Model
     }
 
     public function hours(){
-        return $this->hasMany('App\Models\DisplayHours');
+        return $this->hasMany('App\Models\DisplayHour');
     }
 
 

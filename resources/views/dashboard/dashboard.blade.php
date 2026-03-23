@@ -279,10 +279,14 @@
                     <h3 class="mt-1 text-2xl font-bold tracking-tight text-slate-900">{{ $dashboardText['displaysNeedAttention'] }}</h3>
                     <p class="mt-1 text-[13px] text-slate-500">{{ $failedSectionDescription }}</p>
                 </div>
-                <a href="{{ url('displays?type=failed') }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 transition hover:bg-slate-50">
+                <button
+                    type="button"
+                    onclick="window.openDashboardStatModal && window.openDashboardStatModal('displays_failed')"
+                    class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 transition hover:bg-slate-50"
+                >
                     {{ __('View All') }}
                     <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
-                </a>
+                </button>
             </div>
 
             <div class="workstation-table-shell overflow-hidden">
@@ -325,10 +329,14 @@
                 <h3 class="mt-1 text-2xl font-bold tracking-tight text-slate-900">{{ __('Upcoming maintenance pipeline') }}</h3>
                 <p class="mt-1 text-[13px] text-slate-500">{{ $dueSectionDescription }}</p>
             </div>
-            <a href="{{ url('scheduler') }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 transition hover:bg-slate-50">
-                {{ __('Open Scheduler') }}
+            <button
+                type="button"
+                onclick="window.openDashboardStatModal && window.openDashboardStatModal('due_tasks')"
+                class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 transition hover:bg-slate-50"
+            >
+                {{ __('View All') }}
                 <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
-            </a>
+            </button>
         </div>
 
         <div class="workstation-table-shell overflow-hidden">

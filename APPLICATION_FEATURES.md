@@ -107,6 +107,10 @@ Main capabilities:
 
 This is the fastest way to create immediate calibration work from the admin console.
 
+Important behavior:
+- The task queue is ordered by newest created calibration tasks first
+- This makes recent scheduling actions easier to verify immediately after creation
+
 ---
 
 ## 7. Scheduler
@@ -121,6 +125,10 @@ Main capabilities:
 - Filter and review due work in a more planning-oriented view than the dashboard
 
 This area focuses on planned task execution rather than one-off task creation.
+
+Important behavior:
+- The default table order prioritizes the nearest due schedules first
+- This makes upcoming work easier to triage and act on from the scheduler
 
 ---
 

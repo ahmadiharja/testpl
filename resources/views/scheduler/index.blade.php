@@ -199,7 +199,7 @@
                 <div>
                     <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{{ __('Scheduled Tasks') }}</p>
                     <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">{{ __('All calibration and QA schedules') }}</h2>
-                    <p class="mt-1 text-sm text-slate-500">{{ __('Newest created tasks are shown first to make recent scheduling actions easier to verify.') }}</p>
+                    <p class="mt-1 text-sm text-slate-500">{{ __('Nearest due schedules are shown first so upcoming work is easier to prioritize.') }}</p>
                 </div>
             </div>
 
@@ -695,7 +695,7 @@
                     },
                 ],
                 server: {
-                    url: '/api/tasks?sort_mode=due_desc',
+                    url: '/api/tasks?sort_mode=due',
                     then: d => {
                         setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 50);
                         return d.data.map(r => [

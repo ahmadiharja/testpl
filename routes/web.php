@@ -96,6 +96,7 @@ Route::group(['middleware' => 'auth'], function(){
   Route::get('api/due-tasks', [DashboardController::class, 'api_due_tasks']);
   Route::get('api/displays-failed', [DashboardController::class, 'api_displays_failed']);
   Route::get('api/latest-performed', [DashboardController::class, 'api_latest_performed']);
+  Route::get('api/connection-watchlist', [DashboardController::class, 'api_connection_watchlist']);
   // Grid.js API endpoints for sidebar pages
   Route::get('api/displays',      [DashboardController::class, 'api_displays']);
   Route::get('api/workstations',  [DashboardController::class, 'api_workstations']);

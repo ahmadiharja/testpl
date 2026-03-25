@@ -910,16 +910,21 @@
                                         </div>
 
                                         <div class="bg-gray-50/80 rounded-2xl p-5 border border-gray-100 mt-2">
-                                            <p class="text-[10px] text-gray-500 mb-2 font-semibold">{{ __('Status') }}</p>
+                                            <p class="text-[10px] text-gray-500 mb-2 font-semibold" x-text="displayDetail.statusSectionLabel || @js(__('Current Device Health'))"></p>
                                             <div class="flex items-center gap-2 mb-3">
                                                 <span class="w-2.5 h-2.5 rounded-full" :class="displayDetail.statusTone === 'success' ? 'bg-emerald-500' : 'bg-rose-500'"></span>
                                                 <span class="text-sm font-extrabold text-gray-900" x-text="displayDetail.statusLabel"></span>
                                             </div>
+                                            <p class="mb-3 text-[11px] leading-relaxed text-slate-500" x-text="displayDetail.statusSummary"></p>
                                             <div class="space-y-2 text-[11px] text-gray-500">
                                                 <p><span class="font-semibold text-gray-700">{{ __('Connection:') }}</span> <span x-text="displayDetail.connectedLabel"></span></p>
                                                 <p><span class="font-semibold text-gray-700">{{ __('Last sync:') }}</span> <span x-text="displayDetail.lastSync"></span></p>
                                             </div>
-                                            <p class="mt-4 rounded-xl border border-rose-100 bg-white px-3 py-2 text-[11px] leading-relaxed text-gray-600" x-text="displayDetail.latestError"></p>
+                                            <p class="mt-4 rounded-xl px-3 py-2 text-[11px] leading-relaxed"
+                                               :class="displayDetail.statusTone === 'success'
+                                                    ? 'border border-slate-200 bg-white text-slate-500'
+                                                    : 'border border-rose-100 bg-white text-gray-600'"
+                                               x-text="displayDetail.latestError"></p>
                                         </div>
 
                                         <div class="pt-6 border-t border-gray-100 border-dashed">
@@ -1048,7 +1053,12 @@
                                                     </div>
                                                 </template>
                                                 <template x-if="!displayDetail.history.timeline.length">
-                                                    <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">{{ __('No history data available yet.') }}</div>
+                                                    <div class="space-y-3">
+                                                        <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">{{ __('No history data available yet.') }}</div>
+                                                        <div class="rounded-2xl border border-sky-100 bg-sky-50/80 px-4 py-3 text-sm leading-6 text-sky-700">
+                                                            {{ __('Current device health can still show a live device alert even when calibration history is empty, because live sync status and recorded histories are tracked separately.') }}
+                                                        </div>
+                                                    </div>
                                                 </template>
                                             </div>
 
@@ -1083,8 +1093,8 @@
                                                 <div class="rounded-[1.25rem] border border-gray-200 bg-white p-5 shadow-sm">
                                                     <div class="flex items-start justify-between gap-6">
                                                         <div>
-                                                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">{{ __('Failed') }}</p>
-                                                            <p class="mt-2 text-sm font-medium text-gray-500">{{ __('Runs needing follow-up attention') }}</p>
+                                                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-gray-400">{{ __('Failed Runs') }}</p>
+                                                            <p class="mt-2 text-sm font-medium text-gray-500">{{ __('Recorded failed histories in this view') }}</p>
                                                         </div>
                                                         <p class="text-4xl font-extrabold text-rose-600" x-text="displayDetail.history.failed"></p>
                                                     </div>
@@ -3231,6 +3241,8 @@
                             latestError: response.latestError,
                             lastSync: response.lastSync,
                             statusLabel: response.statusLabel,
+                            statusSectionLabel: response.statusSectionLabel,
+                            statusSummary: response.statusSummary,
                             statusTone: response.statusTone,
                             connectedLabel: response.connectedLabel,
                             links: response.links,

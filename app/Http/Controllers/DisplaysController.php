@@ -959,7 +959,7 @@ class DisplaysController extends Controller
         $failedHistories = (int) ($historyCounts[3] ?? 0);
         $passRate = $totalHistories > 0 ? round(($passedHistories / $totalHistories) * 100) : 0;
 
-        $latestError = 'No recent error details available.';
+        $latestError = 'No active device alert reported.';
         $errorRows = json_decode($display->errors ?? '[]', true);
         if (is_array($errorRows) && count($errorRows) > 0) {
             $lastError = end($errorRows);
@@ -967,6 +967,14 @@ class DisplaysController extends Controller
                 ? ($lastError['message'] ?? json_encode($lastError))
                 : $lastError;
         }
+        $displayFailed = (int) $display->status !== 1;
+        $statusSummary = !$totalHistories
+            ? ($displayFailed
+                ? 'This live device alert comes from the latest synced device telemetry. No calibration history has been recorded yet.'
+                : 'No calibration history has been recorded yet. Current health is based on the latest synced device telemetry.')
+            : ($displayFailed
+                ? 'This live device alert reflects the latest synced device telemetry. The history widgets below only summarize recorded calibration runs.'
+                : 'Current health reflects the latest synced device telemetry while the overview below summarizes recorded calibration runs.');
 
         $hoursBaseQuery = \App\Models\DisplayHour::where('display_id', $display->id);
         $hoursCount = (int) (clone $hoursBaseQuery)->count();
@@ -1311,8 +1319,10 @@ class DisplaysController extends Controller
             'manufacturer' => $manufacturer,
             'model' => $model,
             'serial' => $serial,
-            'statusLabel' => (int) $display->status === 1 ? 'Healthy' : 'Needs Attention',
+            'statusLabel' => (int) $display->status === 1 ? 'Healthy' : 'Live Device Alert',
             'statusTone' => (int) $display->status === 1 ? 'success' : 'danger',
+            'statusSectionLabel' => 'Current Device Health',
+            'statusSummary' => $statusSummary,
             'connectedLabel' => $display->connected ? 'Online' : 'Offline',
             'connectedTone' => $display->connected ? 'success' : 'warning',
             'resolution' => trim(($preferences['ResolutionHorizontal'] ?? '-') . ' x ' . ($preferences['ResolutionVertical'] ?? '-')),

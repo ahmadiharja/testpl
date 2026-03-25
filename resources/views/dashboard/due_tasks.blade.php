@@ -125,7 +125,7 @@
                     }
                 ],
                 server: {
-                    url: @json(url('api/tasks')),
+                    url: @json(url('api/due-tasks')),
                     then: (payload) => payload.data.map((item) => [item, item.wsName, item.wgName, item.taskName, item.scheduleName, item.dueAt, item.status, null]),
                     total: (payload) => payload.total
                 },

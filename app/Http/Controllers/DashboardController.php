@@ -45,6 +45,16 @@ class DashboardController extends Controller
                 ->where('workgroups.facility_id', '=', $facility_id);
         })
             ->count();
+
+        $staleThreshold = now()->subDays(7);
+        $stale_workstations = \App\Models\Workstation::query()
+            ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+            ->when($facility_id, fn($q) => $q->where('workgroups.facility_id', '=', $facility_id))
+            ->where(function ($q) use ($staleThreshold) {
+                $q->whereNull('workstations.last_connected')
+                    ->orWhere('workstations.last_connected', '<', $staleThreshold);
+            })
+            ->count();
         
         //$display_ids=\App\Models\Display::whereIn('workstation_id', $workstations_ids)->pluck('id');
         
@@ -86,6 +96,7 @@ class DashboardController extends Controller
             'd_ok' => $d_ok,
             'd_fail' => $d_fail,
             'workstations' => $workstations,
+            'stale_workstations' => $stale_workstations,
             'due_tasks' => $due_tasks,
             'title' => 'Dashboard',
             'd_fail_recent' => $d_fail_recent,
@@ -295,40 +306,62 @@ class DashboardController extends Controller
         $user = \App\Models\User::find($user_id);
         
         if (!$user) {
-            return response()->json([]);
+            return response()->json(['data' => [], 'total' => 0]);
         }
         
-        $facility_id = $user->facility_id;
+        $facility_id = $request->get('facility_id', $user->facility_id);
+        $search = trim((string) $request->get('search', ''));
+        $terms = $search !== '' ? preg_split('/\s+/', $search) : [];
+        $limit = max(1, min((int) $request->get('limit', 10), 100));
+        $page = max(1, (int) $request->get('page', 1));
+        $offset = ($page - 1) * $limit;
+        $nowTimestamp = now()->timestamp;
 
-        // Single-query JOIN approach for tasks — no N+1 eager loading
+        // This mirrors the old list_tasks query structure and only adds a "already due" cutoff.
         $taskRows = DB::table('tasks')
             ->join('displays', 'tasks.display_id', '=', 'displays.id')
             ->join('workstations', 'displays.workstation_id', '=', 'workstations.id')
             ->join('workgroups', 'workstations.workgroup_id', '=', 'workgroups.id')
             ->join('facilities', 'workgroups.facility_id', '=', 'facilities.id')
-            ->leftJoin('task_types', 'tasks.type', '=', 'task_types.key')
-            ->leftJoin('schedule_types', 'tasks.schtype', '=', 'schedule_types.client_id')
+            ->join('task_types', 'tasks.type', '=', 'task_types.key')
+            ->join('schedule_types', 'tasks.schtype', '=', 'schedule_types.client_id')
             ->where('tasks.deleted', 0)
             ->where('tasks.disabled', 0)
             ->where('tasks.nextrun', '>', 0)
+            ->where('tasks.nextrun', '<=', $nowTimestamp)
             ->when($facility_id, fn($q) => $q->where('workgroups.facility_id', $facility_id))
+            ->when(!empty($terms), function ($query) use ($terms) {
+                $query->where(function ($query) use ($terms) {
+                    foreach ($terms as $term) {
+                        $query->where(function ($q) use ($term) {
+                            $q->where('task_types.title', 'like', "%{$term}%")
+                                ->orWhere('displays.manufacturer', 'like', "%{$term}%")
+                                ->orWhere('displays.model', 'like', "%{$term}%")
+                                ->orWhere('displays.serial', 'like', "%{$term}%")
+                                ->orWhere('schedule_types.title', 'like', "%{$term}%")
+                                ->orWhere('facilities.name', 'like', "%{$term}%")
+                                ->orWhere('workstations.name', 'like', "%{$term}%")
+                                ->orWhere('workgroups.name', 'like', "%{$term}%");
+                        });
+                    }
+                });
+            })
             ->select([
                 DB::raw("'task' as record_type"),
                 'tasks.id', 'tasks.display_id',
                 'task_types.title as task_name',
                 'schedule_types.title as schedule_name',
+                'tasks.startdate as startdate1',
                 'tasks.nextrun as due_at',
-                'displays.manufacturer', 'displays.model', 'displays.serial',
-                'displays.workstation_id',
-                'workstations.name as ws_name', 'workstations.workgroup_id as wg_id',
-                'workgroups.name as wg_name', 'workgroups.facility_id as fac_id',
+                'tasks.nextrun as due_date_sort',
+                'displays.manufacturer', 'displays.model', 'displays.serial', 'displays.workstation_id',
+                'workstations.id as ws_id', 'workstations.name as ws_name',
+                'workgroups.id as wg_id', 'workgroups.name as wg_name',
+                'facilities.id as fac_id',
                 'facilities.name as fac_name',
             ])
-            ->orderBy('tasks.nextrun', 'asc')
-            ->limit(10)
             ->get();
 
-        // Single-query JOIN approach for QA tasks
         $qaRows = DB::table('qa_tasks')
             ->join('displays', 'qa_tasks.display_id', '=', 'displays.id')
             ->join('workstations', 'displays.workstation_id', '=', 'workstations.id')
@@ -336,29 +369,48 @@ class DashboardController extends Controller
             ->join('facilities', 'workgroups.facility_id', '=', 'facilities.id')
             ->where('qa_tasks.nextdate', '>', 0)
             ->where('qa_tasks.deleted', 0)
+            ->where('qa_tasks.nextdate', '<=', $nowTimestamp)
             ->when($facility_id, fn($q) => $q->where('workgroups.facility_id', $facility_id))
+            ->when(!empty($terms), function ($query) use ($terms) {
+                $query->where(function ($query) use ($terms) {
+                    foreach ($terms as $term) {
+                        $query->where(function ($q) use ($term) {
+                            $q->where('qa_tasks.name', 'like', "%{$term}%")
+                                ->orWhere('displays.manufacturer', 'like', "%{$term}%")
+                                ->orWhere('displays.model', 'like', "%{$term}%")
+                                ->orWhere('displays.serial', 'like', "%{$term}%")
+                                ->orWhere('facilities.name', 'like', "%{$term}%")
+                                ->orWhere('workstations.name', 'like', "%{$term}%")
+                                ->orWhere('workgroups.name', 'like', "%{$term}%");
+                        });
+                    }
+                });
+            })
             ->select([
                 DB::raw("'qa_task' as record_type"),
                 'qa_tasks.id', 'qa_tasks.display_id',
                 'qa_tasks.name as task_name',
                 'qa_tasks.freq as schedule_name',
+                DB::raw("'2019-08-27 00:00' as startdate1"),
                 'qa_tasks.nextdate as due_at',
-                'displays.manufacturer', 'displays.model', 'displays.serial',
-                'displays.workstation_id',
-                'workstations.name as ws_name', 'workstations.workgroup_id as wg_id',
-                'workgroups.name as wg_name', 'workgroups.facility_id as fac_id',
+                'qa_tasks.nextdate as due_date_sort',
+                'displays.manufacturer', 'displays.model', 'displays.serial', 'displays.workstation_id',
+                'workstations.id as ws_id', 'workstations.name as ws_name',
+                'workgroups.id as wg_id', 'workgroups.name as wg_name',
+                'facilities.id as fac_id',
                 'facilities.name as fac_name',
             ])
-            ->orderBy('qa_tasks.nextdate', 'asc')
-            ->limit(10)
             ->get();
 
-        // Merge both sets and take the 10 soonest due items
-        $allTasks = $taskRows->merge($qaRows)
-            ->sortBy('due_at')
-            ->take(10);
+        // Same ordering used by the old due-tasks page: due date desc, then id desc.
+        $allTasks = $taskRows->merge($qaRows)->sort(function ($a, $b) {
+            $dueCompare = ((int) $b->due_date_sort) <=> ((int) $a->due_date_sort);
+            return $dueCompare !== 0 ? $dueCompare : ((int) $b->id <=> (int) $a->id);
+        });
+        $total = $allTasks->count();
+        $rows = $allTasks->slice($offset, $limit)->values();
 
-        $formattedData = $allTasks->map(function ($record) {
+        $formattedData = $rows->map(function ($record) {
             $mfg = $record->manufacturer ?? '';
             $mod = $record->model ?? '';
             $ser = $record->serial ?? '';
@@ -377,9 +429,14 @@ class DashboardController extends Controller
                 $diffForHumans = $isPast ? $dueObj->diffForHumans() : 'Not overdue';
             }
 
+            $dueColor = $isPast ? 'danger' : ($isToday ? 'warning' : 'success');
+            $status = $isPast ? 'Overdue' : ($isToday ? 'Today' : 'Upcoming');
+
             return [
+                'id'         => $record->id,
+                'type'       => $record->record_type,
                 'displayId'  => $record->display_id,
-                'wsId'       => $record->workstation_id,
+                'wsId'       => $record->ws_id ?? $record->workstation_id,
                 'wgId'       => $record->wg_id,
                 'facId'      => $record->fac_id,
                 'displayName' => $displayName,
@@ -387,16 +444,24 @@ class DashboardController extends Controller
                 'wgName'     => $record->wg_name ?? '-',
                 'facName'    => $record->fac_name ?? '-',
                 'task'       => $record->task_name ?? $record->record_type,
+                'taskName'   => $record->task_name ?? $record->record_type,
                 'schedule'   => $record->schedule_name ?? '-',
+                'scheduleName' => $record->schedule_name ?? '-',
                 'dueAt'      => $dueAtFormatted,
                 'timestamp'  => $dueAtTimestamp,
                 'isPast'     => $isPast,
                 'isToday'    => $isToday,
                 'overdue'    => $diffForHumans,
+                'dueColor'   => $dueColor,
+                'status'     => $status,
+                'statusColor' => $dueColor,
             ];
         })->values();
 
-        return response()->json($formattedData);
+        return response()->json([
+            'data' => $formattedData,
+            'total' => $total,
+        ]);
     }
 
     public function api_displays_failed(Request $request)
@@ -484,7 +549,11 @@ class DashboardController extends Controller
             return response()->json([]);
         }
 
-        $facility_id = $user->facility_id;
+        $role = $request->session()->get('role');
+        $requestedFacilityId = $request->get('facility_id');
+        $facility_id = $role === 'super'
+            ? ($requestedFacilityId !== null && $requestedFacilityId !== '' ? $requestedFacilityId : null)
+            : $user->facility_id;
         $limit = max(1, min((int) $request->get('limit', 10), 50));
 
         // Single JOIN query — no Eloquent eager loading chains
@@ -506,6 +575,7 @@ class DashboardController extends Controller
             ])
             ->when($facility_id, fn($q) => $q->where('workgroups.facility_id', $facility_id))
             ->orderBy('histories.time', 'desc')
+            ->orderBy('histories.id', 'desc')
             ->limit($limit)
             ->get();
 
@@ -534,6 +604,79 @@ class DashboardController extends Controller
         });
 
         return response()->json($formattedData);
+    }
+
+    public function api_connection_watchlist(Request $request)
+    {
+        $user_id = $request->session()->get('id');
+        $user = \App\Models\User::find($user_id);
+        if (!$user) {
+            return response()->json(['data' => [], 'total' => 0]);
+        }
+
+        $role = $request->session()->get('role');
+        $requestedFacilityId = $request->get('facility_id');
+        $facility_id = $role === 'super'
+            ? ($requestedFacilityId !== null && $requestedFacilityId !== '' ? $requestedFacilityId : null)
+            : $user->facility_id;
+        $limit = max(1, min((int) $request->get('limit', 5), 20));
+        $staleThreshold = now()->subDays(7);
+
+        $query = DB::table('workstations')
+            ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+            ->join('facilities', 'facilities.id', '=', 'workgroups.facility_id')
+            ->leftJoin(DB::raw('(
+                SELECT workstation_id, COUNT(*) as cnt
+                FROM displays
+                GROUP BY workstation_id
+            ) dc'), 'dc.workstation_id', '=', 'workstations.id')
+            ->select([
+                'workstations.id',
+                'workstations.name',
+                'workstations.last_connected',
+                'workgroups.id as wg_id',
+                'workgroups.name as wg_name',
+                'facilities.id as fac_id',
+                'facilities.name as fac_name',
+                DB::raw('COALESCE(dc.cnt, 0) as displays_count'),
+            ])
+            ->when($facility_id, fn($q) => $q->where('workgroups.facility_id', $facility_id))
+            ->where(function ($q) use ($staleThreshold) {
+                $q->whereNull('workstations.last_connected')
+                    ->orWhere('workstations.last_connected', '<', $staleThreshold);
+            });
+
+        $total = (clone $query)->count();
+        $rows = (clone $query)
+            ->orderByRaw('CASE WHEN workstations.last_connected IS NULL THEN 0 ELSE 1 END')
+            ->orderBy('workstations.last_connected', 'asc')
+            ->orderBy('workstations.id', 'asc')
+            ->limit($limit)
+            ->get();
+
+        $data = $rows->map(function ($row) {
+            $lastConnected = $row->last_connected ? \Carbon\Carbon::parse($row->last_connected) : null;
+            $daysSince = $lastConnected ? $lastConnected->diffInDays(\Carbon\Carbon::now()) : null;
+            $lcColor = $lastConnected === null ? 'danger' : ($daysSince > 15 ? 'danger' : 'warning');
+
+            return [
+                'id' => $row->id,
+                'name' => $row->name,
+                'wgId' => $row->wg_id,
+                'wgName' => $row->wg_name ?? '-',
+                'facId' => $row->fac_id,
+                'facName' => $row->fac_name ?? '-',
+                'displaysCount' => (int) $row->displays_count,
+                'lastConnected' => $lastConnected ? $lastConnected->format('d M Y H:i') : '-',
+                'lastSeenRelative' => $lastConnected ? $lastConnected->diffForHumans() : 'No sync data',
+                'lcColor' => $lcColor,
+            ];
+        })->values();
+
+        return response()->json([
+            'data' => $data,
+            'total' => $total,
+        ]);
     }
 
     // ─── API: DISPLAYS ───────────────────────────────────────────────────────
@@ -868,6 +1011,8 @@ class DashboardController extends Controller
         $display_id     = $request->get('display_id');
         $search = $request->get('search', '');
         $sortMode = $request->get('sort_mode', 'due');
+        $dueScope = $request->get('due_scope');
+        $nowTimestamp = now()->timestamp;
         $limit  = (int)$request->get('limit', 25);
         $page   = (int)$request->get('page', 1);
         $offset = ($page - 1) * $limit;
@@ -880,9 +1025,11 @@ class DashboardController extends Controller
             ->leftJoin('task_types',     'tasks.type',   '=', 'task_types.key')
             ->leftJoin('schedule_types', 'tasks.schtype','=', 'schedule_types.client_id')
             ->where('tasks.deleted', 0)
+            ->where('tasks.disabled', 0)
             ->where('tasks.nextrun', '>', 0)
             ->whereNotNull('tasks.type')
             ->whereNotNull('tasks.schtype')
+            ->when($dueScope === 'due', fn($q) => $q->where('tasks.nextrun', '<=', $nowTimestamp))
             ->when($facility_id, fn($q) => $q->where('workgroups.facility_id', $facility_id))
             ->when($workgroup_id, fn($q) => $q->where('workgroups.id', $workgroup_id))
             ->when($workstation_id, fn($q) => $q->where('workstations.id', $workstation_id))
@@ -904,6 +1051,7 @@ class DashboardController extends Controller
                 'task_types.title as task_name',
                 'schedule_types.title as schedule_name',
                 'tasks.nextrun as due_at',
+                'tasks.created_at as created_at',
                 'displays.manufacturer', 'displays.model', 'displays.serial',
                 'displays.workstation_id',
                 'workstations.id as ws_id',
@@ -922,6 +1070,7 @@ class DashboardController extends Controller
             ->where('qa_tasks.deleted', 0)
             ->where('qa_tasks.nextdate', '>', 0)
             ->where('qa_tasks.nextdate', '<', 4294967295)
+            ->when($dueScope === 'due', fn($q) => $q->where('qa_tasks.nextdate', '<=', $nowTimestamp))
             ->when($facility_id, fn($q) => $q->where('workgroups.facility_id', $facility_id))
             ->when($workgroup_id, fn($q) => $q->where('workgroups.id', $workgroup_id))
             ->when($workstation_id, fn($q) => $q->where('workstations.id', $workstation_id))
@@ -943,6 +1092,7 @@ class DashboardController extends Controller
                 'qa_tasks.name as task_name',
                 'qa_tasks.freq as schedule_name',
                 'qa_tasks.nextdate as due_at',
+                'qa_tasks.created_at as created_at',
                 'displays.manufacturer', 'displays.model', 'displays.serial',
                 'displays.workstation_id',
                 'workstations.id as ws_id',
@@ -955,7 +1105,12 @@ class DashboardController extends Controller
 
         $allRows = $taskRows->get()->merge($qaRows->get());
         $allRows = match ($sortMode) {
-            'latest' => $allRows->sortByDesc('id'),
+            'latest' => $allRows->sort(function ($a, $b) {
+                $createdA = $a->created_at ? strtotime((string) $a->created_at) : 0;
+                $createdB = $b->created_at ? strtotime((string) $b->created_at) : 0;
+                $createdCompare = $createdB <=> $createdA;
+                return $createdCompare !== 0 ? $createdCompare : ($b->id <=> $a->id);
+            }),
             'due_desc' => $allRows->sort(function ($a, $b) {
                 $dueCompare = ((int) $b->due_at) <=> ((int) $a->due_at);
                 return $dueCompare !== 0 ? $dueCompare : ($b->id <=> $a->id);
@@ -1052,7 +1207,7 @@ class DashboardController extends Controller
 
         $total = $query->count();
         $rows = (clone $query)
-            ->orderByDesc('tasks.nextrun')
+            ->orderByDesc('tasks.created_at')
             ->orderByDesc('tasks.id')
             ->offset($offset)
             ->limit($limit)

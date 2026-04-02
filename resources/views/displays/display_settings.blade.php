@@ -2,6 +2,7 @@
 
 @php
     $role = session('role') ?? 'user';
+    $canManageDisplaySettings = in_array($role, ['super', 'admin'], true);
 @endphp
 
 <div x-data="{ activeTab: 'settings' }" class="flex flex-col gap-6 pb-8">
@@ -169,7 +170,7 @@
                                 {{ Form::date('InstalationDate', null, ['class' => 'h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20']) }}
                             </label>
 
-                            @if($role != 'user')
+                            @if($canManageDisplaySettings)
                                 <div class="md:col-span-2 flex justify-end">
                                     <button class="rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-400" type="button" id="display_save">
                                         Save Changes
@@ -218,7 +219,7 @@
                                 {{ Form::date('expected_replacement_date', null, ['class' => 'h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20']) }}
                             </label>
 
-                            @if($role != 'user')
+                            @if($canManageDisplaySettings)
                                 <div class="md:col-span-2 flex justify-end">
                                     <button class="rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-400" type="button" id="save-financial">
                                         Save Financial Status
@@ -253,7 +254,7 @@
 <script>
     (function () {
         const displayId = @json((string) $display_id);
-        const canManage = @json($role !== 'user');
+        const canManage = @json($canManageDisplaySettings);
 
         function parseOptionSource(value) {
             if (!value) return [];

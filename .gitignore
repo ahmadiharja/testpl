@@ -11,6 +11,7 @@
 /storage/*.key
 /storage/logs/*.log
 /vendor
+.checkpoints/
 /bootstrap/cache/*.php
 /storage/app/tmp_settings_script.txt
 /storage/app/updates/*

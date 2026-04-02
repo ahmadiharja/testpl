@@ -18,6 +18,7 @@ function makeNonDraggable(node) {
     node.setAttribute('draggable', 'false');
     node.style.userSelect = 'none';
     node.style.webkitUserDrag = 'none';
+    node.style.touchAction = 'none';
     node.addEventListener('dragstart', (event) => {
         event.preventDefault();
     });
@@ -30,6 +31,7 @@ function finalizeNodeHtml(node) {
         child.setAttribute('draggable', 'false');
         child.style.userSelect = 'none';
         child.style.webkitUserDrag = 'none';
+        child.style.touchAction = 'none';
     });
     return node;
 }
@@ -46,10 +48,11 @@ function stageHtml(cell) {
 
 function displayHtml(cell) {
     const data = cell.getData() || {};
+    const mobile = !!data.mobile;
     const attention = data.statusTone === 'danger';
     const wrap = el(
         'div',
-        `h-full w-full rounded-xl border px-3 py-2.5 ${
+        `h-full w-full ${mobile ? 'rounded-[18px] px-2.5 py-2' : 'rounded-xl px-3 py-2.5'} border ${
             data.active
                 ? 'border-sky-300 bg-sky-50'
                 : attention
@@ -62,12 +65,12 @@ function displayHtml(cell) {
     const row = el('div', 'flex items-center gap-2');
     const icon = el(
         'div',
-        `flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+        `flex ${mobile ? 'h-6 w-6 rounded-md' : 'h-7 w-7 rounded-lg'} shrink-0 items-center justify-center ${
             data.active ? 'bg-sky-500 text-white' : attention ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-500'
         }`,
     );
     icon.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3 w-3">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="${mobile ? 'h-2.5 w-2.5' : 'h-3 w-3'}">
             <rect x="3" y="4" width="18" height="12" rx="2"></rect>
             <path d="M8 20h8"></path>
             <path d="M12 16v4"></path>
@@ -77,9 +80,9 @@ function displayHtml(cell) {
     const body = el('div', 'min-w-0 flex-1');
     const top = el('div', 'flex items-start justify-between gap-2');
     const info = el('div', 'min-w-0 flex-1');
-    info.append(el('p', `truncate text-[12px] font-bold leading-tight ${data.active ? 'text-sky-700' : attention ? 'text-rose-700' : 'text-slate-900'}`, data.label || 'Display'));
+    info.append(el('p', `truncate ${mobile ? 'text-[11px]' : 'text-[12px]'} font-bold leading-tight ${data.active ? 'text-sky-700' : attention ? 'text-rose-700' : 'text-slate-900'}`, data.label || 'Display'));
 
-    const meta = el('div', 'mt-1 flex items-center gap-1 whitespace-nowrap');
+    const meta = el('div', `mt-1 flex items-center gap-1 whitespace-nowrap ${mobile ? 'scale-[0.97] origin-left' : ''}`);
     const health = el(
         'span',
         `inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] ${
@@ -99,12 +102,12 @@ function displayHtml(cell) {
     top.append(info);
 
     if (!data.active) {
-        const button = el('button', 'inline-flex h-6 shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-white px-1.5 py-0 text-[9px] font-semibold text-slate-600 transition hover:border-sky-200 hover:text-sky-700');
+        const button = el('button', `inline-flex ${mobile ? 'h-6 rounded-full px-2 text-[8px]' : 'h-6 rounded-md px-1.5 text-[9px]'} shrink-0 items-center gap-1 border border-slate-200 bg-white py-0 font-semibold text-slate-600 transition hover:border-sky-200 hover:text-sky-700`);
         button.type = 'button';
         button.dataset.action = 'open-display';
         button.dataset.displayId = String(data.id || '');
         button.innerHTML = `
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-2.5 w-2.5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="${mobile ? 'h-2 w-2' : 'h-2.5 w-2.5'}">
                 <path d="M7 17L17 7"></path>
                 <path d="M9 7h8v8"></path>
             </svg>
@@ -449,28 +452,38 @@ function addEdge(graph, source, target, options = {}) {
     });
 }
 
-function buildDisplayLayout(structure) {
+function buildDisplayLayout(structure, { mobile = false } = {}) {
     const displays = structure?.displays || [];
-    const columns = displays.length <= 10 ? 1 : displays.length <= 20 ? 2 : 3;
+    const columns = mobile
+        ? 1
+        : (displays.length <= 10 ? 1 : displays.length <= 20 ? 2 : 3);
     const rows = Math.max(1, Math.ceil(displays.length / columns));
-    const colGap = 360;
-    const rowGap = 82;
-    const startX = 1110;
+    const colGap = mobile ? 0 : 360;
+    const rowGap = mobile ? 74 : 82;
+    const canvasWidth = mobile ? 360 : null;
+    const centerX = mobile ? canvasWidth / 2 : null;
+    const startX = mobile ? (centerX - 107) : 1110;
     const stageTopY = 96;
-    const stageHeight = 88;
-    const nodeHeight = 64;
-    const columnHeight = Math.max(0, ((rows - 1) * rowGap) + nodeHeight);
-    const baseCenterY = stageTopY + (stageHeight / 2);
-    const stageY = baseCenterY - (stageHeight / 2);
-    const startY = baseCenterY - (columnHeight / 2);
+    const stageWidth = mobile ? 160 : 210;
+    const stageHeight = mobile ? 72 : 88;
+    const nodeWidth = mobile ? 214 : 320;
+    const nodeHeight = mobile ? 60 : 64;
+    const stageY = stageTopY;
+    const startY = mobile
+        ? stageTopY + (stageHeight * 3) + 118
+        : (stageTopY + (stageHeight / 2)) - (Math.max(0, ((rows - 1) * rowGap) + nodeHeight) / 2);
 
     const nodes = {
-        facility: { x: 80, y: stageY, width: 210, height: stageHeight },
-        workgroup: { x: 390, y: stageY, width: 210, height: stageHeight },
-        workstation: { x: 700, y: stageY, width: 210, height: stageHeight },
+        facility: { x: mobile ? (centerX - (stageWidth / 2)) : 80, y: stageY, width: stageWidth, height: stageHeight },
+        workgroup: { x: mobile ? (centerX - (stageWidth / 2)) : 390, y: mobile ? stageY + 108 : stageY, width: stageWidth, height: stageHeight },
+        workstation: { x: mobile ? (centerX - (stageWidth / 2)) : 700, y: mobile ? stageY + 216 : stageY, width: stageWidth, height: stageHeight },
         displays: [],
-        width: startX + (Math.max(columns, 1) * colGap) + 240,
-        height: Math.max(520, startY + rows * rowGap + 100),
+        width: mobile
+            ? canvasWidth
+            : startX + (Math.max(columns, 1) * colGap) + 240,
+        height: mobile
+            ? Math.max(620, startY + ((Math.max(rows, 1) - 1) * rowGap) + nodeHeight + 88)
+            : Math.max(520, startY + rows * rowGap + 100),
     };
 
     displays.forEach((display, index) => {
@@ -480,8 +493,8 @@ function buildDisplayLayout(structure) {
             id: display.id,
             x: startX + column * colGap,
             y: startY + row * rowGap,
-            width: 320,
-            height: 64,
+            width: nodeWidth,
+            height: nodeHeight,
         });
     });
 
@@ -688,9 +701,12 @@ function buildWorkgroupLayout(structure, expandedWorkgroupId, expandedWorkstatio
     return nodes;
 }
 
-function fit(graph) {
+function fit(graph, { mobile = false } = {}) {
     graph.centerContent();
-    graph.zoomToFit({ padding: 48, maxScale: 1 });
+    graph.zoomToFit({
+        padding: mobile ? 22 : 48,
+        maxScale: mobile ? 1.08 : 1,
+    });
 }
 
 function getViewport(graph) {
@@ -725,8 +741,8 @@ function focusWorkstation(graph, workstationId) {
     graph.centerCell(cell);
 }
 
-function createDisplayGraph(graph, structure) {
-    const layout = buildDisplayLayout(structure || {});
+function createDisplayGraph(graph, structure, { mobile = false } = {}) {
+    const layout = buildDisplayLayout(structure || {}, { mobile });
     const stageNodes = {
         facility: graph.addNode({
             id: 'facility',
@@ -757,8 +773,13 @@ function createDisplayGraph(graph, structure) {
         }),
     };
 
-    addEdge(graph, { cell: stageNodes.facility.id, anchor: 'right' }, { cell: stageNodes.workgroup.id, anchor: 'left' }, {});
-    addEdge(graph, { cell: stageNodes.workgroup.id, anchor: 'right' }, { cell: stageNodes.workstation.id, anchor: 'left' }, {});
+    if (mobile) {
+        addEdge(graph, { cell: stageNodes.facility.id, anchor: 'bottom' }, { cell: stageNodes.workgroup.id, anchor: 'top' }, {});
+        addEdge(graph, { cell: stageNodes.workgroup.id, anchor: 'bottom' }, { cell: stageNodes.workstation.id, anchor: 'top' }, {});
+    } else {
+        addEdge(graph, { cell: stageNodes.facility.id, anchor: 'right' }, { cell: stageNodes.workgroup.id, anchor: 'left' }, {});
+        addEdge(graph, { cell: stageNodes.workgroup.id, anchor: 'right' }, { cell: stageNodes.workstation.id, anchor: 'left' }, {});
+    }
 
     (structure?.displays || []).forEach((display, index) => {
         const position = layout.displays[index];
@@ -773,17 +794,18 @@ function createDisplayGraph(graph, structure) {
                 id: display.id,
                 label: display.name,
                 active: !!display.active,
+                mobile,
                 statusTone: display.statusTone,
                 statusLabel: display.statusLabel,
                 connectedLabel: display.connectedLabel,
             },
         });
 
-        const total = Math.max((structure?.displays || []).length - 1, 1);
-        const lane = ((index - total / 2) * 9);
         addEdge(
             graph,
-            { cell: stageNodes.workstation.id, anchor: { name: 'right', args: { dy: lane } } },
+            mobile
+                ? { cell: stageNodes.workstation.id, anchor: 'right' }
+                : { cell: stageNodes.workstation.id, anchor: { name: 'right', args: { dy: ((index - (Math.max((structure?.displays || []).length - 1, 1) / 2)) * 9) } } },
             { cell: `display-${display.id}`, anchor: 'left' },
             { active: !!display.active, attention: display.statusTone === 'danger' },
         );
@@ -976,12 +998,13 @@ function createWorkgroupGraph(graph, structure, expandedWorkgroupId, expandedWor
     });
 }
 
-export function createStructureMapGraph({ container, structure, onOpenDisplay, onZoomChange, expandedWorkstationId: initialExpandedWorkstationId = null, expandedWorkgroupId: initialExpandedWorkgroupId = null, onExpandedWorkstationChange, onExpandedWorkgroupChange }) {
+export function createStructureMapGraph({ container, structure, onOpenDisplay, onZoomChange, expandedWorkstationId: initialExpandedWorkstationId = null, expandedWorkgroupId: initialExpandedWorkgroupId = null, onExpandedWorkstationChange, onExpandedWorkgroupChange, mobile = false }) {
     registerNodes();
     container.innerHTML = '';
     container.style.userSelect = 'none';
     container.style.webkitUserSelect = 'none';
     container.style.webkitUserDrag = 'none';
+    container.style.touchAction = mobile ? 'none' : 'pan-x pan-y';
 
     const workstationMode = Array.isArray(structure?.workstations);
     const workgroupMode = Array.isArray(structure?.workgroups);
@@ -1013,21 +1036,22 @@ export function createStructureMapGraph({ container, structure, onOpenDisplay, o
         width: container.clientWidth,
         height: container.clientHeight,
         async: false,
-        background: { color: '#f8fafc' },
+        background: { color: mobile ? '#f8fbff' : '#f8fafc' },
         grid: {
-            visible: true,
+            visible: mobile ? false : true,
             type: 'dot',
-            size: 24,
+            size: mobile ? 20 : 24,
             args: { color: 'rgba(148,163,184,0.18)', thickness: 1 },
         },
         panning: true,
         preventDefaultMouseDown: true,
         mousewheel: {
             enabled: true,
-            minScale: 0.5,
-            maxScale: 2.2,
+            minScale: mobile ? 0.35 : 0.5,
+            maxScale: mobile ? 2.45 : 2.2,
         },
         interacting: {
+            nodeMovable: true,
             edgeMovable: false,
             vertexMovable: false,
             arrowheadMovable: false,
@@ -1049,17 +1073,18 @@ export function createStructureMapGraph({ container, structure, onOpenDisplay, o
         } else if (workgroupMode) {
             createWorkgroupGraph(graph, structure, expandedWorkgroupId, expandedWorkstationId, workgroupPositionOverrides, workstationPositionOverrides, stagePositionOverrides);
         } else {
-            createDisplayGraph(graph, structure);
+            createDisplayGraph(graph, structure, { mobile });
         }
         if (preserveViewport) {
             restoreViewport(graph, viewport);
         } else if (workstationMode) {
             focusWorkstation(graph, expandedWorkstationId);
         } else if (workgroupMode) {
-            fit(graph);
+            fit(graph, { mobile });
         } else {
-            fit(graph);
+            fit(graph, { mobile });
         }
+        onZoomChange?.(graph.zoom());
     };
 
     graph.on('scale', ({ sx }) => {
@@ -1162,7 +1187,7 @@ export function createStructureMapGraph({ container, structure, onOpenDisplay, o
         if (workstationMode) {
             focusWorkstation(graph, expandedWorkstationId);
         } else {
-            fit(graph);
+            fit(graph, { mobile });
         }
     });
     resizeObserver.observe(container);
@@ -1172,7 +1197,7 @@ export function createStructureMapGraph({ container, structure, onOpenDisplay, o
 
     return {
         graph,
-        fit: () => fit(graph),
+        fit: () => fit(graph, { mobile }),
         getViewport: () => getViewport(graph),
         setViewport: (viewport) => restoreViewport(graph, viewport),
         zoomIn() {

@@ -26,21 +26,13 @@ class HistoriesController extends Controller
     
     public function view_histories(Request $request, $id)
     {
+        $item = $this->resolveAuthorizedHistory($request, $id);
         $graph = $request->input('graph');
         if ($graph) {
             $graph = json_decode($graph, true);
         } else {
             $graph = [];
         }
-        //$item = \App\Models\History::with('display.workstation.workgroup')->find($id);
-        $item = \App\Models\History::find($id);
-        $item->load('display.workstation.workgroup');
-        
-        //$version = File::get(base_path().'/version.txt');
-
-        //$pdf = \PDF::loadView('histories.pdf',  compact('item', 'graph', 'version'));
-        
-        //$item = \App\Models\History::find($id);
         return view('histories.view', ['title'=>'History Information'])->with('item', $item);
     }
 

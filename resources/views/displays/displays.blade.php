@@ -15,13 +15,34 @@
         'option' => __('option'),
         'options' => __('options'),
         'noOptionsFound' => __('No options found'),
+        'display' => __('Display'),
         'displayName' => __('Display Name'),
         'inventoryNumber' => __('Inventory Number'),
         'workstation' => __('Workstation'),
         'workgroup' => __('Workgroup'),
         'facility' => __('Facility'),
+        'issue' => __('Attention'),
+        'displayHours' => __('Runtime'),
+        'updated' => __('Updated'),
+        'lastActivity' => __('Latest activity'),
+        'added' => __('Added'),
+        'noRecordedActivity' => __('No recorded activity'),
         'status' => __('Status'),
         'actions' => __('Actions'),
+        'noActiveIssue' => __('No active alert'),
+        'noAlertDetail' => __('No alert detail'),
+        'needsAttention' => __('Needs review'),
+        'noFailureDetail' => __('No failure detail recorded'),
+        'runningHours' => __('Reported runtime'),
+        'hoursSync' => __('Runtime sync'),
+        'noHoursData' => __('No runtime reported'),
+        'noHoursSync' => __('No runtime sync recorded'),
+        'online' => __('Online'),
+        'offline' => __('Offline'),
+        'latestIssue' => __('Attention now'),
+        'latestFailedCheck' => __('Latest failed check'),
+        'latestFailedRun' => __('Latest failed run'),
+        'liveState' => __('Current state'),
         'searchDisplays' => __('Search displays...'),
         'searchFacilities' => __('Search facilities...'),
         'searchWorkgroups' => __('Search workgroups...'),
@@ -71,6 +92,1098 @@
     ];
 @endphp
 
+<style>
+    .desktop-display-filter-panel {
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.94));
+        box-shadow: 0 18px 60px -36px rgba(15, 23, 42, 0.2);
+    }
+
+    .desktop-display-filter-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.1rem;
+    }
+
+    .desktop-display-panel-kicker {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #94a3b8;
+    }
+
+    .desktop-display-panel-title {
+        margin-top: 0.38rem;
+        font-size: 1.1rem;
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+        color: #0f172a;
+    }
+
+    .desktop-display-panel-copy {
+        margin-top: 0.38rem;
+        font-size: 13px;
+        line-height: 1.45;
+        color: #64748b;
+    }
+
+    .desktop-display-filter-grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .desktop-display-table-block {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+    }
+
+    .desktop-display-grid-shell {
+        position: relative;
+    }
+
+    .desktop-display-grid-shell.is-loading {
+        min-height: 34rem;
+    }
+
+    .desktop-display-grid-shell.is-loading #displays-grid,
+    .desktop-display-grid-shell.is-loading .gridjs-head,
+    .desktop-display-grid-shell.is-loading .gridjs-footer {
+        opacity: 0.26;
+        filter: saturate(0.9);
+        transition: opacity 180ms ease, filter 180ms ease;
+        pointer-events: none;
+    }
+
+    .desktop-display-grid-loading {
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        display: flex;
+        align-items: stretch;
+        justify-content: stretch;
+        padding: 0.28rem;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 180ms ease, visibility 180ms ease;
+    }
+
+    .desktop-display-grid-shell.is-loading .desktop-display-grid-loading {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .desktop-display-grid-loading-surface {
+        width: 100%;
+        min-height: 34rem;
+        border: 1px solid rgba(226, 232, 240, 0.94);
+        border-radius: 1.65rem;
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.95));
+        backdrop-filter: blur(12px);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.78),
+            0 18px 44px -34px rgba(15, 23, 42, 0.22);
+        padding: 1.05rem 1.2rem 1.25rem;
+    }
+
+    .desktop-display-grid-skeleton-toolbar {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 1rem;
+    }
+
+    .desktop-display-grid-skeleton-search {
+        width: 15.5rem;
+        height: 2.6rem;
+        border-radius: 999px;
+    }
+
+    .desktop-display-grid-skeleton-head,
+    .desktop-display-grid-skeleton-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1.8fr) minmax(220px, 0.9fr) 144px 132px 96px 68px;
+        column-gap: 1rem;
+        align-items: center;
+    }
+
+    .desktop-display-grid-skeleton-head {
+        margin-bottom: 0.55rem;
+        padding: 0 0 0.75rem;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.96);
+    }
+
+    .desktop-display-grid-skeleton-row {
+        min-height: 6.05rem;
+        padding: 0.92rem 0;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+    }
+
+    .desktop-display-grid-skeleton-cell {
+        min-width: 0;
+    }
+
+    .desktop-display-grid-skeleton-display,
+    .desktop-display-grid-skeleton-issue {
+        display: flex;
+        flex-direction: column;
+        gap: 0.42rem;
+    }
+
+    .desktop-display-grid-skeleton-updated,
+    .desktop-display-grid-skeleton-hours,
+    .desktop-display-grid-skeleton-status,
+    .desktop-display-grid-skeleton-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+    }
+
+    .desktop-display-skeleton-block {
+        display: block;
+        border-radius: 999px;
+        background:
+            linear-gradient(90deg, rgba(226, 232, 240, 0.58) 0%, rgba(255, 255, 255, 0.94) 50%, rgba(226, 232, 240, 0.58) 100%);
+        background-size: 200% 100%;
+        animation: desktop-display-skeleton-shimmer 1.18s linear infinite;
+    }
+
+    .desktop-display-skeleton-headline {
+        height: 0.86rem;
+        width: 7.5rem;
+    }
+
+    .desktop-display-skeleton-title {
+        height: 1.06rem;
+        width: 68%;
+        border-radius: 0.7rem;
+    }
+
+    .desktop-display-skeleton-meta {
+        height: 0.82rem;
+        width: 48%;
+        border-radius: 0.68rem;
+    }
+
+    .desktop-display-skeleton-issue-title {
+        height: 0.82rem;
+        width: 6.6rem;
+    }
+
+    .desktop-display-skeleton-issue-main {
+        height: 1rem;
+        width: 72%;
+        border-radius: 0.7rem;
+    }
+
+    .desktop-display-skeleton-issue-note {
+        height: 0.82rem;
+        width: 42%;
+        border-radius: 0.68rem;
+    }
+
+    .desktop-display-skeleton-hours-main {
+        height: 1rem;
+        width: 5.8rem;
+        border-radius: 0.7rem;
+    }
+
+    .desktop-display-skeleton-hours-note {
+        height: 0.82rem;
+        width: 6.8rem;
+        margin-top: 0.28rem;
+        border-radius: 0.68rem;
+    }
+
+    .desktop-display-skeleton-date {
+        height: 0.96rem;
+        width: 6rem;
+        border-radius: 0.68rem;
+    }
+
+    .desktop-display-skeleton-time {
+        height: 0.8rem;
+        width: 3rem;
+        margin-top: 0.28rem;
+        border-radius: 0.68rem;
+    }
+
+    .desktop-display-skeleton-pill {
+        width: 3.2rem;
+        height: 1.55rem;
+        border-radius: 999px;
+    }
+
+    .desktop-display-skeleton-circle {
+        width: 2.35rem;
+        height: 2.35rem;
+        border-radius: 999px;
+    }
+
+    @keyframes desktop-display-skeleton-shimmer {
+        0% {
+            background-position: 200% 0;
+        }
+
+        100% {
+            background-position: -200% 0;
+        }
+    }
+
+    #displays-grid .gridjs-wrapper,
+    #displays-grid .gridjs-table,
+    #displays-grid .gridjs-thead,
+    #displays-grid .gridjs-tbody {
+        border: 0;
+        box-shadow: none;
+        background: transparent;
+    }
+
+    #displays-grid .gridjs-table {
+        display: block;
+        width: 100% !important;
+        border-collapse: separate;
+        border-spacing: 0;
+        table-layout: fixed;
+    }
+
+    #displays-grid .gridjs-thead,
+    #displays-grid .gridjs-tbody {
+        display: block;
+        width: 100%;
+    }
+
+    #displays-grid .gridjs-thead .gridjs-tr,
+    #displays-grid .gridjs-tbody .gridjs-tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1.8fr) minmax(220px, 0.94fr) 144px 132px 96px 68px;
+        column-gap: 1rem;
+        width: 100%;
+        align-items: start;
+    }
+
+    #displays-grid .gridjs-th {
+        border-bottom: 0;
+        background: transparent;
+        padding: 0 0.25rem 0.8rem;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #94a3b8;
+        white-space: nowrap;
+    }
+
+    #displays-grid .gridjs-td {
+        border-bottom: 0;
+        background: transparent;
+        padding: 0.92rem 0.25rem;
+        vertical-align: top;
+    }
+
+    #displays-grid .gridjs-thead .gridjs-tr {
+        position: relative;
+        padding: 0 0.15rem 0.55rem;
+    }
+
+    #displays-grid .gridjs-thead .gridjs-tr::after {
+        content: '';
+        position: absolute;
+        inset: auto 0 0;
+        height: 1px;
+        background: rgba(226, 232, 240, 0.95);
+    }
+
+    #displays-grid .gridjs-th:first-child,
+    #displays-grid .gridjs-td:first-child {
+        padding-left: 0;
+    }
+
+    #displays-grid .gridjs-th:last-child,
+    #displays-grid .gridjs-td:last-child {
+        padding-right: 0;
+    }
+
+    #displays-grid .gridjs-head {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 1rem;
+        padding: 0.45rem 0.4rem 0.9rem !important;
+    }
+
+    #displays-grid .gridjs-search {
+        margin-left: auto;
+    }
+
+    #displays-grid .gridjs-search-input {
+        width: 100% !important;
+        min-width: 16rem;
+        max-width: 16rem;
+        border-color: rgba(203, 213, 225, 0.9) !important;
+        background: rgba(248, 250, 252, 0.96) !important;
+        padding: 0.82rem 1rem !important;
+        font-size: 13px !important;
+        color: #334155 !important;
+    }
+
+    .desktop-display-table-shell {
+        padding: 0.28rem;
+    }
+
+    .desktop-display-table-shell .gridjs-head,
+    .desktop-display-table-shell .gridjs-wrapper,
+    .desktop-display-table-shell .gridjs-footer {
+        border-radius: 1.55rem;
+    }
+
+    .desktop-display-table-shell .gridjs-wrapper {
+        padding: 0 0.2rem;
+    }
+
+    .desktop-display-table-shell .gridjs-footer {
+        padding-top: 0.45rem !important;
+    }
+
+    #displays-grid .gridjs-tbody .gridjs-tr {
+        position: relative;
+        padding: 0.22rem 0.15rem;
+        border-radius: 1.3rem;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(248, 250, 252, 0.72));
+        border: 1px solid transparent;
+        transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    }
+
+    #displays-grid .gridjs-tbody .gridjs-tr::after {
+        content: '';
+        position: absolute;
+        inset: auto 0.15rem 0;
+        height: 1px;
+        background: rgba(226, 232, 240, 0.78);
+    }
+
+    #displays-grid .gridjs-tbody .gridjs-tr:last-child::after {
+        opacity: 0;
+    }
+
+    #displays-grid .gridjs-tbody .gridjs-tr:hover {
+        border-color: rgba(226, 232, 240, 0.92);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.94));
+        box-shadow: 0 16px 36px -28px rgba(15, 23, 42, 0.18);
+    }
+
+    .desktop-display-summary {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-width: 0;
+        min-height: 4.2rem;
+        padding-block: 0;
+        max-width: 28rem;
+    }
+
+    .desktop-display-heading {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        min-width: 0;
+    }
+
+    .desktop-display-kicker-dot {
+        height: 0.5rem;
+        width: 0.5rem;
+        flex: 0 0 auto;
+        border-radius: 999px;
+        background: #94a3b8;
+        margin-top: 0.12rem;
+    }
+
+    .desktop-display-kicker-dot.healthy {
+        background: #10b981;
+    }
+
+    .desktop-display-kicker-dot.alert {
+        background: #f43f5e;
+    }
+
+    .desktop-display-title {
+        margin-top: 0;
+        display: inline-block;
+        max-width: 100%;
+        min-width: 0;
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.24;
+        letter-spacing: -0.02em;
+        color: #0f172a;
+    }
+
+    .desktop-display-title:hover {
+        color: #0284c7;
+    }
+
+    .desktop-display-meta {
+        margin-top: 0.28rem;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.2rem 0.36rem;
+        font-size: 11px;
+        color: #94a3b8;
+    }
+
+    .desktop-display-meta-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        font: inherit;
+        font-weight: 600;
+        color: #64748b;
+        transition: color 160ms ease;
+    }
+
+    .desktop-display-meta-button:hover {
+        color: #0284c7;
+    }
+
+    .desktop-display-separator {
+        color: #cbd5e1;
+        font-weight: 700;
+    }
+
+    .desktop-display-detail {
+        margin-top: 0.24rem;
+        font-size: 11.5px;
+        line-height: 1.4;
+        color: #475569;
+    }
+
+    .desktop-display-detail.problem {
+        color: #334155;
+    }
+
+    .desktop-display-updated {
+        display: inline-flex;
+        white-space: nowrap;
+        font-size: 12px;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .desktop-display-issue {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-width: 0;
+        min-height: 4.2rem;
+        max-width: 14.5rem;
+        padding-top: 0;
+    }
+
+    .desktop-display-issue-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 9.5px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #94a3b8;
+    }
+
+    .desktop-display-issue-kicker::before {
+        content: '';
+        width: 0.4rem;
+        height: 0.4rem;
+        border-radius: 999px;
+        background: #cbd5e1;
+        flex: 0 0 auto;
+    }
+
+    .desktop-display-issue-kicker.healthy::before {
+        background: #10b981;
+    }
+
+    .desktop-display-issue-kicker.alert::before {
+        background: #f43f5e;
+    }
+
+    .desktop-display-issue-text {
+        margin-top: 0.24rem;
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.42;
+        color: #0f172a;
+    }
+
+    .desktop-display-issue-text.muted {
+        color: #334155;
+    }
+
+    .desktop-display-issue-text.placeholder {
+        margin-top: 0;
+        color: #94a3b8;
+        font-weight: 500;
+    }
+
+    .desktop-display-issue-note {
+        margin-top: 0.16rem;
+        font-size: 11px;
+        line-height: 1.4;
+        color: #64748b;
+    }
+
+    .desktop-display-hours {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 4.2rem;
+        gap: 0.16rem;
+        padding-top: 0;
+    }
+
+    .desktop-display-hours-kicker {
+        font-size: 9.5px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #94a3b8;
+    }
+
+    .desktop-display-hours-text {
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.35;
+        color: #0f172a;
+    }
+
+    .desktop-display-hours-text.empty {
+        color: #334155;
+        font-weight: 600;
+    }
+
+    .desktop-display-hours-note {
+        font-size: 11px;
+        line-height: 1.4;
+        color: #64748b;
+    }
+
+    .desktop-display-updated-block {
+        display: inline-flex;
+        min-width: 5.9rem;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        min-height: 4.2rem;
+        gap: 0.1rem;
+    }
+
+    .desktop-display-updated-date {
+        font-size: 11.5px;
+        font-weight: 700;
+        line-height: 1.2;
+        color: #334155;
+    }
+
+    .desktop-display-updated-time {
+        font-size: 10.5px;
+        font-weight: 600;
+        line-height: 1.2;
+        color: #94a3b8;
+    }
+
+    .desktop-display-status-cell,
+    .desktop-display-actions-cell {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 4.2rem;
+    }
+
+    .desktop-display-status-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0.32rem 0.66rem;
+        font-size: 9.5px;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: 0.02em;
+    }
+
+    @media (max-width: 1439px) {
+        #displays-grid .gridjs-thead .gridjs-tr,
+        #displays-grid .gridjs-tbody .gridjs-tr {
+            grid-template-columns: minmax(0, 1.65fr) minmax(210px, 0.92fr) 114px 88px 60px;
+        }
+    }
+
+    .desktop-display-status-pill.success {
+        background: #dcfce7;
+        color: #047857;
+    }
+
+    .desktop-display-status-pill.danger {
+        background: #ffe4e6;
+        color: #e11d48;
+    }
+
+    @media (max-width: 1279px) {
+        .desktop-display-filter-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 767px) {
+        .desktop-display-filter-grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    /* Stable editorial ledger override */
+    #displays-grid .gridjs-table {
+        display: table !important;
+        width: 100% !important;
+        table-layout: fixed;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    #displays-grid .gridjs-thead {
+        display: table-header-group !important;
+        width: auto !important;
+    }
+
+    #displays-grid .gridjs-tbody {
+        display: table-row-group !important;
+        width: auto !important;
+    }
+
+    #displays-grid .gridjs-thead .gridjs-tr,
+    #displays-grid .gridjs-tbody .gridjs-tr {
+        display: table-row !important;
+        width: auto !important;
+        position: static;
+        padding: 0 !important;
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+    }
+
+    #displays-grid .gridjs-thead .gridjs-tr::after,
+    #displays-grid .gridjs-tbody .gridjs-tr::after {
+        display: none !important;
+    }
+
+    #displays-grid .gridjs-th,
+    #displays-grid .gridjs-td {
+        display: table-cell !important;
+    }
+
+    #displays-grid .gridjs-th {
+        padding: 0 0.8rem 0.9rem !important;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.95) !important;
+        vertical-align: bottom;
+    }
+
+    #displays-grid .gridjs-th-content {
+        display: inline-flex;
+        align-items: center;
+        min-height: 1rem;
+        vertical-align: middle;
+    }
+
+    #displays-grid .gridjs-sort {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        vertical-align: middle;
+        margin-left: 0.32rem;
+        color: #94a3b8 !important;
+    }
+
+    #displays-grid .gridjs-td {
+        padding: 0.95rem 0.8rem !important;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.9) !important;
+        vertical-align: top;
+    }
+
+    #displays-grid .gridjs-th:first-child,
+    #displays-grid .gridjs-td:first-child {
+        width: 47%;
+        padding-left: 0 !important;
+    }
+
+    #displays-grid .gridjs-th:nth-child(2),
+    #displays-grid .gridjs-td:nth-child(2) {
+        width: 25%;
+    }
+
+    #displays-grid .gridjs-th:nth-child(3),
+    #displays-grid .gridjs-td:nth-child(3) {
+        width: 12%;
+    }
+
+    #displays-grid .gridjs-th:nth-child(4),
+    #displays-grid .gridjs-td:nth-child(4) {
+        width: 8%;
+    }
+
+    #displays-grid .gridjs-th:nth-child(5),
+    #displays-grid .gridjs-td:nth-child(5) {
+        width: 8%;
+        padding-right: 0 !important;
+    }
+
+    #displays-grid .gridjs-tr:hover .gridjs-td {
+        background: rgba(248, 250, 252, 0.88) !important;
+    }
+
+    .desktop-display-table-shell .gridjs-wrapper {
+        padding: 0 !important;
+    }
+
+    .desktop-display-table-shell .gridjs-head {
+        padding: 0.2rem 0 0.85rem !important;
+    }
+
+    #displays-grid .gridjs-search-input {
+        min-width: 15rem;
+        max-width: 15rem;
+    }
+
+    .desktop-display-summary {
+        max-width: none;
+        min-height: 4rem;
+    }
+
+    .desktop-display-issue {
+        max-width: none;
+        min-height: 4rem;
+    }
+
+    .desktop-display-heading {
+        gap: 0.45rem;
+    }
+
+    .desktop-display-title {
+        font-size: 14.5px;
+    }
+
+    .desktop-display-meta {
+        margin-top: 0.24rem;
+        gap: 0.18rem 0.34rem;
+    }
+
+    .desktop-display-detail {
+        margin-top: 0.18rem;
+    }
+
+    .desktop-display-issue-text {
+        margin-top: 0.2rem;
+    }
+
+    .desktop-display-issue-note {
+        margin-top: 0.14rem;
+    }
+
+    .desktop-display-updated-block {
+        min-width: 0;
+        min-height: 4rem;
+    }
+
+    .desktop-display-status-cell,
+    .desktop-display-actions-cell {
+        align-items: center;
+        justify-content: flex-start;
+        min-height: 4rem;
+    }
+
+    .desktop-display-hours {
+        min-height: 4rem;
+    }
+
+    /* Final header/table normalization */
+    #displays-grid table.gridjs-table,
+    #displays-grid .gridjs-table {
+        display: table !important;
+        width: 100% !important;
+        table-layout: fixed;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    #displays-grid thead.gridjs-thead,
+    #displays-grid .gridjs-thead {
+        display: table-header-group !important;
+        width: auto !important;
+    }
+
+    #displays-grid tbody.gridjs-tbody,
+    #displays-grid .gridjs-tbody {
+        display: table-row-group !important;
+        width: auto !important;
+    }
+
+    #displays-grid tr.gridjs-tr,
+    #displays-grid .gridjs-thead .gridjs-tr,
+    #displays-grid .gridjs-tbody .gridjs-tr {
+        display: table-row !important;
+        width: auto !important;
+        position: static !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+    }
+
+    #displays-grid tr.gridjs-tr::after,
+    #displays-grid .gridjs-thead .gridjs-tr::after,
+    #displays-grid .gridjs-tbody .gridjs-tr::after {
+        display: none !important;
+    }
+
+    #displays-grid th.gridjs-th,
+    #displays-grid td.gridjs-td {
+        display: table-cell !important;
+    }
+
+    #displays-grid th.gridjs-th {
+        position: relative;
+        padding: 0 0.8rem 0.9rem !important;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.95) !important;
+        background: transparent !important;
+        vertical-align: bottom;
+    }
+
+    #displays-grid td.gridjs-td {
+        padding: 0.95rem 0.8rem !important;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.9) !important;
+        background: transparent !important;
+        vertical-align: top;
+    }
+
+    #displays-grid tr.gridjs-tr:hover td.gridjs-td {
+        background: rgba(248, 250, 252, 0.88) !important;
+    }
+
+    #displays-grid th.gridjs-th:first-child,
+    #displays-grid td.gridjs-td:first-child {
+        width: 39%;
+        padding-left: 0 !important;
+    }
+
+    #displays-grid th.gridjs-th:nth-child(2),
+    #displays-grid td.gridjs-td:nth-child(2) {
+        width: 22%;
+    }
+
+    #displays-grid th.gridjs-th:nth-child(3),
+    #displays-grid td.gridjs-td:nth-child(3) {
+        width: 13%;
+    }
+
+    #displays-grid th.gridjs-th:nth-child(4),
+    #displays-grid td.gridjs-td:nth-child(4) {
+        width: 11%;
+    }
+
+    #displays-grid th.gridjs-th:nth-child(5),
+    #displays-grid td.gridjs-td:nth-child(5) {
+        width: 7%;
+    }
+
+    #displays-grid th.gridjs-th:nth-child(6),
+    #displays-grid td.gridjs-td:nth-child(6) {
+        width: 8%;
+        padding-right: 0 !important;
+    }
+
+    #displays-grid th.gridjs-th .gridjs-th-content {
+        display: block !important;
+        width: auto !important;
+        float: none !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        white-space: nowrap;
+        line-height: 1.1;
+    }
+
+    #displays-grid th.gridjs-th-sort {
+        padding-right: 1.7rem !important;
+    }
+
+    #displays-grid th.gridjs-th-sort button.gridjs-sort {
+        float: none !important;
+        position: absolute;
+        top: 50%;
+        right: 0.65rem;
+        transform: translateY(-48%);
+        margin: 0 !important;
+    }
+
+    #displays-grid .gridjs-head {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 1rem;
+        padding: 0.2rem 0 0.85rem !important;
+    }
+
+    .desktop-display-table-shell .gridjs-wrapper {
+        padding: 0 !important;
+    }
+
+    /* Ultimate sortable table stabilization */
+    #displays-grid .gridjs-table,
+    #displays-grid table.gridjs-table {
+        table-layout: fixed !important;
+        width: 100% !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+    }
+
+    #displays-grid .gridjs-head {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        padding: 0.2rem 0 0.85rem !important;
+    }
+
+    #displays-grid th.gridjs-th,
+    #displays-grid td.gridjs-td {
+        position: relative;
+        vertical-align: middle !important;
+    }
+
+    #displays-grid th.gridjs-th {
+        padding: 0 1rem 0.9rem !important;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.95) !important;
+    }
+
+    #displays-grid td.gridjs-td {
+        padding: 1rem 1rem !important;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.9) !important;
+        vertical-align: middle !important;
+    }
+
+    #displays-grid th.gridjs-th:first-child,
+    #displays-grid td.gridjs-td:first-child {
+        width: 40% !important;
+        padding-left: 0 !important;
+    }
+
+    #displays-grid th.gridjs-th:nth-child(2),
+    #displays-grid td.gridjs-td:nth-child(2) {
+        width: 16% !important;
+    }
+
+    #displays-grid th.gridjs-th:nth-child(3),
+    #displays-grid td.gridjs-td:nth-child(3) {
+        width: 14% !important;
+    }
+
+    #displays-grid th.gridjs-th:nth-child(4),
+    #displays-grid td.gridjs-td:nth-child(4) {
+        width: 12% !important;
+    }
+
+    #displays-grid th.gridjs-th:nth-child(5),
+    #displays-grid td.gridjs-td:nth-child(5) {
+        width: 8% !important;
+    }
+
+    #displays-grid th.gridjs-th:nth-child(6),
+    #displays-grid td.gridjs-td:nth-child(6) {
+        width: 6% !important;
+        padding-right: 0 !important;
+    }
+
+    #displays-grid th.gridjs-th .gridjs-th-content {
+        display: inline-flex !important;
+        align-items: center !important;
+        min-height: 1.1rem !important;
+        line-height: 1 !important;
+        white-space: nowrap !important;
+        float: none !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+    }
+
+    #displays-grid th.gridjs-th-sort {
+        padding-right: 2rem !important;
+    }
+
+    #displays-grid th.gridjs-th:nth-child(4).gridjs-th-sort {
+        padding-right: 2.4rem !important;
+    }
+
+    #displays-grid th.gridjs-th:nth-child(4) .gridjs-th-content {
+        padding-right: 0.15rem;
+    }
+
+    #displays-grid th.gridjs-th-sort .gridjs-sort,
+    #displays-grid th.gridjs-th-sort button.gridjs-sort {
+        position: absolute !important;
+        top: 50% !important;
+        right: 0.7rem !important;
+        transform: translateY(-50%) !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 !important;
+        float: none !important;
+        color: #94a3b8 !important;
+    }
+
+    #displays-grid th.gridjs-th-sort .gridjs-sort svg,
+    #displays-grid th.gridjs-th-sort button.gridjs-sort svg {
+        display: block;
+    }
+
+    #displays-grid th.gridjs-th-sort .gridjs-sort:focus-visible,
+    #displays-grid th.gridjs-th-sort button.gridjs-sort:focus-visible {
+        outline: 2px solid rgba(14, 165, 233, 0.35);
+        outline-offset: 2px;
+        border-radius: 999px;
+    }
+
+    #displays-grid .gridjs-tr:hover .gridjs-td {
+        background: rgba(248, 250, 252, 0.88) !important;
+    }
+
+    .desktop-display-updated-label {
+        font-size: 9.5px;
+        font-weight: 700;
+        line-height: 1.15;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #94a3b8;
+    }
+
+    .desktop-display-updated-date.empty {
+        color: #64748b;
+        font-weight: 600;
+    }
+</style>
+
 <div class="flex flex-col gap-6 pb-8">
     <x-page-header title="{{ __('All Displays') }}" description="{{ __('Manage and monitor all diagnostic displays across facilities.') }}" icon="monitor">
         <x-slot name="actions">
@@ -81,9 +1194,27 @@
         </x-slot>
     </x-page-header>
 
-    <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_-32px_rgba(15,23,42,0.18)]">
-        <div class="flex flex-wrap items-end gap-4 xl:flex-nowrap">
-            <div class="min-w-0 flex-1 space-y-2 xl:w-[220px] xl:flex-none">
+    <section class="desktop-display-filter-panel rounded-[2rem] p-5">
+        <div class="desktop-display-filter-head">
+            <div>
+                <p class="desktop-display-panel-kicker">{{ __('Fleet filters') }}</p>
+                <h2 class="desktop-display-panel-title">{{ __('Refine by scope and status') }}</h2>
+                <p class="desktop-display-panel-copy">{{ __('Focus the display fleet by hierarchy and condition before scanning the list below.') }}</p>
+            </div>
+
+            <div class="flex items-start justify-end">
+                <button
+                    id="reset-display-filters"
+                    type="button"
+                    class="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900">
+                    <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
+                    {{ __('Reset Filters') }}
+                </button>
+            </div>
+        </div>
+
+        <div class="desktop-display-filter-grid">
+            <div class="min-w-0 space-y-2">
                 <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Facility') }}</label>
                 <div class="relative">
                     <button
@@ -101,7 +1232,7 @@
                 </div>
             </div>
 
-            <div class="min-w-0 flex-1 space-y-2 xl:w-[220px] xl:flex-none">
+            <div class="min-w-0 space-y-2">
                 <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Workgroup') }}</label>
                 <div class="relative">
                     <button
@@ -119,7 +1250,7 @@
                 </div>
             </div>
 
-            <div class="min-w-0 flex-1 space-y-2 xl:w-[220px] xl:flex-none">
+            <div class="min-w-0 space-y-2">
                 <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Workstation') }}</label>
                 <div class="relative">
                     <button
@@ -137,7 +1268,7 @@
                 </div>
             </div>
 
-            <div class="min-w-0 flex-1 space-y-2 xl:w-[280px] xl:flex-none">
+            <div class="min-w-0 space-y-2">
                 <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Status') }}</label>
                 <div class="grid h-12 grid-cols-3 rounded-2xl border border-slate-200 bg-white p-1">
                     <button
@@ -172,20 +1303,63 @@
                     </button>
                 </div>
             </div>
-
-            <div class="flex items-end justify-end xl:ml-auto xl:flex-none">
-                <button
-                    id="reset-display-filters"
-                    type="button"
-                    class="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900">
-                    <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
-                    {{ __('Reset Filters') }}
-                </button>
-            </div>
         </div>
     </section>
 
-    <x-data-table id="displays-grid" class="mb-10 workstation-table-shell" />
+    <div class="desktop-display-table-block">
+        <div id="displays-grid-shell" class="desktop-display-grid-shell is-loading" aria-busy="true">
+            <x-data-table id="displays-grid" class="mb-10 workstation-table-shell desktop-display-table-shell" />
+
+            <div id="displays-grid-loading" class="desktop-display-grid-loading" aria-hidden="true">
+                <div class="desktop-display-grid-loading-surface">
+                    <div class="desktop-display-grid-skeleton-toolbar">
+                        <span class="desktop-display-skeleton-block desktop-display-grid-skeleton-search"></span>
+                    </div>
+
+                    <div class="desktop-display-grid-skeleton-head">
+                        <div class="desktop-display-grid-skeleton-cell"><span class="desktop-display-skeleton-block desktop-display-skeleton-headline"></span></div>
+                        <div class="desktop-display-grid-skeleton-cell"><span class="desktop-display-skeleton-block desktop-display-skeleton-headline"></span></div>
+                        <div class="desktop-display-grid-skeleton-cell"><span class="desktop-display-skeleton-block desktop-display-skeleton-headline"></span></div>
+                        <div class="desktop-display-grid-skeleton-cell"><span class="desktop-display-skeleton-block desktop-display-skeleton-headline"></span></div>
+                        <div class="desktop-display-grid-skeleton-cell"><span class="desktop-display-skeleton-block desktop-display-skeleton-headline"></span></div>
+                        <div class="desktop-display-grid-skeleton-cell"><span class="desktop-display-skeleton-block desktop-display-skeleton-headline"></span></div>
+                    </div>
+
+                    @for($i = 0; $i < 5; $i++)
+                        <div class="desktop-display-grid-skeleton-row">
+                            <div class="desktop-display-grid-skeleton-cell desktop-display-grid-skeleton-display">
+                                <span class="desktop-display-skeleton-block desktop-display-skeleton-title"></span>
+                                <span class="desktop-display-skeleton-block desktop-display-skeleton-meta"></span>
+                            </div>
+                            <div class="desktop-display-grid-skeleton-cell desktop-display-grid-skeleton-issue">
+                                <span class="desktop-display-skeleton-block desktop-display-skeleton-issue-title"></span>
+                                <span class="desktop-display-skeleton-block desktop-display-skeleton-issue-main"></span>
+                                <span class="desktop-display-skeleton-block desktop-display-skeleton-issue-note"></span>
+                            </div>
+                            <div class="desktop-display-grid-skeleton-cell desktop-display-grid-skeleton-hours">
+                                <div>
+                                    <span class="desktop-display-skeleton-block desktop-display-skeleton-hours-main"></span>
+                                    <span class="desktop-display-skeleton-block desktop-display-skeleton-hours-note"></span>
+                                </div>
+                            </div>
+                            <div class="desktop-display-grid-skeleton-cell desktop-display-grid-skeleton-updated">
+                                <div>
+                                    <span class="desktop-display-skeleton-block desktop-display-skeleton-date"></span>
+                                    <span class="desktop-display-skeleton-block desktop-display-skeleton-time"></span>
+                                </div>
+                            </div>
+                            <div class="desktop-display-grid-skeleton-cell desktop-display-grid-skeleton-status">
+                                <span class="desktop-display-skeleton-block desktop-display-skeleton-pill"></span>
+                            </div>
+                            <div class="desktop-display-grid-skeleton-cell desktop-display-grid-skeleton-actions">
+                                <span class="desktop-display-skeleton-block desktop-display-skeleton-circle"></span>
+                            </div>
+                        </div>
+                    @endfor
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div id="display-action-overlay" class="pointer-events-none fixed inset-0 z-[1200] hidden">
@@ -380,6 +1554,8 @@
         selectedWorkstationId: '',
         defaultStatus: @json($initialDisplayStatus),
         selectedStatus: @json($initialDisplayStatus),
+        sortKey: 'updated_at',
+        sortOrder: 'desc',
         facilitySearch: '',
         workgroupSearch: '',
         workstationSearch: '',
@@ -388,6 +1564,9 @@
         deleteTarget: null,
         editTarget: null,
         grid: null,
+        gridBatch: 0,
+        gridLoadingHideTimer: null,
+        gridLoadingStartedAt: 0,
     };
 
     const els = {};
@@ -452,6 +1631,8 @@
         ].filter(Boolean);
 
         els.resetFilters = document.getElementById('reset-display-filters');
+        els.gridShell = document.getElementById('displays-grid-shell');
+        els.gridLoading = document.getElementById('displays-grid-loading');
         els.grid = document.getElementById('displays-grid');
 
         els.actionOverlay = document.getElementById('display-action-overlay');
@@ -612,6 +1793,34 @@
         });
     }
 
+    function primeGridLoading() {
+        if (!els.gridShell) return;
+        window.clearTimeout(state.gridLoadingHideTimer);
+        state.gridLoadingStartedAt = performance.now();
+        els.gridShell.classList.add('is-loading');
+        els.gridShell.setAttribute('aria-busy', 'true');
+    }
+
+    function clearGridLoading(batch) {
+        if (batch !== state.gridBatch || !els.gridShell) {
+            return;
+        }
+
+        const elapsed = performance.now() - (state.gridLoadingStartedAt || 0);
+        const minVisible = batch === 1 ? 220 : 140;
+        const delay = Math.max(0, minVisible - elapsed);
+
+        window.clearTimeout(state.gridLoadingHideTimer);
+        state.gridLoadingHideTimer = window.setTimeout(() => {
+            if (batch !== state.gridBatch || !els.gridShell) {
+                return;
+            }
+
+            els.gridShell.classList.remove('is-loading');
+            els.gridShell.setAttribute('aria-busy', 'false');
+        }, delay);
+    }
+
     function renderWorkgroupOptions() {
         const workgroups = getWorkgroupOptions();
         const query = state.workgroupSearch.trim().toLowerCase();
@@ -695,21 +1904,285 @@
     }
 
     function buildGridUrl(extra = {}) {
-        return Perfectlum.buildServerUrl('/api/displays', {
+        const url = new URL('/api/displays', window.location.origin);
+        const params = {
             type: state.selectedStatus || '',
             facility_id: state.selectedFacilityId || '',
             workgroup_id: state.selectedWorkgroupId || '',
             workstation_id: state.selectedWorkstationId || '',
+            sort: state.sortKey || 'updated_at',
+            order: state.sortOrder || 'desc',
             ...extra,
+        };
+
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                url.searchParams.set(key, value);
+            } else {
+                url.searchParams.delete(key);
+            }
         });
+
+        return `${url.pathname}${url.search}`;
+    }
+
+    function resolveSortState(columns = []) {
+        const active = Array.isArray(columns)
+            ? columns.find((column) => column && typeof column.index === 'number' && [1, -1, 'asc', 'desc'].includes(column.direction))
+            : null;
+        if (!active) {
+            return { key: 'updated_at', order: 'desc' };
+        }
+
+        const key = ({
+            0: 'display_name',
+            2: 'display_hours',
+            3: 'updated_at',
+            4: 'status',
+        })[active.index] || 'updated_at';
+
+        return {
+            key,
+            order: active.direction === -1 || active.direction === 'desc' ? 'desc' : 'asc',
+        };
+    }
+
+    function extractErrorText(errors) {
+        if (!Array.isArray(errors) || !errors.length) {
+            return '';
+        }
+
+        const latest = errors[errors.length - 1];
+        if (typeof latest === 'string') {
+            return latest;
+        }
+
+        if (latest && typeof latest === 'object') {
+            return latest.text || latest.error || latest.message || latest.name || '';
+        }
+
+        return '';
+    }
+
+    function renderHierarchyMetaButton(type, id, label) {
+        if (!label || label === '-') {
+            return '';
+        }
+
+        return `<button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'${type}',id:${Number(id) || 0}}}))" class="desktop-display-meta-button">${Perfectlum.escapeHtml(label)}</button>`;
+    }
+
+    function buildUniqueTextParts(parts = []) {
+        const seen = new Set();
+
+        return parts.filter((part) => {
+            const value = String(part || '').trim();
+            if (!value || value === '-') {
+                return false;
+            }
+
+            const key = value.toLowerCase();
+            if (seen.has(key)) {
+                return false;
+            }
+
+            seen.add(key);
+            return true;
+        });
+    }
+
+    function renderDisplayOverviewCell(item) {
+        const healthy = Number(item.status) === 1;
+        const workstation = renderHierarchyMetaButton('workstation', item.wsId, item.wsName);
+        const workgroup = renderHierarchyMetaButton('workgroup', item.wgId, item.wgName);
+        const facility = renderHierarchyMetaButton('facility', item.facId, item.facName);
+        const contextParts = [workstation, workgroup, facility].filter(Boolean);
+        const detailParts = buildUniqueTextParts([
+            item.location && String(item.location).trim().toLowerCase() !== String(item.facName || '').trim().toLowerCase() ? item.location : '',
+        ]);
+
+        return `
+            <div class="desktop-display-summary">
+                <div class="desktop-display-heading">
+                    <span class="desktop-display-kicker-dot ${healthy ? 'healthy' : 'alert'}"></span>
+                    <button type="button" onclick="window.openDisplayModal(${item.id})" class="desktop-display-title text-left">
+                        ${Perfectlum.escapeHtml(item.displayName)}
+                    </button>
+                </div>
+                ${contextParts.length ? `
+                    <div class="desktop-display-meta">
+                        ${contextParts.join('<span class="desktop-display-separator">•</span>')}
+                    </div>
+                ` : ''}
+                ${detailParts.length ? `
+                    <div class="desktop-display-detail ${healthy ? '' : 'problem'}">
+                        ${Perfectlum.escapeHtml(detailParts.join(' • '))}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    function renderDisplayIssueCell(item) {
+        const healthy = Number(item.status) === 1;
+        const attentionText = String(item.attentionText || '').trim();
+        const attentionMode = String(item.attentionMode || '').trim();
+        const issueText = extractErrorText(item.errors);
+        const failedCheckText = String(item.latestFailedCheckText || '').trim();
+        const failedHistoryText = String(item.latestFailedHistoryName || '').trim();
+        const connectionState = item.connected ? text.online : text.offline;
+        const detailParts = buildUniqueTextParts([
+            item.location && String(item.location).trim().toLowerCase() !== String(item.facName || '').trim().toLowerCase() ? item.location : '',
+            connectionState,
+        ]);
+
+        if (!healthy && attentionMode === 'placeholder') {
+            return `
+                <div class="desktop-display-issue">
+                    <div class="desktop-display-issue-text placeholder">
+                        ${Perfectlum.escapeHtml(attentionText || text.noAlertDetail)}
+                    </div>
+                </div>
+            `;
+        }
+
+        if (!healthy && !issueText && !failedCheckText && !failedHistoryText) {
+            return `
+                <div class="desktop-display-issue">
+                    <div class="desktop-display-issue-text placeholder">
+                        ${Perfectlum.escapeHtml(text.noAlertDetail)}
+                    </div>
+                </div>
+            `;
+        }
+
+        const primary = healthy
+            ? text.noActiveIssue
+            : (attentionText || issueText || failedCheckText || failedHistoryText);
+        const kicker = healthy
+            ? text.liveState
+            : ({
+                live: text.latestIssue,
+                failed_check: text.latestFailedCheck,
+                failed_history: text.latestFailedRun,
+            }[attentionMode] || (issueText
+                ? text.latestIssue
+                : (failedCheckText ? text.latestFailedCheck : text.latestFailedRun)));
+        const note = detailParts.join(' • ');
+
+        return `
+            <div class="desktop-display-issue">
+                <div class="desktop-display-issue-kicker ${healthy ? 'healthy' : 'alert'}">
+                    ${Perfectlum.escapeHtml(kicker)}
+                </div>
+                <div class="desktop-display-issue-text ${healthy ? 'muted' : ''}">
+                    ${Perfectlum.escapeHtml(primary)}
+                </div>
+                ${note ? `<div class="desktop-display-issue-note">${Perfectlum.escapeHtml(note)}</div>` : ''}
+            </div>
+        `;
+    }
+
+    function renderDisplayHoursCell(item) {
+        const hasHours = item.latestHoursDuration !== null && item.latestHoursDuration !== undefined && item.latestHoursDuration !== '';
+        const primary = hasHours ? (item.latestHoursFormatted || '-') : text.noHoursData;
+        const runtimeSyncedAt = item.latestHoursSyncedAt || item.latestHoursAt;
+        const note = runtimeSyncedAt && runtimeSyncedAt !== '-'
+            ? `${text.hoursSync}: ${runtimeSyncedAt}`
+            : text.noHoursSync;
+
+        return `
+            <div class="desktop-display-hours">
+                <div class="desktop-display-hours-kicker">${Perfectlum.escapeHtml(text.runningHours)}</div>
+                <div class="desktop-display-hours-text ${hasHours ? '' : 'empty'}">${Perfectlum.escapeHtml(primary)}</div>
+                <div class="desktop-display-hours-note">${Perfectlum.escapeHtml(note)}</div>
+            </div>
+        `;
+    }
+
+    function renderUpdatedCell(value) {
+        const payload = value && typeof value === 'object'
+            ? value
+            : { mode: 'activity', updatedAt: value };
+
+        if (payload.mode === 'none') {
+            return `
+                <div class="desktop-display-updated-block">
+                    <span class="desktop-display-updated-date empty">${Perfectlum.escapeHtml(text.noRecordedActivity)}</span>
+                </div>
+            `;
+        }
+
+        const raw = String(payload.mode === 'created' ? (payload.createdAt || payload.updatedAt || '') : (payload.updatedAt || '')).trim();
+        const normalized = raw || '-';
+        const match = normalized.match(/^(.*)\s(\d{2}:\d{2})$/);
+        const date = match ? match[1] : normalized;
+        const time = match ? match[2] : '';
+
+        const label = payload.mode === 'created'
+            ? `<span class="desktop-display-updated-label">${Perfectlum.escapeHtml(text.added)}</span>`
+            : '';
+
+        return `
+            <div class="desktop-display-updated-block">
+                ${label}
+                <span class="desktop-display-updated-date">${Perfectlum.escapeHtml(date || '-')}</span>
+                ${time ? `<span class="desktop-display-updated-time">${Perfectlum.escapeHtml(time)}</span>` : ''}
+            </div>
+        `;
+    }
+
+    function renderStatusCell(value) {
+        const healthy = Number(value) === 1;
+
+        return `
+            <div class="desktop-display-status-cell">
+                <span class="desktop-display-status-pill ${healthy ? 'success' : 'danger'}">
+                    ${Perfectlum.escapeHtml(healthy ? 'OK' : 'Failed')}
+                </span>
+            </div>
+        `;
     }
 
     function mapRows(d) {
         return d.data.map(r => [
-            { id: r.id, displayName: r.displayName },
-            { wsName: r.wsName, wsId: r.wsId },
-            { wgName: r.wgName, wgId: r.wgId },
-            { facName: r.facName, facId: r.facId },
+            {
+                id: r.id,
+                displayName: r.displayName,
+                wsName: r.wsName,
+                wsId: r.wsId,
+                wgName: r.wgName,
+                wgId: r.wgId,
+                facName: r.facName,
+                facId: r.facId,
+                status: r.status,
+                connected: r.connected,
+                location: r.location,
+                updatedAt: r.updatedAt,
+                errors: r.errors,
+            },
+            {
+                facName: r.facName,
+                status: r.status,
+                connected: r.connected,
+                location: r.location,
+                errors: r.errors,
+                attentionText: r.attentionText,
+                attentionMode: r.attentionMode,
+                latestFailedCheckText: r.latestFailedCheckText,
+                latestFailedHistoryName: r.latestFailedHistoryName,
+            },
+            {
+                latestHoursDuration: r.latestHoursDuration,
+                latestHoursFormatted: r.latestHoursFormatted,
+                latestHoursAt: r.latestHoursAt,
+                latestHoursSyncedAt: r.latestHoursSyncedAt,
+            },
+            {
+                updatedAt: r.updatedAt,
+                createdAt: r.createdAt,
+                mode: r.latestActivityMode || r.latestActivitySource || 'activity',
+            },
             r.status,
             { id: r.id, name: r.displayName },
         ]);
@@ -718,44 +2191,46 @@
     function initGrid() {
         if (!els.grid || state.grid) return;
 
+        const gridBatch = ++state.gridBatch;
+        primeGridLoading();
+
         state.grid = Perfectlum.createGrid(els.grid, {
             columns: [
                 {
-                    name: text.displayName,
-                    formatter: (cell) => gridjs.html(`
-                        <button type="button" onclick="window.openDisplayModal(${cell.id})" class="cursor-pointer font-medium text-sky-600 transition hover:text-sky-700 hover:underline">
-                            ${Perfectlum.escapeHtml(cell.displayName)}
-                        </button>
-                    `),
+                    name: text.display,
+                    sort: {},
+                    formatter: (cell) => gridjs.html(renderDisplayOverviewCell(cell)),
                 },
                 {
-                    name: text.workstation,
-                    formatter: (cell) => !cell.wsName || cell.wsName === '-'
-                        ? '-'
-                        : gridjs.html(`<button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'workstation',id:${cell.wsId}}}))" class="cursor-pointer text-gray-600 transition hover:text-sky-500 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(cell.wsName)}</button>`),
+                    name: text.issue,
+                    sort: false,
+                    width: '240px',
+                    formatter: (cell) => gridjs.html(renderDisplayIssueCell(cell)),
                 },
                 {
-                    name: text.workgroup,
-                    formatter: (cell) => !cell.wgName || cell.wgName === '-'
-                        ? '-'
-                        : gridjs.html(`<button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'workgroup',id:${cell.wgId}}}))" class="cursor-pointer text-gray-600 transition hover:text-sky-500 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(cell.wgName)}</button>`),
+                    name: text.displayHours,
+                    width: '152px',
+                    sort: {},
+                    formatter: (cell) => gridjs.html(renderDisplayHoursCell(cell)),
                 },
                 {
-                    name: text.facility,
-                    formatter: (cell) => !cell.facName || cell.facName === '-'
-                        ? '-'
-                        : gridjs.html(`<button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'facility',id:${cell.facId}}}))" class="cursor-pointer text-gray-600 transition hover:text-sky-500 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(cell.facName)}</button>`),
+                    name: text.lastActivity,
+                    width: '146px',
+                    sort: {},
+                    formatter: (cell) => gridjs.html(renderUpdatedCell(cell)),
                 },
                 {
                     name: text.status,
-                    formatter: (cell) => gridjs.html(Perfectlum.badge(Number(cell) === 1 ? 'OK' : 'Failed', Number(cell) === 1 ? 'success' : 'danger')),
+                    width: '106px',
+                    sort: {},
+                    formatter: (cell) => gridjs.html(renderStatusCell(cell)),
                 },
                 {
                     name: text.actions,
                     sort: false,
-                    width: '112px',
+                    width: '96px',
                     formatter: (c) => !canManageDisplays ? '' : gridjs.html(`
-                        <div class="flex justify-center">
+                        <div class="desktop-display-actions-cell">
                             <button
                                 type="button"
                                 onclick='window.displaysPage && window.displaysPage.toggleActionMenu(event, ${c.id}, ${JSON.stringify(c.name)})'
@@ -767,8 +2242,17 @@
             ],
             server: {
                 url: buildGridUrl(),
-                then: mapRows,
-                total: d => d.total,
+                data: async (opts) => {
+                    try {
+                        const payload = await Perfectlum.request(opts.url);
+                        return {
+                            data: mapRows(payload),
+                            total: Number(payload?.total || 0),
+                        };
+                    } finally {
+                        clearGridLoading(gridBatch);
+                    }
+                },
             },
             pagination: {
                 enabled: true,
@@ -783,7 +2267,26 @@
                     url: (_, kw) => buildGridUrl({ search: kw }),
                 },
             },
-            sort: { multiColumn: false },
+            sort: {
+                multiColumn: false,
+                server: {
+                    url: (prevUrl, columns) => {
+                        const nextSort = resolveSortState(columns);
+                        state.sortKey = nextSort.key;
+                        state.sortOrder = nextSort.order;
+
+                        const prev = new URL(prevUrl, window.location.origin);
+                        const search = prev.searchParams.get('search') || '';
+                        const limit = prev.searchParams.get('limit') || '';
+
+                        return buildGridUrl({
+                            search,
+                            limit,
+                            page: 1,
+                        });
+                    },
+                },
+            },
             language: {
                 search: { placeholder: text.searchDisplays },
                 pagination: {
@@ -807,6 +2310,7 @@
             return;
         }
 
+        primeGridLoading();
         Perfectlum.remountGrid('displays-grid', (freshGrid) => {
             els.grid = freshGrid || document.getElementById('displays-grid');
             state.grid = null;

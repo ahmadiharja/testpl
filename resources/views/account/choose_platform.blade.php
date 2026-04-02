@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ __('Qubyx - Choose Platform') }}</title>
 
     <!-- Fonts -->
@@ -50,7 +51,13 @@
 
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 text-[#E2E1E6]">
+<body class="min-h-screen flex items-center justify-center p-4 text-[#E2E1E6]"
+      data-surface="desktop"
+      data-idle-logout-minutes="{{ config('session.idle_timeout', 30) }}"
+      data-idle-heartbeat-seconds="{{ config('session.idle_heartbeat_seconds', 60) }}"
+      data-idle-heartbeat-url="{{ url('session/heartbeat') }}"
+      data-idle-logout-url="{{ url('logout?reason=inactive') }}"
+      data-idle-login-url="{{ url('login?surface=desktop') }}">
 
     <!-- Main Modal Container -->
     <div class="modal-bg w-full max-w-[900px] min-h-[500px] rounded-3xl shadow-2xl flex flex-col relative overflow-hidden">

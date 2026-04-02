@@ -241,12 +241,6 @@ class WorkstationController extends Controller
                 $item = new \App\Models\Workstation();
                 $item->created_at=NOW();
                 $request->session()->flash('success', 'Workstation created successfully!');
-                if ($role !== 'super') {
-                    $targetWorkgroup = \App\Models\Workgroup::findOrFail($request->input('workgroup_id'));
-                    if ((int) $targetWorkgroup->facility_id !== (int) $user->facility_id) {
-                        abort(403);
-                    }
-                }
             }
             elseif($id!='0')
             {
@@ -268,7 +262,11 @@ class WorkstationController extends Controller
                 //$item->postcode = $request->input('postcode');
                 //$item->fax = $request->input('fax');
                 $item->user_id = $user->id;
-                $item->workgroup_id = $request->input('workgroup_id');
+                $targetWorkgroup = \App\Models\Workgroup::findOrFail($request->input('workgroup_id'));
+                if ($role !== 'super' && (int) $targetWorkgroup->facility_id !== (int) $user->facility_id) {
+                    abort(403);
+                }
+                $item->workgroup_id = $targetWorkgroup->id;
                 $item->save();
 
             return redirect('workstations');
@@ -408,7 +406,15 @@ class WorkstationController extends Controller
     
     public function workstations_info(Request $request, $id)
     {
+        $userId = $request->session()->get('id');
+        $user = \App\Models\User::find($userId);
+        $role = $request->session()->get('role');
         $item = \App\Models\Workstation::find($id);
+        abort_if(!$item, 404);
+        $currentFacilityId = optional(optional($item->workgroup)->facility)->id;
+        if ($role !== 'super' && (int) $currentFacilityId !== (int) optional($user)->facility_id) {
+            abort(404);
+        }
       
         //return view('workstations.show')->with('item', $item);
         

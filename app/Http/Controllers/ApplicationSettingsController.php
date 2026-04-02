@@ -162,25 +162,10 @@ class ApplicationSettingsController extends Controller
     {
         $user_id=$request->session()->get('id');
         $user=\App\Models\User::find($user_id);
+        $managedIds = $this->managedWorkstationIdsForRequest($request, $strId);
 
         list($type, $id) = explode('-', $strId, 2);
-        $listWs = [];
-        // get list of ws
-        if ($type == 'fa') {
-            $fc = \App\Models\Facility::find($id);  
-            $listWs = $fc->workstations;
-        } else if ($type == 'wg') {
-            $wg = \App\Models\Workgroup::find($id);  
-            $listWs = $wg->workstations;
-        } else if ($type == 'ws') {
-            $listWs = \App\Models\Workstation::where('id', $id)->get();
-        } else if ($type == 'list') {
-            $ids = collect(explode(',', $id))
-                ->filter()
-                ->map(fn ($item) => (int) $item)
-                ->values();
-            $listWs = \App\Models\Workstation::whereIn('id', $ids)->get();
-        }
+        $listWs = \App\Models\Workstation::whereIn('id', $managedIds)->get();
         $allData = [];
         $allOptions = [];
         $allSnapshots = [];
@@ -307,37 +292,10 @@ class ApplicationSettingsController extends Controller
         $id = $request->get('id');
         $type = "";
         $regulation = $request->get('regulation');
+        $managedIds = $this->managedWorkstationIdsForRequest($request, $id);
+        $w = \App\Models\Workstation::whereIn('id', $managedIds)->get();
+        $setting = $w->first()?->settings_names()->where('setting_name', $regulation)->first();
 
-        if (Str::startsWith($id, 'fa-')){
-            
-            $id = str_replace('fa-','',$id);
-            $f = \App\Models\Facility::find($id);
-            $w = $f->workstations;
-            $setting = $w->first()->settings_names()->where('setting_name', $regulation)->first();
-        }
-        else if (Str::startsWith($id, 'wg-')){
-            
-            $id = str_replace('wg-','',$id);
-            $wg = \App\Models\Workgroup::find($id);
-            $w = $wg->workstations;
-            
-            $setting = $w->first()->settings_names()->where('setting_name', $regulation)->first();
-        }
-        else if (Str::startsWith($id, 'list-')) {
-            $id = str_replace('list-','',$id);
-            $ids = collect(explode(',', $id))
-                ->filter()
-                ->map(fn ($item) => (int) $item)
-                ->values();
-            $w = \App\Models\Workstation::whereIn('id', $ids)->get();
-            $setting = $w->first()?->settings_names()->where('setting_name', $regulation)->first();
-        }
-        else {
-            $id = str_replace('ws-','',$id);
-            $w = \App\Models\Workstation::find($id);
-            
-            $setting = $w->settings_names()->where('setting_name', $regulation)->first();
-        }
         $res = array();
         if ($setting) {
             $data = json_decode($setting->setting_value,true);

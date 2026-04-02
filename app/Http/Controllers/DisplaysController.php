@@ -13,6 +13,26 @@ class DisplaysController extends Controller
         return in_array($role, ['super', 'admin'], true);
     }
 
+    protected function resolveAuthorizedDisplay(Request $request, $displayId, bool $mustManage = false): \App\Models\Display
+    {
+        $displayId = (int) str_replace('di-', '', (string) $displayId);
+        $user = \App\Models\User::find($request->session()->get('id'));
+        $userRole = $request->session()->get('role');
+
+        $display = \App\Models\Display::with(['preferences', 'workstation.workgroup.facility'])->findOrFail($displayId);
+        $facility = optional(optional($display->workstation)->workgroup)->facility;
+
+        if ($userRole !== 'super' && (!$user || !$facility || (int) $facility->id !== (int) $user->facility_id)) {
+            abort(404);
+        }
+
+        if ($mustManage && !$this->display_can_manage($userRole)) {
+            abort(403);
+        }
+
+        return $display;
+    }
+
     public function displays(Request $request)
     {
         $user_id=$request->session()->get('id');
@@ -79,11 +99,16 @@ class DisplaysController extends Controller
     {
         $data=array();
         $data['success']=0;
+        $user = \App\Models\User::find($request->session()->get('id'));
+        $role = $request->session()->get('role');
         
         $data['content']="<option value=''>Select facility first</option>";
         
         $facility_id=$request->input('id');
         if($facility_id=='') $facility_id=0;
+        if ($role !== 'super') {
+            $facility_id = (int) optional($user)->facility_id;
+        }
             
         $row=\App\Models\Workgroup::where('facility_id', $facility_id)->get();
         if(count($row)!=0) $data['content']="<option value=''>Please select</option>";
@@ -101,11 +126,23 @@ class DisplaysController extends Controller
     {
         $data=array();
         $data['success']=0;
+        $user = \App\Models\User::find($request->session()->get('id'));
+        $role = $request->session()->get('role');
         
         $data['content']="<option value=''>Please select</option>";
         
         $workgroup_id=$request->input('id');
         if($workgroup_id=='') $workgroup_id=0;
+
+        if ($role !== 'super') {
+            $allowed = \App\Models\Workgroup::where('id', $workgroup_id)
+                ->where('facility_id', optional($user)->facility_id)
+                ->exists();
+
+            if (!$allowed) {
+                return response()->json(['success' => 0, 'content' => "<option value=''>Please select</option>"], 403);
+            }
+        }
         
         $row=\App\Models\Workstation::where('workgroup_id', $workgroup_id)->get();
         foreach($row as $r){
@@ -120,11 +157,24 @@ class DisplaysController extends Controller
     {
         $data=array();
         $data['success']=0;
+        $user = \App\Models\User::find($request->session()->get('id'));
+        $role = $request->session()->get('role');
         
         $data['content']="<option value=''>Please select</option>";
         
         $workstation_id=$request->input('id');
         if($workstation_id=='') $workstation_id=0;
+
+        if ($role !== 'super') {
+            $allowed = \App\Models\Workstation::where('workstations.id', $workstation_id)
+                ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+                ->where('workgroups.facility_id', optional($user)->facility_id)
+                ->exists();
+
+            if (!$allowed) {
+                return response()->json(['success' => 0, 'content' => "<option value=''>Please select</option>"], 403);
+            }
+        }
             
         $row=\App\Models\Display::where('workstation_id', $workstation_id)->get();
        
@@ -174,6 +224,8 @@ class DisplaysController extends Controller
         $user=\App\Models\User::find($user_id);
         $userRole=$request->session()->get('role');
 
+        abort_unless($this->display_can_manage($userRole), 403);
+
         //$workgroups_ids=\App\Models\Workgroup::where('user_id', $user_id)->pluck('id');
         //$facility_ids=\App\Models\Workgroup::whereIn('id', $workgroups_ids)->pluck('facility_id');
         //$facilities=\App\Models\Facility::whereIn('id', $facility_ids)->pluck('name','id');
@@ -190,7 +242,7 @@ class DisplaysController extends Controller
         
         if($request->input('calibrate')!='')
         {
-            $facility=$request->input('facility');
+            $facility=$userRole === 'super' ? $request->input('facility') : $user->facility_id;
             $workgroup=$request->input('workgroup');
             $workstation=$request->input('workstation');
             $displays=$request->input('displays');
@@ -244,6 +296,20 @@ class DisplaysController extends Controller
                     ->pluck('displays.id');
                     $displays=$items;
                 }
+            }
+            else {
+                $selectedDisplays = \App\Models\Display::query()
+                    ->whereIn('displays.id', (array) $displays)
+                    ->join('workstations', 'workstations.id', '=', 'displays.workstation_id')
+                    ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+                    ->when($userRole !== 'super', function ($query) use ($user) {
+                        return $query->where('workgroups.facility_id', '=', $user->facility_id);
+                    })
+                    ->pluck('displays.id')
+                    ->toArray();
+
+                abort_if(count($selectedDisplays) !== count((array) $displays), 403);
+                $displays = $selectedDisplays;
             }
             
             foreach($displays as $display) {
@@ -324,6 +390,8 @@ class DisplaysController extends Controller
     {
         $data=array();
         $data['success']=0;
+        $user = \App\Models\User::find($request->session()->get('id'));
+        $role = $request->session()->get('role');
         
         $data['content']="<div class='form-check mb-0 py-1 px-4'>
         <input class='form-check-input flex-shrink-0' type='checkbox' id='formCheck-7' name='displays[]'>
@@ -333,6 +401,17 @@ class DisplaysController extends Controller
         
         $workstation_id=$request->input('id');
         if($workstation_id=='') $workstation_id=0;
+
+        if ($role !== 'super') {
+            $allowed = \App\Models\Workstation::where('workstations.id', $workstation_id)
+                ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+                ->where('workgroups.facility_id', optional($user)->facility_id)
+                ->exists();
+
+            if (!$allowed) {
+                return response()->json(['success' => 0, 'content' => ''], 403);
+            }
+        }
             
         $row=\App\Models\Display::where('workstation_id', $workstation_id)->get();
        
@@ -352,8 +431,9 @@ class DisplaysController extends Controller
     
     public function display_settings(Request $request, $display_id)
     {
-        $user_id=$request->session()->get('id');
+        $user = \App\Models\User::find($request->session()->get('id'));
         $userRole=$request->session()->get('role');
+        $display = $this->resolveAuthorizedDisplay($request, $display_id, true);
         
         $workstation_app=$request->input('workstation_app');
         $leaf = 'di';
@@ -370,12 +450,9 @@ class DisplaysController extends Controller
             echo '<br>';
         }
         exit();*/
-        $workstation_id=\App\Models\Display::where('id', $display_id)->pluck('workstation_id')->toArray();
-        $workstation_id=$workstation_id[0];
-        $workgroup_id=\App\Models\Workstation::where('id', $workstation_id)->pluck('workgroup_id')->toArray();
-        $workgroup_id=$workgroup_id[0];
-        $facility_id=\App\Models\Workgroup::where('id', $workgroup_id)->pluck('facility_id')->toArray();
-        $facility_id=$facility_id[0];
+        $workstation_id = $display->workstation_id;
+        $workgroup_id = optional($display->workstation)->workgroup_id;
+        $facility_id = optional(optional($display->workstation)->workgroup)->facility_id;
         
         //$workgroups=\App\Models\Workgroup::where('facility_id', $facility_id)->get();
         //$workstations=\App\Models\Workstation::where('workgroup_id', $workgroup_id)->get();
@@ -456,12 +533,8 @@ class DisplaysController extends Controller
 
     public function load_display_settings(Request $request, $id)
     {
-        $id = str_replace('di-', '', $id);
-        $id=$request->input('id');
-
-        // $w = Workstation::find(1);
-
-        $d = \App\Models\Display::find($id);
+        $displayId = str_replace('di-', '', (string) $request->input('id', $id));
+        $d = $this->resolveAuthorizedDisplay($request, $displayId, true);
         $displays = $d->preferences;
         $w = $d->workstation;
         
@@ -510,7 +583,8 @@ class DisplaysController extends Controller
         $input = $request->except(['_token','ajax','id']);
         
         // DB::beginTransaction();
-        $id = str_replace('di-','',$id);
+        $display = $this->resolveAuthorizedDisplay($request, $id, true);
+        $id = $display->id;
         
         //update active in Display table
         $input['exclude'] = isset($input['exclude']) ? 1 : 0;
@@ -567,8 +641,7 @@ class DisplaysController extends Controller
         //     'expected_replacement_date' =>'date'
         // ]);
 
-        $id = str_replace('di-','',$id);
-        $di = \App\Models\Display::find($id);
+        $di = $this->resolveAuthorizedDisplay($request, $id, true);
         if($di){
             $di->purchase_date = $request->input('purchase_date');
             $di->initial_value = $request->input('initial_value');
@@ -960,12 +1033,23 @@ class DisplaysController extends Controller
         $passRate = $totalHistories > 0 ? round(($passedHistories / $totalHistories) * 100) : 0;
 
         $latestError = 'No active device alert reported.';
+        $liveErrors = collect();
         $errorRows = json_decode($display->errors ?? '[]', true);
         if (is_array($errorRows) && count($errorRows) > 0) {
-            $lastError = end($errorRows);
-            $latestError = is_array($lastError)
-                ? ($lastError['message'] ?? json_encode($lastError))
-                : $lastError;
+            $liveErrors = collect($errorRows)
+                ->map(function ($entry) {
+                    if (is_array($entry)) {
+                        return trim((string) ($entry['message'] ?? $entry['error'] ?? $entry['text'] ?? $entry['name'] ?? ''));
+                    }
+
+                    return trim((string) $entry);
+                })
+                ->filter(fn ($value) => $value !== '')
+                ->values();
+
+            if ($liveErrors->isNotEmpty()) {
+                $latestError = $liveErrors->last();
+            }
         }
         $displayFailed = (int) $display->status !== 1;
         $statusSummary = !$totalHistories
@@ -1344,6 +1428,7 @@ class DisplaysController extends Controller
             'expectedReplacementDate' => $display->expected_replacement_date ?: '-',
             'lastSync' => $display->updated_at ? Carbon::parse($display->updated_at)->format('d M Y H:i') : '-',
             'latestError' => $latestError,
+            'liveErrors' => $liveErrors->values()->all(),
             'runningHours' => [
                 'available' => $hoursCount > 0,
                 'latestReported' => $formatHours($latestHoursEntry?->duration),

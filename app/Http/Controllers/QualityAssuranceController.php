@@ -8,11 +8,28 @@ use DB;
 
 class QualityAssuranceController extends Controller
 {
+    protected function schedulerUser(Request $request): ?\App\Models\User
+    {
+        return \App\Models\User::find($request->session()->get('id'));
+    }
+
+    protected function schedulerRole(Request $request): ?string
+    {
+        return $request->session()->get('role');
+    }
+
+    protected function canManageScheduler(Request $request): bool
+    {
+        return in_array($this->schedulerRole($request), ['super', 'admin'], true);
+    }
+
     public function quality_assuarance(Request $request){
         
         $user_id=$request->session()->get('id');
         $user=\App\Models\User::find($user_id);
         $role=$request->session()->get('role');
+
+        abort_unless($this->canManageScheduler($request), 403);
         
         $cacheKey = '';
         if ($role!='super') { // load current facility only
@@ -26,9 +43,6 @@ class QualityAssuranceController extends Controller
         //calibrate
         if($request->input('displays')!='')
         {
-            $facility=$request->input('facility');
-            $workgroup=$request->input('workgroup');
-            $workstation=$request->input('workstation');
             $displays=$request->input('displays');
             
             //set_timezone();
@@ -36,8 +50,20 @@ class QualityAssuranceController extends Controller
             $time=date('H:i');
             $unixtime=now()->timestamp;
             
-            foreach($displays as $display) {
-                $d = \App\Models\Display::find($display);
+            $allowedDisplays = \App\Models\Display::query()
+                ->when($role !== 'super', function ($query) use ($user) {
+                    return $query->join('workstations', 'workstations.id', '=', 'displays.workstation_id')
+                        ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+                        ->where('workgroups.facility_id', '=', $user->facility_id)
+                        ->select('displays.*');
+                })
+                ->whereIn('displays.id', (array) $displays)
+                ->get();
+
+            abort_if($allowedDisplays->count() !== count((array) $displays), 403);
+
+            foreach($allowedDisplays as $d) {
+                $display = $d->id;
                 if ($d->preference('exclude')) continue;
 
                 \App\Models\Task::create([
@@ -103,8 +129,12 @@ class QualityAssuranceController extends Controller
         ]);
     }
     
-     public function fetch_workgroups2(Request $request)
+    public function fetch_workgroups2(Request $request)
     {
+        if (!$this->canManageScheduler($request)) {
+            return response()->json(['success' => 0, 'message' => 'You do not have access to scheduler scope.'], 403);
+        }
+
         $data=array();
         $data['success']=0;
         
@@ -112,6 +142,10 @@ class QualityAssuranceController extends Controller
         
         $facility_id=$request->input('id');
         if($facility_id=='') $facility_id=0;
+        $user = $this->schedulerUser($request);
+        if ($this->schedulerRole($request) !== 'super') {
+            $facility_id = (int) $user->facility_id;
+        }
             
         $row=\App\Models\Workgroup::where('facility_id', $facility_id)->get();
        
@@ -127,6 +161,10 @@ class QualityAssuranceController extends Controller
      
     public function fetch_workstations2(Request $request)
     {
+        if (!$this->canManageScheduler($request)) {
+            return response()->json(['success' => 0, 'message' => 'You do not have access to scheduler scope.'], 403);
+        }
+
         $data=array();
         $data['success']=0;
         
@@ -134,6 +172,17 @@ class QualityAssuranceController extends Controller
         
         $workgroup_id=$request->input('id');
         if($workgroup_id=='') $workgroup_id=0;
+        $user = $this->schedulerUser($request);
+
+        if ($this->schedulerRole($request) !== 'super') {
+            $allowed = \App\Models\Workgroup::where('id', $workgroup_id)
+                ->where('facility_id', $user->facility_id)
+                ->exists();
+
+            if (!$allowed) {
+                return response()->json(['success' => 0, 'message' => 'You do not have access to this workgroup.'], 403);
+            }
+        }
         
         $row=\App\Models\Workstation::where('workgroup_id', $workgroup_id)->get();
         foreach($row as $r){
@@ -144,8 +193,12 @@ class QualityAssuranceController extends Controller
          return response()->json($data);
     }
     
-     public function fetch_displays_checklist2(Request $request)
+    public function fetch_displays_checklist2(Request $request)
     {
+        if (!$this->canManageScheduler($request)) {
+            return response()->json(['success' => 0, 'message' => 'You do not have access to scheduler scope.'], 403);
+        }
+
         $data=array();
         $data['success']=0;
         
@@ -156,6 +209,18 @@ class QualityAssuranceController extends Controller
         
         $workstation_id=$request->input('id');
         if($workstation_id=='') $workstation_id=0;
+        $user = $this->schedulerUser($request);
+
+        if ($this->schedulerRole($request) !== 'super') {
+            $allowed = \App\Models\Workstation::where('workstations.id', $workstation_id)
+                ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+                ->where('workgroups.facility_id', $user->facility_id)
+                ->exists();
+
+            if (!$allowed) {
+                return response()->json(['success' => 0, 'message' => 'You do not have access to this workstation.'], 403);
+            }
+        }
             
         $row=\App\Models\Display::where('workstation_id', $workstation_id)->get();
        

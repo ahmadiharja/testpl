@@ -121,24 +121,23 @@
 
                 <!-- Top Header Overlay -->
                 <div class="absolute top-0 left-0 right-0 p-8 flex justify-between items-center z-10 w-full">
-                    <!-- Qubyx Logo -->
+                    <!-- PerfectLum Logo -->
                     <div class="flex items-center">
-                        <img src="{{ asset('assets/images/qubyx-logo.png') }}" alt="Qubyx" class="h-8 w-auto">
+                        <img src="{{ asset('assets/images/perfectlum-logo.png') }}" alt="PerfectLum" class="h-8 w-auto">
                     </div>
 
                     <a href="#" class="text-xs bg-white/10 hover:bg-white/20 backdrop-blur border border-white/20 transition-colors text-white py-2 px-4 rounded-full flex items-center gap-1 backdrop-filter">
-                        {{ __('Back to website') }} <span class="text-[10px]">&rarr;</span>
+                        {{ __('Remote Calibration Portal') }} <span class="text-[10px]">&rarr;</span>
                     </a>
                 </div>
 
                 <!-- Bottom Text Overlay -->
-                <div class="absolute bottom-0 left-0 right-0 p-12 text-center z-10">
-                    <h2 class="text-3xl font-medium text-white mb-6 leading-tight drop-shadow-md">Capturing Moments,<br>Creating Memories</h2>
-                    <div class="flex justify-center space-x-2">
-                        <div class="w-6 h-[2px] bg-white/40 rounded-full"></div>
-                        <div class="w-6 h-[2px] bg-white/40 rounded-full"></div>
-                        <div class="w-8 h-[2px] bg-white rounded-full"></div>
-                    </div>
+                <div class="absolute bottom-0 left-0 right-0 p-12 z-10">
+                    <p class="mb-4 text-[11px] font-semibold uppercase tracking-[0.35em] text-white/70">Remote Operations Platform</p>
+                    <h2 class="max-w-md text-3xl font-medium leading-tight text-white drop-shadow-md">See every display. Act before issues spread.</h2>
+                    <p class="mt-4 max-w-md text-sm leading-6 text-white/80">
+                        PerfectLum centralizes display health, scheduled QA, and workstation sync across distributed facilities.
+                    </p>
                 </div>
 
             </div>
@@ -149,16 +148,23 @@
             
             <!-- Logo for mobile (hidden on desktop) -->
             <div class="md:hidden flex items-center mb-8">
-                <img src="{{ asset('assets/images/qubyx-logo.png') }}" alt="Qubyx" class="h-8 w-auto">
+                <img src="{{ asset('assets/images/perfectlum-logo.png') }}" alt="PerfectLum" class="h-8 w-auto">
             </div>
 
             <!-- ======================= LOGIN VIEW ======================= -->
             <div x-show="mode === 'login'" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="opacity-0 translate-x-4" x-transition:enter-end="opacity-100 translate-x-0" style="display: none;">
-                <h1 class="text-4xl font-semibold text-white mb-2">{{ __('Welcome back') }}</h1>
+                <h1 class="text-4xl font-semibold text-white mb-2">{{ __('Sign in to PerfectLum') }}</h1>
+                <p class="text-muted text-sm mb-3">{{ __('Access the remote calibration workspace for display health, task scheduling, and sync activity.') }}</p>
                 <p class="text-muted text-sm mb-10">
-                    {{ __("Don't have an account?") }}
+                    {{ __("Need a workspace account?") }}
                     <button @click="mode = 'register'" class="text-[#E2E1E6] hover:text-white underline decoration-[#8a8899] underline-offset-2 transition-colors">{{ __('Sign up') }}</button>
                 </p>
+
+                @if (session('idle_logout_notice'))
+                    <div class="mb-5 rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+                        {{ session('idle_logout_notice') }}
+                    </div>
+                @endif
 
                 <form method="POST" action="{{ url('login') }}" class="space-y-5" @submit.prevent="checkLogin">
                     @csrf
@@ -198,7 +204,10 @@
 
             <!-- ======================= REGISTER VIEW ======================= -->
             <div x-show="mode === 'register'" x-transition:enter="transition ease-out duration-300 transform delay-150" x-transition:enter-start="opacity-0 -translate-x-4" x-transition:enter-end="opacity-100 translate-x-0" style="display: none;">
-                <h1 class="text-4xl font-semibold text-white mb-2 tracking-tight">{{ __('Create an account') }}</h1>
+                <h1 class="text-4xl font-semibold text-white mb-2 tracking-tight">{{ __('Create a PerfectLum account') }}</h1>
+                <p class="text-muted text-sm mb-4">
+                    {{ __('Set up access to the remote calibration workspace.') }}
+                </p>
                 <p class="text-muted text-sm mb-10">
                     {{ __('Already have an account?') }}
                     <button @click="mode = 'login'" class="text-[#E2E1E6] hover:text-white underline decoration-[#8a8899] underline-offset-2 transition-colors">{{ __('Log in') }}</button>
@@ -230,7 +239,7 @@
                     </div>
                     
                     <button type="submit" class="btn-primary w-full text-white font-medium text-sm rounded-lg py-3.5 mt-2 transition-transform active:scale-[0.98]">
-                        {{ __('Create account') }}
+                        {{ __('Create workspace account') }}
                     </button>
                     
                 </form>

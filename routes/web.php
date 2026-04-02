@@ -64,6 +64,7 @@ Route::get('/verify-user/{code}', [AccountController::class, 'activateUser'])->n
 
 Route::group(['middleware' => 'auth'], function(){
     Route::post('update-sidebar', [DashboardController::class, 'update_sidebar']);
+    Route::post('session/heartbeat', [AccountController::class, 'heartbeat']);
     
   // Test routes for debugging Livewire tables
   Route::get('/test-displays-data', function() {

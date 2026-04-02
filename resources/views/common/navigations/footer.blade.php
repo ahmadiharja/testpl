@@ -1,19 +1,22 @@
 @php
-    $menuLabels = [
+    $footerRole = $role ?? null;
+    $canManageDesktop = in_array($footerRole, ['super', 'admin'], true);
+    $canManageUsersDesktop = $canManageDesktop;
+    $menuLabels = array_filter([
         'Dashboard' => __('Dashboard'),
         'Facilities' => __('Facilities'),
         'Facility Information' => __('Facility Information'),
         'Workgroups' => __('Workgroups'),
         'Workstations' => __('Workstations'),
         'Displays' => __('Displays'),
-        'Calibrate Display' => __('Calibrate Display'),
-        'Scheduler' => __('Scheduler'),
+        'Calibrate Display' => $canManageDesktop ? __('Calibrate Display') : null,
+        'Scheduler' => $canManageDesktop ? __('Scheduler') : null,
         'History & Reports' => __('History & Reports'),
-        'Site Settings' => __('Site Settings'),
-        'Application Settings' => __('Application Settings'),
-        'Alert Settings' => __('Alert Settings'),
-        'Users' => __('Users'),
-    ];
+        'Site Settings' => ($role ?? null) === 'super' ? __('Site Settings') : null,
+        'Application Settings' => $canManageDesktop ? __('Application Settings') : null,
+        'Alert Settings' => $canManageDesktop ? __('Alert Settings') : null,
+        'Users' => $canManageUsersDesktop ? __('Users') : null,
+    ]);
 @endphp
 
             </div>
@@ -62,13 +65,21 @@
                     'Workgroups': '{{ url("workgroups") }}',
                     'Workstations': '{{ url("workstations") }}',
                     'Displays': '{{ url("displays") }}',
+                    @if ($canManageDesktop)
                     'Calibrate Display': '{{ url("display-calibration") }}',
                     'Scheduler': '{{ url("scheduler") }}',
+                    @endif
                     'History & Reports': '{{ url("histories-reports") }}',
+                    @if (($role ?? null) === 'super')
                     'Site Settings': '{{ url("site-settings") }}',
+                    @endif
+                    @if ($canManageDesktop)
                     'Application Settings': '{{ url("global-settings") }}',
                     'Alert Settings': '{{ url("alert-settings") }}',
+                    @endif
+                    @if ($canManageUsersDesktop)
                     'Users': '{{ url("users-management") }}'
+                    @endif
                 },
                 navigate(name) {
                     if (this.routes[name]) {

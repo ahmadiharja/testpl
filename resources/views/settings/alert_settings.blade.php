@@ -1,5 +1,9 @@
 @include('common.navigations.header')
 
+@php
+    $canManageAlertSettings = in_array(($role ?? session('role')), ['super', 'admin'], true);
+@endphp
+
 <main class="main-vertical-layout">
     <div class="container-fluid">
         <section class="py-3">
@@ -83,7 +87,7 @@
                                         <h2 class="mt-1 text-[1.2rem] font-bold tracking-tight text-slate-900">{{ __('Recipient rules') }}</h2>
                                         <p class="mt-1 text-sm leading-6 text-slate-500">{{ __('Review, search, and update the recipient rules used for alerts and daily summaries.') }}</p>
                                     </div>
-                                    @if($role != 'user')
+                                    @if($canManageAlertSettings)
                                         <button type="button" @click="openForm(0)" class="inline-flex shrink-0 items-center justify-center rounded-2xl bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-400">
                                             {{ __('Add Alert') }}
                                         </button>
@@ -282,7 +286,7 @@ function alertSettingsPage() {
                     { name: 'Recipient', formatter: (_, row) => gridjs.html(`<div><div class=\"text-sm font-semibold text-slate-900\">${this.escapeHtml(row.cells[0].data.email)}</div><div class=\"text-xs text-slate-500\">${this.escapeHtml(row.cells[0].data.facName || 'No facility scope')}</div></div>`) },
                     { name: 'Daily Report', width: '140px', sort: false, formatter: (_, row) => gridjs.html(this.renderToggle(row.cells[0].data.id, row.cells[0].data.dailyReport, 'daily_report')) },
                     { name: 'Active', width: '120px', sort: false, formatter: (_, row) => gridjs.html(this.renderToggle(row.cells[0].data.id, row.cells[0].data.active, 'active')) },
-                    { name: 'Actions', width: '120px', sort: false, formatter: (_, row) => { const item=row.cells[0].data; const editButton=`<button onclick=\"window.alert_form(this,'edit',${item.id})\" class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600 transition hover:bg-sky-100\"><svg class=\"h-4 w-4\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7\"/><path d=\"M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z\"/></svg></button>`; const deleteButton=@json($role != 'user')?`<button onclick=\"window.delete_record(this,${item.id})\" class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600 transition hover:bg-rose-100\"><svg class=\"h-4 w-4\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M3 6h18\"/><path d=\"M8 6V4h8v2\"/><path d=\"m19 6-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6\"/><path d=\"M10 11v6\"/><path d=\"M14 11v6\"/></svg></button>`:''; return gridjs.html(`<div class=\"flex items-center gap-2\">${editButton}${deleteButton}</div>`); } }
+                    { name: 'Actions', width: '120px', sort: false, formatter: (_, row) => { const item=row.cells[0].data; const editButton=`<button onclick=\"window.alert_form(this,'edit',${item.id})\" class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600 transition hover:bg-sky-100\"><svg class=\"h-4 w-4\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7\"/><path d=\"M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z\"/></svg></button>`; const deleteButton=@json($canManageAlertSettings)?`<button onclick=\"window.delete_record(this,${item.id})\" class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600 transition hover:bg-rose-100\"><svg class=\"h-4 w-4\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M3 6h18\"/><path d=\"M8 6V4h8v2\"/><path d=\"m19 6-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6\"/><path d=\"M10 11v6\"/><path d=\"M14 11v6\"/></svg></button>`:''; return gridjs.html(`<div class=\"flex items-center gap-2\">${editButton}${deleteButton}</div>`); } }
                 ],
                 server: { url: '/api/alerts', then: (payload) => payload.data.map((item) => [item]), total: (payload) => payload.total },
                 search: { enabled: true, server: { url: (prev, keyword) => `${prev}${prev.includes('?') ? '&' : '?'}search=${encodeURIComponent(keyword)}` } },
@@ -294,7 +298,7 @@ function alertSettingsPage() {
         },
         renderToggle(id, enabled, column) {
             const checked = enabled ? 'checked' : '';
-            const disabled = @json($role == 'user') ? 'disabled' : '';
+            const disabled = @json(!$canManageAlertSettings) ? 'disabled' : '';
             return `<label class=\"relative inline-flex items-center ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}\"><input type=\"checkbox\" class=\"peer sr-only\" ${checked} ${disabled} onchange=\"window.update_alert(this, ${id}, '${column}')\"><span class=\"h-6 w-11 rounded-full bg-slate-200 transition peer-checked:bg-sky-500\"></span><span class=\"absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5\"></span></label>`;
         },
         async openForm(id) {
@@ -391,7 +395,7 @@ function alertSettingsPage() {
             catch (_) { notify('error', 'Failed to delete alert.'); }
         },
         async toggleAlert(input, id, column) {
-            if (@json($role == 'user')) { input.checked = !input.checked; return; }
+            if (@json(!$canManageAlertSettings)) { input.checked = !input.checked; return; }
             const formData = new FormData(); formData.append('_token', @json(csrf_token())); formData.append('id', id); formData.append('column', column); formData.append('value', input.checked ? 1 : 0);
             try { const payload = await Perfectlum.postForm(@json(url('update-alert')), formData); if (!payload.success) throw new Error(); }
             catch (_) { input.checked = !input.checked; notify('error', 'Failed to update the alert state.'); }

@@ -1,6 +1,7 @@
 @include('common.navigations.header')
 
 @php
+    $canManageSchedulerDesktop = in_array(($role ?? session('role')), ['super', 'admin'], true);
     $schedulerText = [
         'pleaseSelect' => __('Please select'),
         'selectFacilityFirst' => __('Select facility first'),
@@ -76,7 +77,7 @@
         </div>
 
         <div x-show="activeTab === 'tasks'" x-cloak>
-            @if(($role ?? 'user') !== 'user')
+            @if($canManageSchedulerDesktop)
             <div class="mb-6 rounded-[1.75rem] border border-slate-200 bg-slate-50/70 p-5 shadow-[0_12px_34px_rgba(15,23,42,0.05)]"
                 x-data="{ openScheduleDisplays: false }">
                 <div class="mb-4">
@@ -94,7 +95,7 @@
                                 onchange="fetch_schedule_workgroups(this)"
                                 class="hidden">
                                 <option value="">{{ __('Please select') }}</option>
-                                @if(($role ?? 'user') !== 'super')
+                                @if(($role ?? session('role')) !== 'super')
                                     @foreach($facilities as $fc)
                                         <option value="{{ $fc['id'] }}">{{ $fc['name'] }}</option>
                                     @endforeach
@@ -289,7 +290,7 @@
             workgroupSearch: '',
             workstationSearch: '',
         };
-        const canManageTasks = @json(($role ?? 'user') !== 'user');
+        const canManageTasks = @json($canManageSchedulerDesktop);
 
         function updateScheduleDisplaysLabel() {
             const field = document.getElementById('schedule-displays-options');

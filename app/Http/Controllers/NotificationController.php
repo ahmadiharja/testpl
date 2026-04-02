@@ -42,12 +42,14 @@ class NotificationController extends Controller
         $page = min($page, $lastPage);
         $offset = ($page - 1) * $limit;
 
+        $context = $request->get('context') === 'mobile' ? 'mobile' : 'desktop';
+
         $items = (clone $query)
             ->latest('created_at')
             ->offset($offset)
             ->limit($limit)
             ->get()
-            ->map(fn (DatabaseNotification $notification) => $this->present($notification))
+            ->map(fn (DatabaseNotification $notification) => $this->present($notification, $context))
             ->values();
 
         $from = $total > 0 ? ($offset + 1) : 0;
@@ -124,13 +126,13 @@ class NotificationController extends Controller
             ]);
     }
 
-    private function present(DatabaseNotification $notification): array
+    private function present(DatabaseNotification $notification, string $context = 'desktop'): array
     {
         $data = is_array($notification->data)
             ? $notification->data
             : (json_decode($notification->data ?? '{}', true) ?: []);
 
-        $payload = $this->normalizePayload($notification->type, $data);
+        $payload = $this->normalizePayload($notification->type, $data, $context);
 
         return [
             'id' => $notification->id,
@@ -147,7 +149,7 @@ class NotificationController extends Controller
         ];
     }
 
-    private function normalizePayload(string $type, array $data): array
+    private function normalizePayload(string $type, array $data, string $context = 'desktop'): array
     {
         if (!empty($data['title'])) {
             return [
@@ -162,7 +164,7 @@ class NotificationController extends Controller
         }
 
         if (str_ends_with($type, 'MessageDBNotification')) {
-            return $this->normalizeLegacyMessage($data['message_id'] ?? null);
+            return $this->normalizeLegacyMessage($data['message_id'] ?? null, $context);
         }
 
         return [
@@ -176,8 +178,10 @@ class NotificationController extends Controller
         ];
     }
 
-    private function normalizeLegacyMessage(?string $messageId): array
+    private function normalizeLegacyMessage(?string $messageId, string $context = 'desktop'): array
     {
+        $isMobile = $context === 'mobile';
+
         return match ($messageId) {
             'edit_profile_reminder' => [
                 'category' => 'Account',
@@ -185,7 +189,7 @@ class NotificationController extends Controller
                 'body' => 'Review your profile details and confirm your remote access credentials.',
                 'severity' => 'info',
                 'icon' => 'user-round',
-                'url' => url('profile-settings'),
+                'url' => $isMobile ? route('mobile.profile.settings') : url('profile-settings'),
                 'scope' => null,
             ],
             'site_settings_reminder' => [
@@ -194,7 +198,7 @@ class NotificationController extends Controller
                 'body' => 'Check branding, mail delivery, and release configuration for this workspace.',
                 'severity' => 'info',
                 'icon' => 'settings-2',
-                'url' => url('site-settings'),
+                'url' => $isMobile ? null : url('site-settings'),
                 'scope' => null,
             ],
             'smtp_reminder' => [
@@ -203,7 +207,7 @@ class NotificationController extends Controller
                 'body' => 'Confirm the outbound mail configuration used for alerts, reports, and test messages.',
                 'severity' => 'warning',
                 'icon' => 'mail-search',
-                'url' => url('site-settings?tab=smtp'),
+                'url' => $isMobile ? null : url('site-settings?tab=smtp'),
                 'scope' => null,
             ],
             default => [
@@ -214,7 +218,7 @@ class NotificationController extends Controller
                     : 'A new notification was added to your account.',
                 'severity' => 'info',
                 'icon' => 'bell',
-                'url' => url('notifications'),
+                'url' => $isMobile ? route('mobile.notifications') : url('notifications'),
                 'scope' => null,
             ],
         };

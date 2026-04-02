@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'Qubyx Dashboard' }}</title>
 
     <!-- Fonts: Inter -->
@@ -50,6 +51,12 @@
 <body x-data="adminApp()" 
       @resize.window="isMobile = window.innerWidth < 1024; if(isMobile) sidebarCollapsed = true"
       class="h-screen w-screen overflow-hidden flex transition-colors duration-500"
+      data-surface="desktop"
+      data-idle-logout-minutes="{{ config('session.idle_timeout', 30) }}"
+      data-idle-heartbeat-seconds="{{ config('session.idle_heartbeat_seconds', 60) }}"
+      data-idle-heartbeat-url="{{ url('session/heartbeat') }}"
+      data-idle-logout-url="{{ url('logout?reason=inactive') }}"
+      data-idle-login-url="{{ url('login?surface=desktop') }}"
       :class="theme === 'perfectlum' ? 'bg-[#F4F5F8] text-[#1B1B1D]' : 'bg-[#0A0A0C] text-[#E2E1E6]'">
 
     {{-- ===================== --}}

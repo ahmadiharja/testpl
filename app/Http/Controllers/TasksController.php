@@ -12,8 +12,87 @@ use Carbon\Carbon;
 
 class TasksController extends Controller
 {
+    protected function taskManager(Request $request): ?\App\Models\User
+    {
+        $userId = $request->session()->get('id');
+
+        return \App\Models\User::find($userId);
+    }
+
+    protected function canManageTasks(?\App\Models\User $user): bool
+    {
+        return $user && $user->hasAnyRole(['super', 'admin']);
+    }
+
+    protected function taskFacilityId(\App\Models\Task $task): ?int
+    {
+        return optional(optional(optional(optional($task->display)->workstation)->workgroup)->facility)->id;
+    }
+
+    protected function taskTargetIsAccessible(?\App\Models\User $user, \App\Models\Task $task): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        if ($user->hasRole('super')) {
+            return true;
+        }
+
+        return (int) $this->taskFacilityId($task) === (int) $user->facility_id;
+    }
+
+    protected function scopedDisplayIds(Request $request, ?\App\Models\User $user): array
+    {
+        $displayIds = [];
+        $requestedDisplays = (string) $request->input('displays', '');
+        $workstationId = $request->input('workstation2');
+        $workgroupId = $request->input('workgroup2');
+        $requestedFacilityId = $request->input('facility2');
+        $facilityId = $user && !$user->hasRole('super')
+            ? $user->facility_id
+            : $requestedFacilityId;
+
+        $query = \App\Models\Display::query()
+            ->join('workstations', 'workstations.id', '=', 'displays.workstation_id')
+            ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id');
+
+        if ($requestedDisplays !== '') {
+            $ids = collect(explode(';', $requestedDisplays))
+                ->filter(fn ($item) => trim((string) $item) !== '')
+                ->map(fn ($item) => (int) $item)
+                ->values()
+                ->all();
+
+            $query->whereIn('displays.id', $ids);
+        } else {
+            if ($facilityId) {
+                $query->where('workgroups.facility_id', '=', $facilityId);
+            }
+
+            if ($workgroupId) {
+                $query->where('workgroups.id', '=', $workgroupId);
+            }
+
+            if ($workstationId) {
+                $query->where('workstations.id', '=', $workstationId);
+            }
+        }
+
+        if ($user && !$user->hasRole('super')) {
+            $query->where('workgroups.facility_id', '=', $user->facility_id);
+        }
+
+        return $query->pluck('displays.id')->map(fn ($id) => (int) $id)->all();
+    }
+
     public function edit_task(Request $request)
     {
+        $user = $this->taskManager($request);
+        if (!$this->canManageTasks($user)) {
+            return response()->json(['success' => 0, 'message' => 'You do not have access to manage scheduled tasks.'], 403);
+        }
+
         $id=$request->input('id');
         if($id=='' OR $id==NULL) $id=0;
         $tasktype = TaskType::where('status', 1)->orderBy('id')->pluck('title', 'key')->toArray();
@@ -47,6 +126,9 @@ class TasksController extends Controller
 
         // $task = Task::with('display')->find($id);
         $task = Task::With(['Display'])->find($id);
+        if ($task && !$this->taskTargetIsAccessible($user, $task)) {
+            return response()->json(['success' => 0, 'message' => 'You do not have access to update this task.'], 403);
+        }
         if(!isset($task->id))
         {
             $task=new Task;
@@ -84,55 +166,44 @@ class TasksController extends Controller
     {
         $data=array();
         $data['success']=0;
+        $user = $this->taskManager($request);
+
+        if (!$this->canManageTasks($user)) {
+            return response()->json(['success' => 0, 'message' => 'You do not have access to manage scheduled tasks.'], 403);
+        }
+
         $id=$request->input('id');
         $this->validate($request, [
             'tasktype' => 'required',
             'scheduletype' => 'required'
         ]);
-        $workstation_id=$request->input('workstation2');
-        $workgroup_id=$request->input('workgroup2');
 
         if($id=='0')
         {
-            if($request->input('displays')!='')
-                $displayIds = explode(';', $request->input('displays'));
-            elseif($workgroup_id==null AND $workstation_id==null)
-                {
-                    $facility_id=$request->input('facility2');
-                    $items = \App\Models\Display::join('workstations', 'workstations.id', '=', 'displays.workstation_id')
-                    ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
-                    ->where('workgroups.facility_id', '=', $facility_id)
-                    ->pluck('displays.id');
-                    $displayIds=$items;
-                }
-            elseif($workstation_id==NULL)
-            {
-                $facility_id=$request->input('facility2');
-                $workgroup_id=$request->input('workgroup2');
-                $items = \App\Models\Display::join('workstations', 'workstations.id', '=', 'displays.workstation_id')
-                    ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
-                    ->where('workgroups.facility_id', '=', $facility_id)
-                    ->where('workgroups.id', '=', $workgroup_id)
-                    ->pluck('displays.id');
-                $displayIds=$items;
+            $requestedDisplays = collect(explode(';', (string) $request->input('displays', '')))
+                ->filter(fn ($item) => trim((string) $item) !== '')
+                ->map(fn ($item) => (int) $item)
+                ->values();
+            $displayIds = $this->scopedDisplayIds($request, $user);
+
+            if ($requestedDisplays->isNotEmpty() && $requestedDisplays->count() !== count($displayIds)) {
+                return response()->json([
+                    'success' => 0,
+                    'message' => 'One or more selected displays are outside your allowed scope.',
+                ], 403);
             }
-            else
-            {
-                $facility_id=$request->input('facility2');
-                $workgroup_id=$request->input('workgroup2');
-                $workstation_id=$request->input('workstation2');
-                $items = \App\Models\Display::join('workstations', 'workstations.id', '=', 'displays.workstation_id')
-                    ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
-                    ->where('workgroups.facility_id', '=', $facility_id)
-                    ->where('workgroups.id', '=', $workgroup_id)
-                    ->where('workstations.id', '=', $workstation_id)
-                    ->pluck('displays.id');
-                $displayIds=$items;
+
+            if (count($displayIds) === 0) {
+                return response()->json([
+                    'success' => 0,
+                    'message' => 'No displays were found within your allowed scope.',
+                ], 422);
             }
 
             foreach ($displayIds as $displayId) {
                 $task = new Task();
                 $task->display_id = $displayId;
+                $task->user_id = $user?->id;
                 $this->setTask($task, $request);
                 $dat=$request->input('startdate').' '.$request->input('starttime');
                 $task->nextrun = Carbon::createFromFormat('Y-m-d H:i', $dat)->timestamp;
@@ -142,6 +213,14 @@ class TasksController extends Controller
         else
         {
             $task = Task::find($id);
+            if (!$task) {
+                return response()->json(['success' => 0, 'message' => 'Task not found.'], 404);
+            }
+
+            if (!$this->taskTargetIsAccessible($user, $task)) {
+                return response()->json(['success' => 0, 'message' => 'You do not have access to update this task.'], 403);
+            }
+
             $this->setTask($task, $request);
             $task->save();
         }
@@ -153,10 +232,18 @@ class TasksController extends Controller
     public function delete_task(Request $request){
         $data=array();
         $data['success']=0;
+        $user = $this->taskManager($request);
+
+        if (!$this->canManageTasks($user)) {
+            return response()->json(['success' => 0, 'msg' => 'You do not have access to manage scheduled tasks.'], 403);
+        }
 
         $id=$request->input('id');
         
         $item = \App\Models\Task::findOrFail($id);
+        if (!$this->taskTargetIsAccessible($user, $item)) {
+            return response()->json(['success' => 0, 'msg' => 'You do not have access to delete this task.'], 403);
+        }
         $item->deleted = 1;
         $item->sync = 0;
         $item->save();

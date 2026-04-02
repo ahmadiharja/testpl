@@ -95,7 +95,7 @@
 
 <script>
     (function () {
-        const canManage = @json(($role ?? session('role')) !== 'user');
+        const canManage = @json(in_array(($role ?? session('role')), ['super', 'admin'], true));
 
         function selectedDisplayIds() {
             return Array.from(document.querySelectorAll('#displays_field input[name="displays[]"]:checked'))
@@ -152,6 +152,10 @@
         }
 
         function renderDisplayActions(row) {
+            if (!canManage) {
+                return '<span class="text-xs text-slate-400">No actions</span>';
+            }
+
             const settingsUrl = @json(url('display-settings')) + `/${row.id}`;
             const settingsButton = `
                 <a href="${settingsUrl}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600 transition hover:bg-sky-100">
@@ -161,10 +165,6 @@
                     </svg>
                 </a>
             `;
-
-            if (!canManage) {
-                return settingsButton;
-            }
 
             return `
                 <div class="flex items-center gap-2">

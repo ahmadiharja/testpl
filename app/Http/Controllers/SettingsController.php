@@ -15,6 +15,28 @@ use App\Notifications\TestEmailNotification;
 
 class SettingsController extends Controller
 {
+    protected function settingsManager(Request $request): ?\App\Models\User
+    {
+        return \App\Models\User::find($request->session()->get('id'));
+    }
+
+    protected function canManageDesktopSettings(?\App\Models\User $user): bool
+    {
+        return $user && $user->hasAnyRole(['super', 'admin']);
+    }
+
+    protected function scopedAlertForUser(Request $request, int $alertId): \App\Models\Alert
+    {
+        $user = $this->settingsManager($request);
+        $alert = \App\Models\Alert::findOrFail($alertId);
+
+        if ($user && !$user->hasRole('super') && (int) $alert->facility_id !== (int) $user->facility_id) {
+            abort(404);
+        }
+
+        return $alert;
+    }
+
     private function settingOptionPayloadHasMeaningfulValues($value)
     {
         if ($value === null || $value === '') {
@@ -112,7 +134,10 @@ class SettingsController extends Controller
     }
 
     public function site_settings(Request $request)
-    {    
+    {
+        $user = $this->settingsManager($request);
+        abort_unless($user && $user->hasRole('super'), 403);
+
         $data=\App\Models\Setting::pluck('value', 'title')->toArray();
         
         if($request->input('site')!=''){
@@ -202,6 +227,8 @@ class SettingsController extends Controller
     
     public function subscription(Request $request)
     {
+        abort_unless($this->canManageDesktopSettings($this->settingsManager($request)), 403);
+
         return view('settings.subscription', ['title'=>'Subscription']);
     }
     
@@ -302,6 +329,9 @@ class SettingsController extends Controller
 
     public function build_version(Request $request)
     {
+        $user = $this->settingsManager($request);
+        abort_unless($user && $user->hasRole('super'), 403);
+
         return redirect('site-settings?tab=release');
     }
     
@@ -335,6 +365,8 @@ class SettingsController extends Controller
         $user_id=$request->session()->get('id');
         $user=\App\Models\User::find($user_id);
         $role=$request->session()->get('role');
+
+        abort_unless($this->canManageDesktopSettings($user), 403);
         
         //add/edit form
         if($request->input('id')!='')
@@ -347,14 +379,16 @@ class SettingsController extends Controller
             }
             elseif($id!='0')
             {
-                $alert= \App\Models\Alert::find($id);
+                $alert= $this->scopedAlertForUser($request, (int) $id);
                 $alert->updated_at=NOW();
                 $request->session()->flash('success', 'Alert updated successfully!');
             }
            
         $alert->email = $request->input('email');
         $alert->actived = $request->input('actived') ? 1 : 0;
-        $alert->facility_id = $request->input('facility_id');
+        $alert->facility_id = $user->hasRole('super')
+            ? $request->input('facility_id')
+            : $user->facility_id;
         $alert->daily_report = $request->input('daily_report') ? 1 : 0;
         $alert->user_id = $user->id;
 
@@ -397,6 +431,10 @@ class SettingsController extends Controller
     
     public function errorlimit_update(Request $request)
     {
+        if (!$this->canManageDesktopSettings($this->settingsManager($request))) {
+            return response()->json(['success' => 0, 'msg' => 'You do not have access to update alert settings.'], 403);
+        }
+
         //errorlimit update
         $response=array();
         $response['success']=0;
@@ -416,6 +454,10 @@ class SettingsController extends Controller
 
     public function errorsmtp_update(Request $request)
     {
+        if (!$this->canManageDesktopSettings($this->settingsManager($request))) {
+            return response()->json(['success' => 0, 'msg' => 'You do not have access to update SMTP settings.'], 403);
+        }
+
         //errorlimit update
         $response=array();
         $response['success']=0;
@@ -442,19 +484,28 @@ class SettingsController extends Controller
     
     public function update_alert(Request $request)
     {
+        $user = $this->settingsManager($request);
+        if (!$this->canManageDesktopSettings($user)) {
+            return response()->json(['success' => 0, 'message' => 'You do not have access to update alerts.'], 403);
+        }
+
         $data=array();
         $data['success']=0;
         $id=$request->input('id');
         $column=$request->input('column');
         $value=$request->input('value');
+        $alert = $this->scopedAlertForUser($request, (int) $id);
 
         if ($column === 'active') {
             $column = 'actived';
         }
 
-        \App\Models\Alert::where('id', $id)->update([
-            $column => $value
-        ]);
+        if (!in_array($column, ['actived', 'daily_report'], true)) {
+            return response()->json(['success' => 0, 'message' => 'This alert field cannot be updated inline.'], 422);
+        }
+
+        $alert->{$column} = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? 1 : 0;
+        $alert->save();
         $data['success']=1;
 
         return response()->json($data);
@@ -462,6 +513,8 @@ class SettingsController extends Controller
     
     public function sendTestEmail(Request $request)
     {
+        abort_unless($this->canManageDesktopSettings($this->settingsManager($request)), 403);
+
         $email = request('email');
         Notification::route('mail', $email)->notify(new TestEmailNotification());
         return 'Email has been sent to '.$email.' successfully!';
@@ -471,10 +524,15 @@ class SettingsController extends Controller
     {
         $user_id=$request->session()->get('id');
         $user=\App\Models\User::find($user_id);
+
+        if (!$this->canManageDesktopSettings($user)) {
+            return response()->json(['success' => 0, 'message' => 'You do not have access to manage alerts.'], 403);
+        }
+
         $isSuper = $user->hasRole('super');
          
         $id=$request->input('id');
-        $alert = \App\Models\Alert::find($id);
+        $alert = $id ? $this->scopedAlertForUser($request, (int) $id) : null;
 
         $facilities = \App\Models\Facility::when(!$isSuper, function ($q) use($user) {
                 return $q->where('id', $user->facility_id);
@@ -489,7 +547,7 @@ class SettingsController extends Controller
            $alert->email = '';
            $alert->actived = 1;
            $alert->daily_report = 1;
-           $alert->facility_id = 0;
+           $alert->facility_id = $isSuper ? 0 : $user->facility_id;
        }
         $data['success']=1;
         $data['content']=view('settings.alert_form')->with('alert', $alert)->with('facilities', $facilities)->render();
@@ -499,13 +557,18 @@ class SettingsController extends Controller
     
     public function delete_alert(Request $request)
     {
+        $user = $this->settingsManager($request);
+        if (!$this->canManageDesktopSettings($user)) {
+            return response()->json(['success' => 0, 'msg' => 'You do not have access to delete alerts.'], 403);
+        }
+
         $data=array();
         $data['success']=0;
         $data['msg']='';
         
         $alert_id=$request->input('id');
         
-        $alert = \App\Models\Alert::findOrFail($alert_id);
+        $alert = $this->scopedAlertForUser($request, (int) $alert_id);
         $alert->delete();
         $data['msg']='Alert deleted successfully!';
         $data['success']=1;
@@ -519,6 +582,8 @@ class SettingsController extends Controller
         $user_id=$request->session()->get('id');
         $userRole=$request->session()->get('role');
         $user=\App\Models\User::find($user_id);
+
+        abort_unless($this->canManageDesktopSettings($user), 403);
         
         $workstation_app=$request->input('workstation_app');
         $leaf = 'di';
@@ -530,6 +595,10 @@ class SettingsController extends Controller
         $workgroup_id=$workgroup_id[0];
         $facility_id=\App\Models\Workgroup::where('id', $workgroup_id)->pluck('facility_id')->toArray();
         $facility_id=$facility_id[0];
+
+        if ($userRole !== 'super' && (int) $facility_id !== (int) $user->facility_id) {
+            abort(404);
+        }
         
         $query = \App\Models\Facility::query();
 
@@ -567,6 +636,8 @@ class SettingsController extends Controller
     {
         $user_id=$request->session()->get('id');
         $user=\App\Models\User::find($user_id);
+
+        abort_unless($this->canManageDesktopSettings($user), 403);
 
         if (!$user->hasRole('super') ) { // load current facility only
             $facilities = $user->facility ? collect([$user->facility]) : collect();

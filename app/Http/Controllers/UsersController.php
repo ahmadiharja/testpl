@@ -11,10 +11,17 @@ use Illuminate\Support\Str;
 
 class UsersController extends Controller
 {
+    protected function canManageUsers(?User $user): bool
+    {
+        return $user && $user->hasAnyRole(['super', 'admin']);
+    }
+
     public function users_management(Request $request)
     {
         $user_id=$request->session()->get('id');
         $user=User::find($user_id);
+
+        abort_unless($this->canManageUsers($user), 403);
         
         if($request->input('id')!='')
         {
@@ -40,6 +47,10 @@ class UsersController extends Controller
     {
          $user_id=$request->session()->get('id');
          $user=User::find($user_id);
+
+        if (!$this->canManageUsers($user)) {
+            return response()->json(['data' => [], 'total' => 0, 'message' => 'You do not have access to manage users.'], 403);
+        }
          
         $search = $request->get('search', '');
         $limit  = (int)$request->get('limit', 10);
@@ -55,6 +66,11 @@ class UsersController extends Controller
         }
 
         $items = User::query()->whereNotIn('name', ['admin']);
+        $items->when(!$user->hasRole('super'), function ($query) {
+            return $query->whereDoesntHave('roles', function ($roleQuery) {
+                $roleQuery->where('name', 'super');
+            });
+        });
         $items->when($facilityId !== '', function ($q) use ($facilityId) {
             return $q->where('facility_id', '=', $facilityId);
         });
@@ -90,10 +106,13 @@ class UsersController extends Controller
     public function user_modal_json(Request $request, $id = null)
     {
         $currentUser = User::find($request->session()->get('id'));
+
+        abort_unless($this->canManageUsers($currentUser), 403);
+
         $item = $id ? User::findOrFail($id) : new User();
         $isSuper = $currentUser->hasRole('super');
 
-        if ($id && !$isSuper && (string) $item->facility_id !== (string) $currentUser->facility_id) {
+        if ($id && !$isSuper && ((string) $item->facility_id !== (string) $currentUser->facility_id || $item->hasRole('super'))) {
             abort(403);
         }
 
@@ -130,6 +149,11 @@ class UsersController extends Controller
     public function save_modal(Request $request)
     {
         $currentUser = User::find($request->session()->get('id'));
+
+        if (!$this->canManageUsers($currentUser)) {
+            return response()->json(['success' => 0, 'message' => 'You do not have access to manage users.'], 403);
+        }
+
         $result = $this->persistUser($request, $currentUser, true);
 
         if (!$result['success']) {
@@ -143,13 +167,31 @@ class UsersController extends Controller
     {
         $data=array();
         $data['success']=0;
+        $currentUser = User::find($request->session()->get('id'));
+
+        if (!$this->canManageUsers($currentUser)) {
+            return response()->json(['success' => 0, 'message' => 'You do not have access to manage users.'], 403);
+        }
+
         $id=$request->input('id');
         $column=$request->input('column');
         $value=$request->input('value');
+        $item = User::findOrFail($id);
 
-        \App\Models\User::where('id', $id)->update([
-            $column => $value
-        ]);
+        if (!$currentUser->hasRole('super')) {
+            if ((string) $item->facility_id !== (string) $currentUser->facility_id || $item->hasRole('super')) {
+                return response()->json(['success' => 0, 'message' => 'You do not have access to update this user.'], 403);
+            }
+        }
+
+        if (!in_array($column, ['enabled'], true)) {
+            return response()->json(['success' => 0, 'message' => 'This field cannot be updated inline.'], 422);
+        }
+
+        $item->{$column} = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        $item->{$column} = $item->{$column} ? 1 : 0;
+        $item->updated_at = now();
+        $item->save();
         $data['success']=1;
 
         return response()->json($data);
@@ -159,6 +201,11 @@ class UsersController extends Controller
     {
         $user_id=$request->session()->get('id');
         $user=User::find($user_id);
+
+        if (!$this->canManageUsers($user)) {
+            return response()->json(['success' => 0, 'message' => 'You do not have access to manage users.'], 403);
+        }
+
         $isSuper = $user->hasRole('super');
         
         
@@ -169,6 +216,10 @@ class UsersController extends Controller
         $user1 = User::find($id);
         //$isSuper = $user->hasRole('super');
         
+        if ($id && $user1 && !$isSuper && ((string) $user1->facility_id !== (string) $user->facility_id || $user1->hasRole('super'))) {
+            return response()->json(['success' => 0, 'message' => 'You do not have access to update this user.'], 403);
+        }
+
         $facility_id = $user->facility_id;
         $facilities = Facility::when(!$isSuper, function ($q) use($facility_id) {
             return $q->where('id', $facility_id);
@@ -215,6 +266,11 @@ class UsersController extends Controller
         
         $id=$request->input('id');
         $currentUser = User::find($request->session()->get('id'));
+
+        if (!$this->canManageUsers($currentUser)) {
+            return response()->json(['success' => 0, 'msg' => 'You do not have access to manage users.'], 403);
+        }
+
         $user = User::findOrFail($id);
 
         if ((int) $user->id === (int) $currentUser->id) {
@@ -242,6 +298,10 @@ class UsersController extends Controller
 
     protected function persistUser(Request $request, User $currentUser, bool $json = false): array
     {
+        if (!$this->canManageUsers($currentUser)) {
+            return ['success' => false, 'message' => 'You do not have access to manage users.', 'status' => 403];
+        }
+
         $id = (string) $request->input('id', '0');
         $isNew = $id === '0' || $id === '';
         $isSuper = $currentUser->hasRole('super');

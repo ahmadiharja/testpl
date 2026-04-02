@@ -234,7 +234,13 @@ class WorkgroupController extends Controller
                 $item->phone = $request->input('phone');
                 //$item->fax = $request->input('fax');
                 $item->user_id = $user->id;
-                $item->facility_id = $request->input('facility_id');
+                $targetFacilityId = $role === 'super'
+                    ? (int) $request->input('facility_id')
+                    : (int) $user->facility_id;
+                if ($targetFacilityId <= 0 || !\App\Models\Facility::where('id', $targetFacilityId)->exists()) {
+                    abort(422);
+                }
+                $item->facility_id = $targetFacilityId;
                 $item->save();
 
             return redirect('workgroups');
@@ -354,7 +360,14 @@ class WorkgroupController extends Controller
     
     public function workgroups_info(Request $request, $id)
     {
+        $userId = $request->session()->get('id');
+        $user = \App\Models\User::find($userId);
+        $role = $request->session()->get('role');
         $item = \App\Models\Workgroup::find($id);
+        abort_if(!$item, 404);
+        if ($role !== 'super' && (int) $item->facility_id !== (int) optional($user)->facility_id) {
+            abort(404);
+        }
         $facilities = \App\Models\Facility::orderBy('id')->pluck('name','id')->toArray();
       
         return view('workgroups.information', ['title' => 'Workgroup Infromation', 'item' => $item, 'facilities' =>$facilities]);

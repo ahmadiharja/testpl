@@ -18,6 +18,8 @@
             ? ['label' => __('Facility scope'), 'tone' => 'border-emerald-200 bg-emerald-50 text-emerald-700']
             : ['label' => __('Read only'), 'tone' => 'border-slate-200 bg-slate-50 text-slate-600']);
 
+    $dueTasksFullUrl = $isUserDashboard ? url('due-tasks') : url('scheduler');
+
     $failedSectionDescription = $isUserDashboard
         ? __('The latest ten displays with active issues inside your visible scope.')
         : __('The most recent ten failed displays across the visible scope.');
@@ -45,7 +47,7 @@
 
     $dashboardJs = [
         'historiesUrl' => url('histories-reports'),
-        'canManageDashboardTasks' => session('role') !== 'user',
+        'canManageDashboardTasks' => in_array(session('role'), ['super', 'admin'], true),
         'noActions' => __('No actions'),
         'scheduleTask' => __('Schedule Task'),
         'deleteTask' => __('Delete Task'),
@@ -74,7 +76,7 @@
                 'eyebrow' => __('Due Tasks'),
                 'title' => $dashboardText['upcomingDueTasks'],
                 'description' => __('Review the next ten scheduled items with their target display, hierarchy scope, cadence, due date, and current status.'),
-                'fullUrl' => url('scheduler'),
+                'fullUrl' => $dueTasksFullUrl,
             ],
         ],
         'historySummary' => [
@@ -115,8 +117,8 @@
             'scheduleType' => __('Schedule Type'),
             'dueDate' => __('Due Date'),
             'actions' => __('Actions'),
-            'lastUpdate' => __('Last Update'),
-            'errorDetails' => __('Error Details'),
+            'lastUpdate' => __('Latest activity'),
+            'errorDetails' => __('Attention'),
             'result' => __('Result'),
             'performed' => __('Performed'),
             'ok' => __('OK'),
@@ -1517,7 +1519,7 @@
                     `)
                 },
                 {
-                    name: @json(__('Error Details')),
+                    name: dashboardGridText.errorDetails,
                     formatter: (cell) => gridjs.html(`
                         <div class="flex min-h-[2.5rem] items-center">
                             <div class="max-w-[22rem] whitespace-normal text-sm font-medium leading-6 text-rose-600">${dashboardEscapeHtml(cell)}</div>
@@ -1548,7 +1550,7 @@
                         item.wsName,
                         item.wgName,
                         item.facName,
-                        dashboardDisplayErrorText(item.errors),
+                        item.attentionText || dashboardDisplayErrorText(item.errors),
                         item.status
                     ]);
                 },
@@ -1809,10 +1811,10 @@
                     }
                 ],
                 server: {
-                    url: '/api/displays-failed?limit=10',
-                    then: (data) => data.map((item) => [
+                    url: '/api/displays?type=failed&sort=updated_at&order=desc&limit=10&page=1',
+                    then: (data) => (data.data || []).map((item) => [
                         {
-                            displayId: item.displayId,
+                            displayId: item.id,
                             displayName: item.displayName,
                             wsId: item.wsId,
                             wsName: item.wsName,
@@ -1823,7 +1825,7 @@
                         },
                         item.wsName,
                         item.updatedAt,
-                        item.errorMsg,
+                        item.attentionText || dashboardDisplayErrorText(item.errors),
                         null,
                     ])
                 },

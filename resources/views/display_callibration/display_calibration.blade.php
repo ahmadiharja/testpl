@@ -1,5 +1,9 @@
 @include('common.navigations.header')
 
+@php
+    $canManageDisplayCalibration = in_array(($role ?? session('role')), ['super', 'admin'], true);
+@endphp
+
 {{-- ===================== DISPLAY CALIBRATION PAGE ===================== --}}
 <div class="space-y-6 pb-8 font-inter theme-lum">
 
@@ -47,7 +51,7 @@
 
     <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
 
-    @if($role != 'user')
+    @if($canManageDisplayCalibration)
     {{-- ── NEW CALIBRATION TASK FORM ── --}}
     <div class="mb-6 rounded-[1.75rem] border border-slate-200 bg-slate-50/70 p-5 shadow-[0_12px_34px_rgba(15,23,42,0.05)]">
     <div class="mb-4">
@@ -266,7 +270,7 @@
         displaysSearch: '',
         activeDropdown: null,
     };
-    const canManageCalibrationTasks = @json(($role ?? 'user') !== 'user');
+    const canManageCalibrationTasks = @json($canManageDisplayCalibration);
 
     function parseNativeSelectOptions(selectId) {
         const select = document.getElementById(selectId);

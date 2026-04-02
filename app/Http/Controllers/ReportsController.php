@@ -125,12 +125,15 @@ class ReportsController extends Controller
     {
         $user_id=$request->session()->get('id');
         $user=\App\Models\User::find($user_id);
+        $userRole=$request->session()->get('role');
 
         $from = $request->input('date_from');
         $to = $request->input('date_to');
         $export_type = $request->input('export_type');
 
-        $facility_id = request('facility_id')?request('facility_id'):$user->facility_id;
+        $facility_id = $userRole === 'super'
+            ? (request('facility_id') ? request('facility_id') : $user->facility_id)
+            : $user->facility_id;
         $items = \App\Models\Workgroup::with('facility');
 
         $items->when($facility_id, function($q) use ($facility_id) {

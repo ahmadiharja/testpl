@@ -24,7 +24,7 @@
 
 <script>
     (function () {
-        const canManageTasks = @json(($role ?? session('role')) !== 'user');
+        const canManageTasks = @json(in_array(($role ?? session('role')), ['super', 'admin'], true));
 
         function renderBadge(label, tone) {
             return Perfectlum.badge(label, tone);

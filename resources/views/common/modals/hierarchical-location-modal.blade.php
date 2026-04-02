@@ -920,11 +920,26 @@
                                                 <p><span class="font-semibold text-gray-700">{{ __('Connection:') }}</span> <span x-text="displayDetail.connectedLabel"></span></p>
                                                 <p><span class="font-semibold text-gray-700">{{ __('Last sync:') }}</span> <span x-text="displayDetail.lastSync"></span></p>
                                             </div>
-                                            <p class="mt-4 rounded-xl px-3 py-2 text-[11px] leading-relaxed"
-                                               :class="displayDetail.statusTone === 'success'
-                                                    ? 'border border-slate-200 bg-white text-slate-500'
-                                                    : 'border border-rose-100 bg-white text-gray-600'"
-                                               x-text="displayDetail.latestError"></p>
+                                            <div class="mt-4 space-y-2">
+                                                <template x-if="(displayDetail.liveErrors || []).length">
+                                                    <div class="space-y-2">
+                                                        <template x-for="(message, index) in (displayDetail.liveErrors || [])" :key="`display-live-error-${index}`">
+                                                            <p class="rounded-xl px-3 py-2 text-[11px] leading-relaxed"
+                                                               :class="displayDetail.statusTone === 'success'
+                                                                    ? 'border border-slate-200 bg-white text-slate-500'
+                                                                    : 'border border-rose-100 bg-white text-gray-600'"
+                                                               x-text="message"></p>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                                <template x-if="!(displayDetail.liveErrors || []).length">
+                                                    <p class="rounded-xl px-3 py-2 text-[11px] leading-relaxed"
+                                                       :class="displayDetail.statusTone === 'success'
+                                                            ? 'border border-slate-200 bg-white text-slate-500'
+                                                            : 'border border-rose-100 bg-white text-gray-600'"
+                                                       x-text="displayDetail.latestError"></p>
+                                                </template>
+                                            </div>
                                         </div>
 
                                         <div class="pt-6 border-t border-gray-100 border-dashed">
@@ -3239,6 +3254,7 @@
                             ...this.displayDetail,
                             history: response.history,
                             latestError: response.latestError,
+                            liveErrors: response.liveErrors,
                             lastSync: response.lastSync,
                             statusLabel: response.statusLabel,
                             statusSectionLabel: response.statusSectionLabel,

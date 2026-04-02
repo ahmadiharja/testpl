@@ -156,6 +156,7 @@ class DashboardController extends Controller
             ->map(fn ($item) => [
                 'id' => 'facility-'.$item->id,
                 'recordId' => (int) $item->id,
+                'facilityId' => (int) $item->id,
                 'type' => 'facility',
                 'title' => $item->name,
                 'subtitle' => collect([$item->location, $item->timezone])->filter()->implode(' • '),
@@ -167,6 +168,7 @@ class DashboardController extends Controller
             ->select([
                 'workgroups.id',
                 'workgroups.name',
+                'workgroups.facility_id',
                 'facilities.name as facility_name',
             ])
             ->when($facilityId, fn ($q) => $q->where('workgroups.facility_id', $facilityId))
@@ -177,6 +179,8 @@ class DashboardController extends Controller
             ->map(fn ($item) => [
                 'id' => 'workgroup-'.$item->id,
                 'recordId' => (int) $item->id,
+                'facilityId' => (int) $item->facility_id,
+                'facilityName' => $item->facility_name,
                 'type' => 'workgroup',
                 'title' => $item->name,
                 'subtitle' => $item->facility_name,
@@ -189,7 +193,10 @@ class DashboardController extends Controller
             ->select([
                 'workstations.id',
                 'workstations.name',
+                'workstations.workgroup_id',
+                'workgroups.id as workgroup_id',
                 'workgroups.name as workgroup_name',
+                'facilities.id as facility_id',
                 'facilities.name as facility_name',
             ])
             ->when($facilityId, fn ($q) => $q->where('workgroups.facility_id', $facilityId))
@@ -200,6 +207,10 @@ class DashboardController extends Controller
             ->map(fn ($item) => [
                 'id' => 'workstation-'.$item->id,
                 'recordId' => (int) $item->id,
+                'facilityId' => (int) $item->facility_id,
+                'facilityName' => $item->facility_name,
+                'workgroupId' => (int) $item->workgroup_id,
+                'workgroupName' => $item->workgroup_name,
                 'type' => 'workstation',
                 'title' => $item->name,
                 'subtitle' => $item->workgroup_name.' • '.$item->facility_name,
@@ -252,6 +263,9 @@ class DashboardController extends Controller
                 return [
                     'id' => 'display-'.$item->id,
                     'recordId' => (int) $item->id,
+                    'facilityName' => $item->facility_name,
+                    'workgroupName' => $item->workgroup_name,
+                    'workstationName' => $item->workstation_name,
                     'type' => 'display',
                     'title' => $title ?: 'Display #'.$item->id,
                     'subtitle' => collect([$item->workstation_name, $item->workgroup_name, $item->facility_name])->filter()->implode(' • '),
@@ -304,12 +318,16 @@ class DashboardController extends Controller
     {
         $user_id = $request->session()->get('id');
         $user = \App\Models\User::find($user_id);
+        $role = $request->session()->get('role');
         
         if (!$user) {
             return response()->json(['data' => [], 'total' => 0]);
         }
         
-        $facility_id = $request->get('facility_id', $user->facility_id);
+        $requestedFacilityId = $request->get('facility_id');
+        $facility_id = $role === 'super'
+            ? ($requestedFacilityId !== null && $requestedFacilityId !== '' ? $requestedFacilityId : null)
+            : $user->facility_id;
         $search = trim((string) $request->get('search', ''));
         $terms = $search !== '' ? preg_split('/\s+/', $search) : [];
         $limit = max(1, min((int) $request->get('limit', 10), 100));
@@ -567,6 +585,7 @@ class DashboardController extends Controller
                 'histories.result',
                 'histories.name',
                 'histories.time',
+                'displays.id as display_id',
                 'displays.manufacturer',
                 'displays.model',
                 'workstations.name as ws_name',
@@ -593,6 +612,7 @@ class DashboardController extends Controller
 
             return [
                 'historyId'     => $history->history_id,
+                'displayId'     => $history->display_id,
                 'result'        => $history->result == 2 ? 'ok' : 'fail',
                 'name'          => $history->name ?? 'Calibration',
                 'displayName'   => $displayName,
@@ -687,20 +707,23 @@ class DashboardController extends Controller
         $role = $request->session()->get('role');
         if (!$user) return response()->json(['data' => [], 'total' => 0]);
 
-        $facility_id = $request->get('facility_id', $user->facility_id);
+        $requestedFacilityId = $request->get('facility_id');
+        $facility_id = $role === 'super'
+            ? ($requestedFacilityId !== null && $requestedFacilityId !== '' ? $requestedFacilityId : null)
+            : $user->facility_id;
         $workstation_id = $request->get('workstation_id');
         $workgroup_id   = $request->get('workgroup_id');
         $display_ids    = collect(explode(',', (string) $request->get('display_ids', '')))->filter()->values()->all();
         $type    = $request->get('type');
         $status  = $request->get('status');
         $search  = $request->get('search', '');
-        $sort    = $request->get('sort', 'id');
-        $order   = $request->get('order', 'asc');
+        $sort    = $request->get('sort', 'updated_at');
+        $order   = strtolower((string) $request->get('order', 'desc')) === 'asc' ? 'asc' : 'desc';
         $limit   = (int)$request->get('limit', 25);
         $page    = (int)$request->get('page', 1);
         $offset  = ($page - 1) * $limit;
 
-        $query = DB::table('displays')
+        $baseQuery = DB::table('displays')
             ->join('workstations', 'workstations.id', '=', 'displays.workstation_id')
             ->join('workgroups',   'workgroups.id',   '=', 'workstations.workgroup_id')
             ->join('facilities',   'facilities.id',   '=', 'workgroups.facility_id')
@@ -708,15 +731,6 @@ class DashboardController extends Controller
                 $join->on('exclude_pref.display_id', '=', 'displays.id')
                     ->where('exclude_pref.name', '=', 'exclude');
             })
-            ->select([
-                'displays.id', 'displays.manufacturer', 'displays.model', 'displays.serial',
-                'displays.status', 'displays.connected', 'displays.workstation_id',
-                'displays.updated_at', 'displays.errors',
-                'workstations.name as ws_name', 'workstations.workgroup_id as wg_id',
-                'workgroups.name as wg_name', 'workgroups.facility_id as fac_id',
-                'workgroups.address as wg_address', 'workgroups.city as wg_city', 'workgroups.state as wg_state',
-                'facilities.name as fac_name',
-            ])
             ->where(function ($q) {
                 $q->whereNull('exclude_pref.value')
                     ->orWhere('exclude_pref.value', '0');
@@ -737,21 +751,315 @@ class DashboardController extends Controller
                    ->orWhere('facilities.name',     'like', "%$search%");
             }));
 
-        $sortColumn = match ($sort) {
-            'id' => 'displays.id',
-            'status' => 'displays.status',
-            'updated_at' => 'displays.updated_at',
-            'manufacturer' => 'displays.manufacturer',
-            default => 'displays.id',
+        $total = (clone $baseQuery)->distinct()->count('displays.id');
+
+        $baseRows = (clone $baseQuery)
+            ->select([
+                'displays.id', 'displays.manufacturer', 'displays.model', 'displays.serial',
+                'displays.status', 'displays.connected', 'displays.workstation_id',
+                'displays.created_at', 'displays.updated_at', 'displays.errors',
+                'workstations.name as ws_name', 'workstations.workgroup_id as wg_id',
+                'workgroups.name as wg_name', 'workgroups.facility_id as fac_id',
+                'workgroups.address as wg_address', 'workgroups.city as wg_city', 'workgroups.state as wg_state',
+                'facilities.name as fac_name',
+            ])
+            ->get();
+
+        $displayIds = $baseRows->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $historyActivityMap = $displayIds->isEmpty()
+            ? []
+            : DB::table('histories')
+                ->selectRaw('display_id, MAX(updated_at) as latest_history_at')
+                ->whereNull('deleted_at')
+                ->whereIn('display_id', $displayIds->all())
+                ->groupBy('display_id')
+                ->pluck('latest_history_at', 'display_id')
+                ->map(fn ($value) => $value ? (string) $value : null)
+                ->all();
+
+        $latestFailedHistoryMap = [];
+
+        if ($displayIds->isNotEmpty()) {
+            $expectedDisplayCount = $displayIds->count();
+
+            foreach (
+                DB::table('histories')
+                    ->select(['id', 'display_id', 'name', 'updated_at', 'time'])
+                    ->whereNull('deleted_at')
+                    ->where('result', 3)
+                    ->whereIn('display_id', $displayIds->all())
+                    ->orderBy('display_id')
+                    ->orderByDesc('updated_at')
+                    ->orderByDesc('time')
+                    ->orderByDesc('id')
+                    ->cursor() as $row
+            ) {
+                $displayId = (int) $row->display_id;
+
+                if (isset($latestFailedHistoryMap[$displayId])) {
+                    continue;
+                }
+
+                $latestFailedHistoryMap[$displayId] = [
+                    'name' => trim((string) ($row->name ?? '')) ?: null,
+                    'updated_at' => $row->updated_at ? (string) $row->updated_at : null,
+                    'time' => $row->time ? (int) $row->time : null,
+                ];
+
+                if (count($latestFailedHistoryMap) >= $expectedDisplayCount) {
+                    break;
+                }
+            }
+        }
+
+        $hoursSummaryMap = [];
+
+        if ($displayIds->isNotEmpty()) {
+            $expectedDisplayCount = $displayIds->count();
+
+            foreach (
+                DB::table('display_hours')
+                    ->select(['id', 'display_id', 'start', 'duration', 'updated_at'])
+                    ->whereIn('display_id', $displayIds->all())
+                    ->orderBy('display_id')
+                    ->orderByDesc('updated_at')
+                    ->orderByDesc('start')
+                    ->orderByDesc('id')
+                    ->cursor() as $row
+            ) {
+                $displayId = (int) $row->display_id;
+
+                if (isset($hoursSummaryMap[$displayId])) {
+                    continue;
+                }
+
+                $hoursSummaryMap[$displayId] = [
+                    'latest_hours_at' => $row->start ? (string) $row->start : null,
+                    'latest_hours_duration' => $row->duration !== null ? (float) $row->duration : null,
+                    'latest_hours_synced_at' => $row->updated_at ? (string) $row->updated_at : null,
+                ];
+
+                if (count($hoursSummaryMap) >= $expectedDisplayCount) {
+                    break;
+                }
+            }
+        }
+
+        $rows = $baseRows->map(function ($row) use ($historyActivityMap, $hoursSummaryMap, $latestFailedHistoryMap) {
+            $historyAt = $historyActivityMap[$row->id] ?? null;
+            $latestFailedHistory = $latestFailedHistoryMap[$row->id] ?? [
+                'name' => null,
+                'updated_at' => null,
+                'time' => null,
+            ];
+            $hoursMeta = $hoursSummaryMap[$row->id] ?? [
+                'latest_hours_at' => null,
+                'latest_hours_duration' => null,
+                'latest_hours_synced_at' => null,
+            ];
+            $hoursAt = $hoursMeta['latest_hours_at'] ?? null;
+            $hoursSyncedAt = $hoursMeta['latest_hours_synced_at'] ?? null;
+            $displayUpdatedAt = $row->updated_at ? (string) $row->updated_at : null;
+            $createdAt = $row->created_at ? (string) $row->created_at : null;
+
+            $activityCandidates = collect([
+                ['source' => 'history', 'value' => $historyAt],
+                ['source' => 'hours', 'value' => $hoursSyncedAt],
+                ['source' => 'sync', 'value' => $displayUpdatedAt],
+            ])->filter(fn ($item) => !empty($item['value']))
+                ->sortByDesc('value')
+                ->values();
+
+            $latestActivity = $activityCandidates->first();
+            $latestActivityAt = $latestActivity['value'] ?? $createdAt;
+            $latestActivitySource = $latestActivity['source'] ?? ($createdAt ? 'created' : 'none');
+
+            $row->latest_history_at = $historyAt;
+            $row->latest_hours_at = $hoursAt;
+            $row->latest_hours_duration = $hoursMeta['latest_hours_duration'] ?? null;
+            $row->latest_hours_synced_at = $hoursSyncedAt;
+            $row->latest_activity_at = $latestActivityAt;
+            $row->latest_activity_source = $latestActivitySource;
+            $row->latest_failed_history_name = $latestFailedHistory['name'] ?? null;
+            $row->latest_failed_history_at = $latestFailedHistory['updated_at'] ?? null;
+            $row->latest_failed_history_time = $latestFailedHistory['time'] ?? null;
+
+            return $row;
+        })->values();
+
+        $rows = $rows->sort(function ($a, $b) use ($sort, $order) {
+            $direction = $order === 'asc' ? 1 : -1;
+
+            $normalizeString = function ($value) {
+                return mb_strtolower(trim((string) ($value ?? '')));
+            };
+
+            $compare = function ($left, $right) use ($direction) {
+                if ($left === $right) {
+                    return 0;
+                }
+
+                if ($left === null || $left === '') {
+                    return 1;
+                }
+
+                if ($right === null || $right === '') {
+                    return -1;
+                }
+
+                return $left <=> $right;
+            };
+
+            switch ($sort) {
+                case 'display_name':
+                    $left = $normalizeString(($a->manufacturer ?? '') . ' ' . ($a->model ?? '') . ' ' . ($a->serial ?? ''));
+                    $right = $normalizeString(($b->manufacturer ?? '') . ' ' . ($b->model ?? '') . ' ' . ($b->serial ?? ''));
+                    return $compare($left, $right) * $direction;
+
+                case 'status':
+                    return $compare((int) ($a->status ?? 0), (int) ($b->status ?? 0)) * $direction;
+
+                case 'display_hours':
+                    $hoursCompare = $compare(
+                        $a->latest_hours_duration !== null ? (float) $a->latest_hours_duration : null,
+                        $b->latest_hours_duration !== null ? (float) $b->latest_hours_duration : null
+                    );
+
+                    if ($hoursCompare !== 0) {
+                        return $hoursCompare * $direction;
+                    }
+
+                    return $compare($a->latest_hours_synced_at, $b->latest_hours_synced_at) * $direction;
+
+                case 'manufacturer':
+                    return $compare($normalizeString($a->manufacturer), $normalizeString($b->manufacturer)) * $direction;
+
+                case 'id':
+                    return $compare((int) $a->id, (int) $b->id) * $direction;
+
+                case 'latest_activity':
+                case 'updated_at':
+                default:
+                    return $compare($a->latest_activity_at, $b->latest_activity_at) * $direction;
+            }
+        })->values();
+
+        $rows = $rows->slice($offset, $limit)->values();
+
+        $failedHistorySummaryMap = [];
+        $pageDisplayIds = $rows->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($pageDisplayIds->isNotEmpty()) {
+            $failedHistories = \App\Models\History::query()
+                ->whereNull('deleted_at')
+                ->where('result', 3)
+                ->whereIn('display_id', $pageDisplayIds->all())
+                ->orderBy('display_id')
+                ->orderByDesc('time')
+                ->orderByDesc('id')
+                ->get()
+                ->groupBy('display_id');
+
+            foreach ($failedHistories as $displayId => $group) {
+                $latestFailedHistory = $group->first();
+                $latestFailedCheckText = null;
+
+                foreach (($latestFailedHistory->steps ?? []) as $step) {
+                    foreach (($step['scores'] ?? []) as $score) {
+                        if (($score['answer'] ?? null) != 0) {
+                            continue;
+                        }
+
+                        $name = trim(strip_tags((string) ($score['name'] ?? '')));
+                        $measured = trim(html_entity_decode(strip_tags((string) ($score['measured'] ?? ''))));
+
+                        if ($name && $measured && $measured !== '-') {
+                            $latestFailedCheckText = $name . ': ' . $measured;
+                        } elseif ($name) {
+                            $latestFailedCheckText = $name;
+                        }
+
+                        break 2;
+                    }
+                }
+
+                $failedHistorySummaryMap[(int) $displayId] = [
+                    'latest_failed_history_name' => trim((string) ($latestFailedHistory->name ?? '')) ?: null,
+                    'latest_failed_check_text' => $latestFailedCheckText,
+                ];
+            }
+        }
+
+        $formatHours = function ($value) {
+            if ($value === null || $value === '') {
+                return '-';
+            }
+
+            $hours = (float) $value;
+            $formatted = floor($hours) == $hours
+                ? number_format($hours, 0)
+                : number_format($hours, 1);
+
+            return $formatted . ' h';
         };
 
-        $total = $query->count();
-        $rows  = (clone $query)->orderBy($sortColumn, $order)
-            ->offset($offset)->limit($limit)->get();
+        $extractLatestErrorText = function ($errors): string {
+            if (!is_array($errors) || count($errors) === 0) {
+                return '';
+            }
 
-        $data = $rows->map(function ($r) use ($role) {
+            $latest = end($errors);
+
+            if (is_string($latest)) {
+                return trim($latest);
+            }
+
+            if (is_array($latest)) {
+                return trim((string) ($latest['text'] ?? $latest['error'] ?? $latest['message'] ?? $latest['name'] ?? ''));
+            }
+
+            return '';
+        };
+
+        $data = $rows->map(function ($r) use ($role, $formatHours, $failedHistorySummaryMap, $extractLatestErrorText) {
             $parts = array_filter([$r->wg_address, $r->wg_city, $r->wg_state]);
             $errors = json_decode($r->errors ?? '[]', true);
+            $activityAt = $r->latest_activity_at ?: $r->updated_at;
+            $hoursAt = $r->latest_hours_at;
+            $hoursSyncedAt = $r->latest_hours_synced_at;
+            $activityFormatted = $activityAt ? \Carbon\Carbon::parse($activityAt)->format('d M Y H:i') : '-';
+            $createdFormatted = $r->created_at ? \Carbon\Carbon::parse($r->created_at)->format('d M Y H:i') : '-';
+            $failedSummary = $failedHistorySummaryMap[(int) $r->id] ?? [];
+            $issueText = $extractLatestErrorText($errors);
+            $failedCheckText = trim((string) ($failedSummary['latest_failed_check_text'] ?? ''));
+            $failedHistoryText = trim((string) ($failedSummary['latest_failed_history_name'] ?? ($r->latest_failed_history_name ?: '')));
+            $healthy = (int) $r->status === 1;
+
+            if ($healthy) {
+                $attentionText = __('No active alert');
+                $attentionMode = 'healthy';
+            } elseif ($issueText !== '') {
+                $attentionText = $issueText;
+                $attentionMode = 'live';
+            } elseif ($failedCheckText !== '') {
+                $attentionText = $failedCheckText;
+                $attentionMode = 'failed_check';
+            } elseif ($failedHistoryText !== '') {
+                $attentionText = $failedHistoryText;
+                $attentionMode = 'failed_history';
+            } else {
+                $attentionText = __('No alert detail');
+                $attentionMode = 'placeholder';
+            }
 
             return [
                 'id'          => $r->id,
@@ -765,7 +1073,24 @@ class DashboardController extends Controller
                 'status'      => $r->status,
                 'connected'   => (bool) $r->connected,
                 'location'    => count($parts) ? implode(', ', $parts) : '-',
-                'updatedAt'   => $r->updated_at ? \Carbon\Carbon::parse($r->updated_at)->format('d M Y H:i') : '-',
+                'updatedAt'   => $activityFormatted,
+                'createdAt'   => $createdFormatted,
+                'latestHistoryAt' => $r->latest_history_at ? \Carbon\Carbon::parse($r->latest_history_at)->format('d M Y H:i') : '-',
+                'latestHoursAt' => $hoursAt ? \Carbon\Carbon::parse($hoursAt)->format('d M Y H:i') : '-',
+                'latestHoursSyncedAt' => $hoursSyncedAt ? \Carbon\Carbon::parse($hoursSyncedAt)->format('d M Y H:i') : '-',
+                'latestHoursDuration' => $r->latest_hours_duration !== null ? (float) $r->latest_hours_duration : null,
+                'latestHoursFormatted' => $formatHours($r->latest_hours_duration),
+                'latestActivityMode' => $r->latest_activity_source,
+                'latestActivitySource' => $r->latest_activity_source,
+                'attentionText' => $attentionText,
+                'attentionMode' => $attentionMode,
+                'latestFailedHistoryName' => $failedSummary['latest_failed_history_name'] ?? ($r->latest_failed_history_name ?: null),
+                'latestFailedCheckText' => $failedSummary['latest_failed_check_text'] ?? null,
+                'latestFailedHistoryAt' => $r->latest_failed_history_at
+                    ? \Carbon\Carbon::parse($r->latest_failed_history_at)->format('d M Y H:i')
+                    : ($r->latest_failed_history_time
+                        ? \Carbon\Carbon::createFromTimestamp($r->latest_failed_history_time)->format('d M Y H:i')
+                        : '-'),
                 'errors'      => is_array($errors) ? $errors : [],
                 'canManage'   => in_array($role, ['super', 'admin'], true),
                 'canDelete'   => in_array($role, ['super', 'admin'], true),
@@ -790,6 +1115,8 @@ class DashboardController extends Controller
             : $user->facility_id;
         $workgroup_id = $request->get('workgroup_id');
         $type = $request->get('type');
+        $staleOnly = $request->boolean('stale');
+        $staleThreshold = now()->subDays(7);
         $search = $request->get('search', '');
         $limit  = (int)$request->get('limit', 25);
         $page   = (int)$request->get('page', 1);
@@ -820,6 +1147,10 @@ class DashboardController extends Controller
             ->when($workgroup_id, fn($q) => $q->where('workstations.workgroup_id', $workgroup_id))
             ->when($type === 'ok', fn($q) => $q->whereRaw('COALESCE(dc.failed_cnt, 0) = 0 AND COALESCE(dc.ok_cnt, 0) = COALESCE(dc.cnt, 0) AND COALESCE(dc.cnt, 0) > 0'))
             ->when($type === 'failed', fn($q) => $q->whereRaw('COALESCE(dc.failed_cnt, 0) > 0'))
+            ->when($staleOnly, fn($q) => $q->where(function ($q2) use ($staleThreshold) {
+                $q2->whereNull('workstations.last_connected')
+                    ->orWhere('workstations.last_connected', '<', $staleThreshold);
+            }))
             ->when($search, fn($q) => $q->where(function($q2) use ($search) {
                 $q2->where('workstations.name', 'like', "%$search%")
                    ->orWhere('workgroups.name', 'like', "%$search%")
@@ -827,7 +1158,17 @@ class DashboardController extends Controller
             }));
 
         $total = $query->count();
-        $rows  = (clone $query)->orderBy('workstations.id')->offset($offset)->limit($limit)->get();
+        $rowsQuery = (clone $query);
+        if ($staleOnly) {
+            $rowsQuery
+                ->orderByRaw('CASE WHEN workstations.last_connected IS NULL THEN 0 ELSE 1 END')
+                ->orderBy('workstations.last_connected', 'asc')
+                ->orderBy('workstations.id', 'asc');
+        } else {
+            $rowsQuery->orderBy('workstations.id');
+        }
+
+        $rows = $rowsQuery->offset($offset)->limit($limit)->get();
 
         $data = $rows->map(function($r) use ($role) {
             $lc = $r->last_connected ? \Carbon\Carbon::parse($r->last_connected) : null;
@@ -843,6 +1184,7 @@ class DashboardController extends Controller
                 'facName'       => $r->fac_name ?? '-',
                 'sleepTime'     => $r->sleep_time ?: 'Off',
                 'lastConnected' => $lcFormatted,
+                'lastSeenRelative' => $lc ? $lc->diffForHumans() : 'No sync data',
                 'lcColor'       => $lcColor,
                 'displaysCount' => (int)$r->displays_count,
                 'okDisplaysCount' => (int)$r->ok_displays_count,
@@ -1003,12 +1345,17 @@ class DashboardController extends Controller
     {
         $user_id = $request->session()->get('id');
         $user = \App\Models\User::find($user_id);
+        $role = $request->session()->get('role');
         if (!$user) return response()->json(['data' => [], 'total' => 0]);
 
-        $facility_id    = $request->get('facility_id', $user->facility_id);
+        $requestedFacilityId = $request->get('facility_id');
+        $facility_id    = $role === 'super'
+            ? ($requestedFacilityId !== null && $requestedFacilityId !== '' ? $requestedFacilityId : null)
+            : $user->facility_id;
         $workgroup_id   = $request->get('workgroup_id');
         $workstation_id = $request->get('workstation_id');
         $display_id     = $request->get('display_id');
+        $display_ids    = collect(explode(',', (string) $request->get('display_ids', '')))->filter()->values()->all();
         $search = $request->get('search', '');
         $sortMode = $request->get('sort_mode', 'due');
         $dueScope = $request->get('due_scope');
@@ -1238,8 +1585,11 @@ class DashboardController extends Controller
         $user = \App\Models\User::find($user_id);
         if (!$user) return response()->json(['data' => [], 'total' => 0]);
 
-        $facility_id = $user->facility_id;
+        $requestedFacilityId = $request->get('facility_id');
         $userRole    = \App\Helpers\AuthHelper::getCurrentUserRole();
+        $facility_id = $userRole === 'super'
+            ? ($requestedFacilityId !== null && $requestedFacilityId !== '' ? $requestedFacilityId : null)
+            : $user->facility_id;
         $search = $request->get('search', '');
         $limit  = (int)$request->get('limit', 25);
         $page   = (int)$request->get('page', 1);
@@ -1249,7 +1599,7 @@ class DashboardController extends Controller
             ->leftJoin('facilities', 'facilities.id', '=', 'alerts.facility_id')
             ->select(['alerts.id', 'alerts.email', 'alerts.actived', 'alerts.daily_report',
                       'alerts.facility_id', 'facilities.name as fac_name'])
-            ->when($userRole === 'admin', fn($q) => $q->where('alerts.facility_id', $facility_id))
+            ->when($facility_id, fn($q) => $q->where('alerts.facility_id', $facility_id))
             ->when($search, fn($q) => $q->where(function($q2) use ($search) {
                 $q2->where('alerts.email',    'like', "%$search%")
                    ->orWhere('facilities.name','like', "%$search%");
@@ -1273,7 +1623,24 @@ class DashboardController extends Controller
     // ─── API: ALERTS TOGGLE ──────────────────────────────────────────────────
     public function api_alerts_toggle(Request $request, $id)
     {
+        $userId = $request->session()->get('id');
+        $user = \App\Models\User::find($userId);
+        $userRole = \App\Helpers\AuthHelper::getCurrentUserRole();
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        if (!in_array($userRole, ['super', 'admin'], true)) {
+            return response()->json(['success' => false, 'message' => 'Forbidden.'], 403);
+        }
+
         $alert = \App\Models\Alert::findOrFail($id);
+
+        if ($userRole !== 'super' && (int) $alert->facility_id !== (int) $user->facility_id) {
+            return response()->json(['success' => false, 'message' => 'Forbidden.'], 403);
+        }
+
         $alert->update(['actived' => !$alert->actived]);
         return response()->json(['success' => true, 'active' => (bool) $alert->actived]);
     }

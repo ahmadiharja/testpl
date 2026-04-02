@@ -95,13 +95,23 @@ class FacilityController extends Controller
     {
         $user_id=$request->session()->get('id');
         $user=\App\Models\User::find($user_id);
+        $role=$request->session()->get('role');
 
         if($id==0)
         $item = $user->facility;
         else $item=\App\Models\Facility::find($id);
 
+        if (!$item) {
+            abort(404);
+        }
+
+        if ($role !== 'super' && (int) $item->id !== (int) optional($user)->facility_id) {
+            abort(404);
+        }
+
         if($request->input('facility_update')!='')
         {
+            abort_unless($this->facility_can_manage($role), 403);
             $item = \App\Models\Facility::find($item->id);
             $old = $item->name;
             $item->name = $request->input('name');
@@ -118,6 +128,7 @@ class FacilityController extends Controller
 
         if($request->input('id')!='')
         {
+            abort_unless($this->facility_can_manage($role), 403);
             $id2=$request->input('id');
             if($id2=='0')
             {
@@ -128,6 +139,12 @@ class FacilityController extends Controller
             elseif($id2!='0')
             {
                 $item = \App\Models\Workgroup::find($id2);
+                if (!$item) {
+                    abort(404);
+                }
+                if ($role !== 'super' && (int) $item->facility_id !== (int) $user->facility_id) {
+                    abort(404);
+                }
                 $item->updated_at=NOW();
                 $request->session()->flash('success', 'Workgroup updated successfully!');
             }
@@ -140,7 +157,13 @@ class FacilityController extends Controller
                 $item->phone = $request->input('phone');
                 //$item->fax = $request->input('fax');
                 $item->user_id = $user->id;
-                $item->facility_id = $request->input('facility_id');
+                $targetFacilityId = $role === 'super'
+                    ? (int) $request->input('facility_id')
+                    : (int) $user->facility_id;
+                if ($targetFacilityId <= 0 || !\App\Models\Facility::where('id', $targetFacilityId)->exists()) {
+                    abort(422);
+                }
+                $item->facility_id = $targetFacilityId;
                 $item->save();
 
                 if($id==0)
@@ -154,10 +177,15 @@ class FacilityController extends Controller
     public function fetch_description(Request $request){
         $data=array();
         $data['success']=0;
+        $user = \App\Models\User::find($request->session()->get('id'));
+        $role = $request->session()->get('role');
         
         $data['content']="<option value=''>Please select</option>";
         
         $id=$request->input('id');
+        if ($role !== 'super' && (int) $id !== (int) optional($user)->facility_id) {
+            return response()->json(['success' => 0, 'content' => "<option value=''>Please select</option>"], 403);
+        }
         
         $row=\App\Models\Facility::where('id', $id)->get();
         foreach($row as $r)
@@ -172,10 +200,15 @@ class FacilityController extends Controller
     public function fetch_location(Request $request){
         $data=array();
         $data['success']=0;
+        $user = \App\Models\User::find($request->session()->get('id'));
+        $role = $request->session()->get('role');
         
         $data['content']="<option value=''>Please select</option>";
         
         $id=$request->input('id');
+        if ($role !== 'super' && (int) $id !== (int) optional($user)->facility_id) {
+            return response()->json(['success' => 0, 'content' => "<option value=''>Please select</option>"], 403);
+        }
         
         $row=\App\Models\Facility::where('id', $id)->get();
         foreach($row as $r)
@@ -190,9 +223,14 @@ class FacilityController extends Controller
     public function fetch_timezone(Request $request){
         $data=array();
         $data['success']=0;
+        $user = \App\Models\User::find($request->session()->get('id'));
+        $role = $request->session()->get('role');
         $data['content']="<option value=''>Please select</option>";
         
         $id=$request->input('id');
+        if ($role !== 'super' && (int) $id !== (int) optional($user)->facility_id) {
+            return response()->json(['success' => 0, 'content' => "<option value=''>Please select</option>"], 403);
+        }
         $row=\App\Models\Facility::where('id', $id)->get();
         foreach($row as $r)
         {

@@ -12,9 +12,33 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use App\Support\ClientSurface;
+use App\Support\SessionActivity;
 
 class AccountController extends Controller
 {
+    protected function preferredSurface(Request $request, ?string $fallback = null): string
+    {
+        return ClientSurface::remember($request, $fallback);
+    }
+
+    protected function resolveRoleId(int $userId): string
+    {
+        $role = \App\Models\ModelRoles::where([
+            ['model_type', 'App\Models\User'],
+            ['model_id', $userId],
+        ])->orWhere([
+            ['model_type', 'App\User'],
+            ['model_id', $userId],
+        ])->first();
+
+        return match ((string) ($role->role_id ?? '3')) {
+            '1' => 'super',
+            '2' => 'admin',
+            default => 'user',
+        };
+    }
+
     protected function loadSettings(): array
     {
         if (!Schema::hasTable('settings')) {
@@ -26,11 +50,12 @@ class AccountController extends Controller
 
     public function login (Request $request)
     {
+        $preferredSurface = $this->preferredSurface($request);
         $user_id=$request->session()->get('id');
         //$request->session()->put('id', '64');
         //$request->session()->put('id', '32');
-        if($user_id!=NULL AND $user_id!='') return redirect('dashboard');
-        
+        if($user_id!=NULL AND $user_id!='') return redirect(ClientSurface::dashboardUrl($request));
+
         if($request->input('email')!='')
         {
             $response=array();
@@ -60,6 +85,8 @@ class AccountController extends Controller
 
                 if($remember=='1') config(['session.lifetime' => 43200]);
                 $request->session()->put('id',$check->id);
+                $request->session()->put('role', $this->resolveRoleId((int) $check->id));
+                SessionActivity::touch($request);
                 
                 // Set default platform session based on user DB column
                 if ($check->platform == 'perfectchroma') {
@@ -74,15 +101,24 @@ class AccountController extends Controller
                 
                 // If user has both, redirect to choice page instead of dashboard
                 if ($check->platform == 'both') {
-                    $response['next']=url('choose-platform');
+                    $response['next']=ClientSurface::choosePlatformUrl($request);
                 } else {
-                    $response['next']=url('dashboard');
+                    $response['next']=ClientSurface::dashboardUrl($request);
                 }
             }
             else{
                 $response['msg']='Invalid Email or Password.';
             }
             return response()->json($response);
+        }
+
+        if (
+            $request->isMethod('get') &&
+            !$request->ajax() &&
+            !$request->expectsJson() &&
+            $preferredSurface === ClientSurface::MOBILE
+        ) {
+            return redirect()->route('mobile.login', ['surface' => ClientSurface::MOBILE]);
         }
 
         $setting=$this->loadSettings();
@@ -97,21 +133,23 @@ class AccountController extends Controller
 
     public function choose_platform(Request $request)
     {
+        $this->preferredSurface($request, ClientSurface::DESKTOP);
         $user_id=$request->session()->get('id');
-        if(!$user_id) return redirect('login');
+        if(!$user_id) return redirect(ClientSurface::loginUrl($request));
         
         return view('account.choose_platform', ['title'=>'Choose Platform']);
     }
 
     public function select_platform(Request $request, $platform)
     {
+        $this->preferredSurface($request, ClientSurface::DESKTOP);
         $user_id=$request->session()->get('id');
-        if(!$user_id) return redirect('login');
+        if(!$user_id) return redirect(ClientSurface::loginUrl($request));
         
         if (in_array($platform, ['perfectlum', 'perfectchroma'])) {
             $request->session()->put('platform', $platform);
         }
-        return redirect('dashboard');
+        return redirect(ClientSurface::dashboardUrl($request));
     }
 
     protected function create_account(Request $request)
@@ -239,20 +277,45 @@ class AccountController extends Controller
             DB::commit();
 
             $request->session()->put('id', $user->id);
+            $request->session()->put('role', $this->resolveRoleId((int) $user->id));
+            SessionActivity::touch($request);
             //auth()->login($user);
         } catch (\Exception $exception) {
             DB::rollBack();
             logger()->error($exception);
             return "Whoops! something went wrong.".$exception->getMessage();
         }
-        return redirect()->to('/dashboard');
+        return redirect(ClientSurface::dashboardUrl($request));
     }
 
     public function logout(Request $request)
     {
+        $surface = ClientSurface::current($request);
+        $reason = (string) $request->query('reason', '');
         $request->session()->put('id', '');
-        $request->session()->forget('id');
-        return redirect('login');
+        $request->session()->forget([
+            'id',
+            'role',
+            'platform',
+            SessionActivity::LAST_ACTIVITY_KEY,
+        ]);
+        ClientSurface::remember($request, $surface);
+
+        if ($reason === 'inactive') {
+            $request->session()->flash('idle_logout_notice', 'Your session expired due to inactivity. Please sign in again.');
+        }
+
+        return redirect(ClientSurface::loginUrl($request));
+    }
+
+    public function heartbeat(Request $request)
+    {
+        SessionActivity::touch($request);
+
+        return response()->json([
+            'success' => 1,
+            'last_activity_at' => $request->session()->get(SessionActivity::LAST_ACTIVITY_KEY),
+        ]);
     }
 }
 

@@ -166,8 +166,10 @@
             scroll-snap-type: x proximity;
             scroll-behavior: auto;
             overscroll-behavior-x: contain;
-            touch-action: pan-y;
+            -webkit-overflow-scrolling: touch;
+            touch-action: auto;
             cursor: grab;
+            scrollbar-width: none;
         }
 
         .mobile-detail-tool-row::-webkit-scrollbar {

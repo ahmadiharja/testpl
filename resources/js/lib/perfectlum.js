@@ -202,20 +202,9 @@ function bindMobileDragScroll(root = document) {
         let startX = 0;
         let startScrollLeft = 0;
         let suppressClick = false;
-        let activeTouchId = null;
         let snapRestoreTimer = null;
 
-        const pointX = (event) => {
-            if (typeof event.clientX === 'number') {
-                return event.clientX;
-            }
-
-            const touch = event.touches?.[0] || event.changedTouches?.[0];
-            return touch ? touch.clientX : 0;
-        };
-
         const reset = () => {
-            activeTouchId = null;
             isPointerDown = false;
             isDragging = false;
             container.classList.remove('is-dragging', 'is-pointer-down');
@@ -240,7 +229,7 @@ function bindMobileDragScroll(root = document) {
                 return;
             }
 
-            const deltaX = pointX(event) - startX;
+            const deltaX = event.clientX - startX;
             if (!isDragging && Math.abs(deltaX) > 4) {
                 isDragging = true;
                 suppressClick = true;
@@ -290,43 +279,6 @@ function bindMobileDragScroll(root = document) {
             endDrag();
         };
 
-        const onTouchStart = (event) => {
-            const touch = event.changedTouches?.[0];
-            if (!touch) {
-                return;
-            }
-
-            activeTouchId = touch.identifier;
-            beginDrag(touch.clientX);
-        };
-
-        const onTouchMove = (event) => {
-            if (!isPointerDown) {
-                return;
-            }
-
-            const touch = Array.from(event.touches || []).find((item) => item.identifier === activeTouchId) || event.touches?.[0];
-            if (!touch) {
-                return;
-            }
-
-            moveDrag({
-                ...event,
-                clientX: touch.clientX,
-            });
-        };
-
-        const onTouchEnd = (event) => {
-            if (activeTouchId !== null) {
-                const touch = Array.from(event.changedTouches || []).find((item) => item.identifier === activeTouchId);
-                if (!touch) {
-                    return;
-                }
-            }
-
-            endDrag();
-        };
-
         const onClickCapture = (event) => {
             if (!suppressClick) {
                 return;
@@ -349,12 +301,8 @@ function bindMobileDragScroll(root = document) {
         };
 
         container.addEventListener('mousedown', onMouseDown);
-        container.addEventListener('touchstart', onTouchStart, { passive: true });
         document.addEventListener('mousemove', onMouseMove, { passive: false });
         document.addEventListener('mouseup', onMouseUp);
-        document.addEventListener('touchmove', onTouchMove, { passive: false });
-        document.addEventListener('touchend', onTouchEnd);
-        document.addEventListener('touchcancel', onTouchEnd);
         container.addEventListener('click', onClickCapture, true);
         container.addEventListener('dragstart', onDragStart);
         container.addEventListener('selectstart', onSelectStart);
@@ -362,12 +310,8 @@ function bindMobileDragScroll(root = document) {
         const cleanup = () => {
             window.clearTimeout(snapRestoreTimer);
             container.removeEventListener('mousedown', onMouseDown);
-            container.removeEventListener('touchstart', onTouchStart);
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
-            document.removeEventListener('touchmove', onTouchMove);
-            document.removeEventListener('touchend', onTouchEnd);
-            document.removeEventListener('touchcancel', onTouchEnd);
             container.removeEventListener('click', onClickCapture, true);
             container.removeEventListener('dragstart', onDragStart);
             container.removeEventListener('selectstart', onSelectStart);

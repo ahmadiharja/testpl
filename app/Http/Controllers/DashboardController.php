@@ -328,6 +328,7 @@ class DashboardController extends Controller
         $facility_id = $role === 'super'
             ? ($requestedFacilityId !== null && $requestedFacilityId !== '' ? $requestedFacilityId : null)
             : $user->facility_id;
+        $display_id = $request->get('display_id');
         $search = trim((string) $request->get('search', ''));
         $terms = $search !== '' ? preg_split('/\s+/', $search) : [];
         $limit = max(1, min((int) $request->get('limit', 10), 100));
@@ -348,6 +349,7 @@ class DashboardController extends Controller
             ->where('tasks.nextrun', '>', 0)
             ->where('tasks.nextrun', '<=', $nowTimestamp)
             ->when($facility_id, fn($q) => $q->where('workgroups.facility_id', $facility_id))
+            ->when($display_id, fn($q) => $q->where('tasks.display_id', $display_id))
             ->when(!empty($terms), function ($query) use ($terms) {
                 $query->where(function ($query) use ($terms) {
                     foreach ($terms as $term) {
@@ -389,6 +391,7 @@ class DashboardController extends Controller
             ->where('qa_tasks.deleted', 0)
             ->where('qa_tasks.nextdate', '<=', $nowTimestamp)
             ->when($facility_id, fn($q) => $q->where('workgroups.facility_id', $facility_id))
+            ->when($display_id, fn($q) => $q->where('qa_tasks.display_id', $display_id))
             ->when(!empty($terms), function ($query) use ($terms) {
                 $query->where(function ($query) use ($terms) {
                     foreach ($terms as $term) {
@@ -1451,6 +1454,8 @@ class DashboardController extends Controller
             ]);
 
         $allRows = $taskRows->get()->merge($qaRows->get());
+        $nowTimestamp = \Carbon\Carbon::now()->timestamp;
+
         $allRows = match ($sortMode) {
             'latest' => $allRows->sort(function ($a, $b) {
                 $createdA = $a->created_at ? strtotime((string) $a->created_at) : 0;
@@ -1462,7 +1467,25 @@ class DashboardController extends Controller
                 $dueCompare = ((int) $b->due_at) <=> ((int) $a->due_at);
                 return $dueCompare !== 0 ? $dueCompare : ($b->id <=> $a->id);
             }),
-            default => $allRows->sortBy('due_at'),
+            default => $allRows->sort(function ($a, $b) use ($nowTimestamp) {
+                $dueA = (int) ($a->due_at ?? 0);
+                $dueB = (int) ($b->due_at ?? 0);
+                $isUpcomingA = $dueA >= $nowTimestamp ? 0 : 1;
+                $isUpcomingB = $dueB >= $nowTimestamp ? 0 : 1;
+
+                $bucketCompare = $isUpcomingA <=> $isUpcomingB;
+                if ($bucketCompare !== 0) {
+                    return $bucketCompare;
+                }
+
+                if ($isUpcomingA === 0) {
+                    $dueCompare = $dueA <=> $dueB;
+                    return $dueCompare !== 0 ? $dueCompare : ($b->id <=> $a->id);
+                }
+
+                $dueCompare = $dueB <=> $dueA;
+                return $dueCompare !== 0 ? $dueCompare : ($b->id <=> $a->id);
+            }),
         };
         $total   = $allRows->count();
         $rows    = $allRows->slice($offset, $limit)->values();
@@ -1470,6 +1493,9 @@ class DashboardController extends Controller
         $data = $rows->map(function($r) {
             $ts = (int)$r->due_at;
             $dueFormatted = $ts ? \Carbon\Carbon::createFromTimestamp($ts)->format('d M Y H:i') : '-';
+            $createdFormatted = $r->created_at
+                ? \Carbon\Carbon::parse($r->created_at)->format('d M Y H:i')
+                : 'Not recorded';
             $isPast = $ts && \Carbon\Carbon::createFromTimestamp($ts)->isPast();
             $isSoon = $ts && !$isPast && \Carbon\Carbon::createFromTimestamp($ts)->diffInDays(\Carbon\Carbon::now()) <= 7;
             $statusMap = [0 => 'OK', 1 => 'Failed', 2 => 'Run Error'];
@@ -1486,6 +1512,7 @@ class DashboardController extends Controller
                 'facName'     => $r->fac_name ?? '-',
                 'taskName'    => $r->task_name ?? $r->record_type,
                 'scheduleName'=> $r->schedule_name ?? '-',
+                'createdAt'   => $createdFormatted,
                 'dueAt'       => $dueFormatted,
                 'dueColor'    => $isPast ? 'danger' : ($isSoon ? 'warning' : 'success'),
                 'status'      => $statusMap[$r->status] ?? 'Unknown',
@@ -1517,6 +1544,7 @@ class DashboardController extends Controller
             ->join('workstations', 'displays.workstation_id', '=', 'workstations.id')
             ->join('workgroups', 'workstations.workgroup_id', '=', 'workgroups.id')
             ->join('facilities', 'workgroups.facility_id', '=', 'facilities.id')
+            ->leftJoin('users', 'tasks.user_id', '=', 'users.id')
             ->leftJoin('task_types', 'tasks.type', '=', 'task_types.key')
             ->leftJoin('schedule_types', 'tasks.schtype', '=', 'schedule_types.client_id')
             ->where('tasks.type', 'cal')
@@ -1538,42 +1566,64 @@ class DashboardController extends Controller
                     ->orWhere('task_types.title', 'like', "%$search%")
                     ->orWhere('schedule_types.title', 'like', "%$search%");
             }))
-            ->select([
-                'tasks.id',
-                'tasks.display_id',
-                'tasks.nextrun as due_at',
-                'task_types.title as task_name',
-                'schedule_types.title as schedule_name',
-                'displays.manufacturer',
-                'displays.model',
-                'displays.serial',
-                'workstations.name as ws_name',
-                'workgroups.name as wg_name',
-                'facilities.name as fac_name',
-            ]);
+              ->select([
+                  'tasks.id',
+                  'tasks.display_id',
+                  'workstations.id as ws_id',
+                  'workgroups.id as wg_id',
+                  'facilities.id as fac_id',
+                  'tasks.nextrun as due_at',
+                  'tasks.created_at',
+                  'tasks.status',
+                  'tasks.disabled',
+                  'tasks.deleted',
+                  'tasks.user_id',
+                  'tasks.startdate',
+                  'tasks.starttime',
+                  'task_types.title as task_name',
+                  'schedule_types.title as schedule_name',
+                  'displays.manufacturer',
+                  'displays.model',
+                  'displays.serial',
+                  'workstations.name as ws_name',
+                  'workgroups.name as wg_name',
+                  'facilities.name as fac_name',
+                  'users.fullname as created_by_fullname',
+                  'users.name as created_by_name',
+                  'users.email as created_by_email',
+              ]);
 
         $total = $query->count();
-        $rows = (clone $query)
-            ->orderByDesc('tasks.created_at')
-            ->orderByDesc('tasks.id')
-            ->offset($offset)
-            ->limit($limit)
-            ->get();
+
+          $rows = (clone $query)
+              ->orderByDesc('tasks.created_at')
+              ->orderByDesc('tasks.id')
+              ->offset($offset)
+              ->limit($limit)
+              ->get();
 
         $data = $rows->map(function ($r) {
             $ts = (int) $r->due_at;
             return [
-                'id' => $r->id,
-                'displayId' => $r->display_id,
-                'displayName' => trim(($r->manufacturer ?? '') . ' ' . ($r->model ?? '')) . ' (' . ($r->serial ?? '') . ')',
-                'wsName' => $r->ws_name ?? '-',
-                'wgName' => $r->wg_name ?? '-',
-                'facName' => $r->fac_name ?? '-',
-                'taskName' => $r->task_name ?: 'Calibration',
-                'scheduleName' => $r->schedule_name ?: 'Manual',
-                'dueAt' => $ts ? \Carbon\Carbon::createFromTimestamp($ts)->format('d M Y H:i') : '-',
-            ];
-        });
+                  'id' => $r->id,
+                  'displayId' => $r->display_id,
+                  'workstationId' => $r->ws_id,
+                  'workgroupId' => $r->wg_id,
+                  'facilityId' => $r->fac_id,
+                  'displayName' => trim(($r->manufacturer ?? '') . ' ' . ($r->model ?? '')) . ' (' . ($r->serial ?? '') . ')',
+                  'wsName' => $r->ws_name ?? '-',
+                  'wgName' => $r->wg_name ?? '-',
+                  'facName' => $r->fac_name ?? '-',
+                  'taskName' => $r->task_name ?: 'Calibration',
+                  'scheduleName' => $r->schedule_name ?: 'Manual',
+                  'dueAt' => $ts ? \Carbon\Carbon::createFromTimestamp($ts)->format('d M Y H:i') : '-',
+                  'createdAt' => $r->created_at ? \Carbon\Carbon::parse($r->created_at)->format('d M Y H:i') : 'Not recorded',
+                  'createdBy' => $r->created_by_fullname ?: ($r->created_by_name ?: ($r->created_by_email ?: 'System')),
+                  'statusLabel' => ((int) ($r->disabled ?? 0) === 1 || (int) ($r->deleted ?? 0) === 1) ? 'Inactive' : (((int) ($r->status ?? 0) === 1) ? 'Running' : 'Active'),
+                  'statusTone' => ((int) ($r->disabled ?? 0) === 1 || (int) ($r->deleted ?? 0) === 1) ? 'slate' : (((int) ($r->status ?? 0) === 1) ? 'emerald' : 'sky'),
+                  'startAt' => trim(($r->startdate ?? '') . ' ' . ($r->starttime ?? '')),
+              ];
+          });
 
         return response()->json(['data' => $data, 'total' => $total]);
     }

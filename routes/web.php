@@ -124,6 +124,7 @@ Route::group(['middleware' => 'auth'], function(){
   Route::get('api/display-modal/workstations/{workgroupId}', [DisplaysController::class, 'display_move_workstations']);
   Route::get('api/display-modal/{id}/edit', [DisplaysController::class, 'edit_display_modal']);
   Route::post('api/display-modal/{id}/move', [DisplaysController::class, 'move_display_modal']);
+  Route::post('api/display-modal/{id}/quick-calibrate', [DisplaysController::class, 'quick_calibrate_display']);
   Route::get('api/display-modal/{id}', [DisplaysController::class, 'api_display_modal']);
   Route::post('api/display-modal/{id}/save', [DisplaysController::class, 'save_display_modal']);
 

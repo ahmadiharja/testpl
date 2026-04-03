@@ -797,6 +797,16 @@
                                                     {{ __('Move') }}
                                                 </button>
                                             </div>
+                                            <div x-show="displayDetail?.permissions?.edit" class="mb-4 grid grid-cols-2 gap-2">
+                                                <button type="button" class="inline-flex items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-[11px] font-semibold text-sky-700 transition hover:border-sky-300 hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60" :disabled="quickCalibratingDisplay" @click="quickCalibrateDisplay()">
+                                                    <i data-lucide="monitor-play" class="h-3.5 w-3.5"></i>
+                                                    <span x-text="quickCalibratingDisplay ? 'Calibrating...' : 'Calibrate'"></span>
+                                                </button>
+                                                <button type="button" @click="openDisplaySchedulerEditor()" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">
+                                                    <i data-lucide="calendar-clock" class="h-3.5 w-3.5"></i>
+                                                    {{ __('Scheduler') }}
+                                                </button>
+                                            </div>
                                             <div class="space-y-3">
                                                 <div>
                                                     <p class="text-[10px] text-gray-500 mb-1 ml-1 font-semibold">{{ __('Facility:') }}</p>
@@ -2269,6 +2279,7 @@
             historyLoading: false,
             displayError: '',
             displayDetail: null,
+            quickCalibratingDisplay: false,
             workgroupLoading: false,
             workgroupError: '',
             workgroupDetail: null,
@@ -3970,6 +3981,50 @@
 
             csrfToken() {
                 return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            },
+
+            openDisplaySchedulerEditor() {
+                if (!this.displayDetail?.permissions?.edit || !this.current.id) {
+                    return;
+                }
+
+                if (typeof window.openTaskEditorWithPayload !== 'function') {
+                    window.location.href = this.displayDetail?.links?.scheduler || '#';
+                    return;
+                }
+
+                window.openTaskEditorWithPayload({
+                    id: 0,
+                    displays: [this.current.id],
+                    facility2: this.displayDetail?.hierarchy?.facility?.id || '',
+                    workgroup2: this.displayDetail?.hierarchy?.workgroup?.id || '',
+                    workstation2: this.displayDetail?.hierarchy?.workstation?.id || '',
+                });
+            },
+
+            async quickCalibrateDisplay() {
+                if (!this.displayDetail?.permissions?.edit || this.quickCalibratingDisplay || !this.current.id) {
+                    return;
+                }
+
+                if (typeof window.openTaskEditorWithPayload !== 'function') {
+                    window.location.href = this.displayDetail?.links?.scheduler || '#';
+                    return;
+                }
+
+                window.openTaskEditorWithPayload({
+                    id: 0,
+                    tasktype: 'cal',
+                    quick_calibration: '1',
+                    lock_tasktype: '1',
+                    displays: [this.current.id],
+                    facility2: this.displayDetail?.hierarchy?.facility?.id || '',
+                    workgroup2: this.displayDetail?.hierarchy?.workgroup?.id || '',
+                    workstation2: this.displayDetail?.hierarchy?.workstation?.id || '',
+                }, {
+                    title: 'Calibrate Display',
+                    subtitle: `Set the schedule window for ${this.displayDetail?.name || 'this display'} before creating the calibration task.`,
+                });
             },
 
             async saveDisplayModal() {

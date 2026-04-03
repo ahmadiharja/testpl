@@ -783,13 +783,55 @@
             @stack('modals')
         </div>
 
+        @include('tasks.schedule_task_modal')
+        @include('common.modals.action-confirm-modal')
+
         @include('mobile.partials.bottom-nav', ['activeTab' => $activeTab ?? 'dashboard'])
     </div>
+
+    <div id="mobile-notification-center" class="pointer-events-none fixed inset-x-0 top-4 z-[9700] mx-auto flex w-full max-w-[440px] flex-col gap-2 px-4"></div>
 
     <!-- mobile-page-scripts-start -->
     @stack('scripts')
     <!-- mobile-page-scripts-end -->
     <div id="mobile-page-runtime-scripts" hidden></div>
+    <script>
+        if (typeof window.notify !== 'function') {
+            window.notify = function (type, msg) {
+                const container = document.getElementById('mobile-notification-center');
+                if (!container) {
+                    return;
+                }
+
+                const tone = type === 'success'
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                    : 'border-rose-200 bg-rose-50 text-rose-700';
+                const icon = type === 'success' ? 'check-circle-2' : 'circle-alert';
+                const alertId = `mobile-alert-${Date.now()}`;
+                const html = `
+                    <div id="${alertId}" class="pointer-events-auto translate-y-2 opacity-0 transition-all duration-300 rounded-2xl border ${tone} px-4 py-3 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="${icon}" class="mt-0.5 h-4 w-4 shrink-0"></i>
+                            <p class="text-sm font-semibold leading-5">${String(msg || '')}</p>
+                        </div>
+                    </div>
+                `;
+
+                container.insertAdjacentHTML('beforeend', html);
+                lucide.createIcons();
+
+                const el = document.getElementById(alertId);
+                requestAnimationFrame(() => {
+                    el?.classList.remove('translate-y-2', 'opacity-0');
+                });
+
+                setTimeout(() => {
+                    el?.classList.add('translate-y-2', 'opacity-0');
+                    setTimeout(() => el?.remove(), 260);
+                }, 3800);
+            };
+        }
+    </script>
     <script>
         window.Perfectlum?.bootMobileShell?.();
         lucide.createIcons();

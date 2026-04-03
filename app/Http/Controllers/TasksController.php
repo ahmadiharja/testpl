@@ -153,7 +153,9 @@ class TasksController extends Controller
             'monthly' => $monthly,
             'task' => $task,
             'displays' => $displays,
-            'request' => $request
+            'request' => $request,
+            'quickCalibration' => $request->boolean('quick_calibration'),
+            'lockTaskType' => $request->boolean('lock_tasktype') || $request->boolean('quick_calibration'),
         );
 
         $data=array();
@@ -207,6 +209,8 @@ class TasksController extends Controller
                 $this->setTask($task, $request);
                 $dat=$request->input('startdate').' '.$request->input('starttime');
                 $task->nextrun = Carbon::createFromFormat('Y-m-d H:i', $dat)->timestamp;
+                $task->created_at = now();
+                $task->updated_at = now();
                 $task->save();
             }
         }
@@ -222,6 +226,7 @@ class TasksController extends Controller
             }
 
             $this->setTask($task, $request);
+            $task->updated_at = now();
             $task->save();
         }
 

@@ -2,6 +2,7 @@
 
 @php
     $canManageSchedulerDesktop = in_array(($role ?? session('role')), ['super', 'admin'], true);
+    $selectedDisplayId = (int) request('display_id', 0);
     $schedulerText = [
         'pleaseSelect' => __('Please select'),
         'selectFacilityFirst' => __('Select facility first'),
@@ -26,11 +27,78 @@
         'searchSchedulerTasks' => __('Search scheduler tasks...'),
         'task' => __('Task'),
         'schedule' => __('Schedule'),
+        'created' => __('Created'),
         'dueDate' => __('Due Date'),
         'status' => __('Status'),
         'actions' => __('Actions'),
     ];
 @endphp
+
+@push('head')
+<style>
+    #tasks-grid .gridjs-th {
+        vertical-align: middle !important;
+        height: 64px !important;
+        padding: 0 1.75rem !important;
+    }
+
+    #tasks-grid .gridjs-th-content {
+        display: flex !important;
+        align-items: center !important;
+        width: 100%;
+        min-height: 64px;
+        line-height: 1 !important;
+        justify-content: flex-start !important;
+        white-space: nowrap;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    #tasks-grid .gridjs-th:last-child .gridjs-th-content {
+        justify-content: flex-end !important;
+    }
+
+    #tasks-grid .gridjs-th > div {
+        display: flex !important;
+        align-items: center !important;
+        min-height: 64px;
+        height: 64px !important;
+    }
+
+    #tasks-grid .gridjs-td {
+        vertical-align: middle !important;
+        padding: 1.1rem 1.75rem !important;
+    }
+
+    #tasks-grid .scheduler-cell {
+        display: flex;
+        min-height: 0;
+        align-items: center;
+        line-height: 1.35;
+    }
+
+    #tasks-grid .scheduler-cell-stack {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 0.25rem;
+        line-height: 1.35;
+    }
+
+    #tasks-grid .scheduler-cell-action {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        line-height: 1;
+    }
+
+    #tasks-grid .scheduler-cell-action > .relative {
+        display: inline-flex;
+        align-items: center;
+    }
+</style>
+@endpush
 
 <div class="space-y-6" x-data="schedulerPage()">
     <section class="rounded-[2rem] border border-slate-200 bg-white px-7 py-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
@@ -545,28 +613,38 @@
 
         function renderSchedulerTaskActions(row) {
             if (!canManageTasks) {
-                return `<span class="text-xs text-slate-400">${Perfectlum.escapeHtml(text.noActions)}</span>`;
+                return `<div class="scheduler-cell-action"><span class="text-xs text-slate-400">${Perfectlum.escapeHtml(text.noActions)}</span></div>`;
             }
 
             return `
-                <div class="relative flex justify-end">
-                    <button type="button"
-                        data-scheduler-task-toggle="${row.id}"
-                        class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700">
-                        <i data-lucide="more-vertical" class="h-4 w-4"></i>
-                    </button>
-                    <div data-scheduler-task-menu="${row.id}" class="absolute right-0 top-full z-20 mt-2 hidden w-44 overflow-hidden rounded-2xl border border-slate-200 bg-white py-1 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                        <button type="button" data-scheduler-task-edit="${row.id}" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                            <i data-lucide="calendar-clock" class="h-4 w-4 text-sky-500"></i>
-                            ${Perfectlum.escapeHtml(text.scheduleTask)}
+                <div class="scheduler-cell-action">
+                    <div class="relative">
+                        <button type="button"
+                            data-scheduler-task-toggle="${row.id}"
+                            class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700">
+                            <i data-lucide="more-vertical" class="h-4 w-4"></i>
                         </button>
-                        <button type="button" data-scheduler-task-delete="${row.id}" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
-                            <i data-lucide="trash-2" class="h-4 w-4"></i>
-                            ${Perfectlum.escapeHtml(text.deleteTask)}
-                        </button>
+                        <div data-scheduler-task-menu="${row.id}" class="absolute right-0 top-full z-20 mt-2 hidden w-44 overflow-hidden rounded-2xl border border-slate-200 bg-white py-1 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
+                            <button type="button" data-scheduler-task-edit="${row.id}" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                                <i data-lucide="calendar-clock" class="h-4 w-4 text-sky-500"></i>
+                                ${Perfectlum.escapeHtml(text.scheduleTask)}
+                            </button>
+                            <button type="button" data-scheduler-task-delete="${row.id}" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
+                                <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                ${Perfectlum.escapeHtml(text.deleteTask)}
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
+        }
+
+        function openSchedulerHierarchy(type, id) {
+            const numericId = Number(id) || 0;
+            if (!numericId) return;
+            window.dispatchEvent(new CustomEvent('open-hierarchy', {
+                detail: { type, id: numericId }
+            }));
         }
 
         async function deleteSchedulerTask(id) {
@@ -644,69 +722,98 @@
             Perfectlum.createGrid(el, {
                 columns: [
                     {
-                        name: text.display,
+                        name: text.task,
+                        width: '280px',
                         sort: false,
                         formatter: (c) => gridjs.html(`
-                            <div>
-                                <a href="/display-settings/${c.displayId}" class="font-semibold text-sky-600 hover:text-sky-700">${Perfectlum.escapeHtml(c.displayName)}</a>
+                            <div class="scheduler-cell">
+                                <span class="text-sm font-semibold text-slate-900">${Perfectlum.escapeHtml(c || '-')}</span>
                             </div>`)
                     },
                     {
-                        name: text.workstation,
-                        width: '160px',
-                        formatter: (c) => gridjs.html(`<span class="font-semibold text-sky-600">${Perfectlum.escapeHtml(c || '-')}</span>`)
+                        name: text.display,
+                        sort: false,
+                        width: '340px',
+                        formatter: (c) => gridjs.html(`
+                            <div class="scheduler-cell-stack space-y-1.5">
+                                <button type="button" onclick="openSchedulerHierarchy('display', ${Number(c.displayId) || 0})" class="block text-left font-semibold text-sky-600 hover:text-sky-700 hover:underline">${Perfectlum.escapeHtml(c.displayName)}</button>
+                                <div class="text-xs text-slate-500">
+                                    <button type="button" onclick="openSchedulerHierarchy('workstation', ${Number(c.wsId) || 0})" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">${Perfectlum.escapeHtml(c.wsName || '-')}</button>
+                                    <span class="mx-1.5">•</span>
+                                    <button type="button" onclick="openSchedulerHierarchy('workgroup', ${Number(c.wgId) || 0})" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">${Perfectlum.escapeHtml(c.wgName || '-')}</button>
+                                    <span class="mx-1.5">•</span>
+                                    <button type="button" onclick="openSchedulerHierarchy('facility', ${Number(c.facId) || 0})" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">${Perfectlum.escapeHtml(c.facName || '-')}</button>
+                                </div>
+                            </div>`)
                     },
                     {
-                        name: text.workgroup,
-                        width: '160px',
-                        formatter: (c) => gridjs.html(`<span class="font-semibold text-sky-600">${Perfectlum.escapeHtml(c || '-')}</span>`)
+                        name: text.schedule,
+                        width: '140px',
+                        sort: false,
+                        formatter: (c) => gridjs.html(`<div class="scheduler-cell">${Perfectlum.badge(c || '-', 'warning')}</div>`)
                     },
-                    {
-                        name: text.facility,
-                        width: '160px',
-                        formatter: (c) => gridjs.html(`<span class="font-semibold text-sky-600">${Perfectlum.escapeHtml(c || '-')}</span>`)
-                    },
-                    { name: text.task, width: '160px', formatter: (c) => gridjs.html(Perfectlum.badge(c || '-', 'info')) },
-                    { name: text.schedule, width: '140px', formatter: (c) => gridjs.html(Perfectlum.badge(c || '-', 'warning')) },
                     {
                         name: text.dueDate,
                         width: '160px',
+                        sort: false,
                         formatter: (c, row) => {
-                            const color = row.cells[0].data.dueColor;
+                            const color = row.cells[1].data.dueColor;
                             const cls = { danger: 'text-red-600 font-bold', warning: 'text-amber-600 font-semibold', success: 'text-emerald-600' }[color] || 'text-slate-500';
-                            return gridjs.html(`<span class="text-xs ${cls}">${Perfectlum.escapeHtml(c)}</span>`);
+                            return gridjs.html(`<div class="scheduler-cell"><span class="text-xs ${cls}">${Perfectlum.escapeHtml(c)}</span></div>`);
+                        }
+                    },
+                    {
+                        name: text.created,
+                        width: '160px',
+                        sort: false,
+                        formatter: (c) => {
+                            const muted = c === 'Not recorded';
+                            const cls = muted ? 'text-slate-400' : 'text-slate-600';
+                            const weight = muted ? 'font-medium' : 'font-semibold';
+                            return gridjs.html(`<div class="scheduler-cell"><span class="text-xs ${cls} ${weight}">${Perfectlum.escapeHtml(c)}</span></div>`);
                         }
                     },
                     {
                         name: text.status,
                         width: '100px',
+                        sort: false,
                         formatter: (c, row) => {
-                            const ok = row.cells[0].data.statusColor === 'success';
+                            const ok = row.cells[1].data.statusColor === 'success';
                             const cls = ok
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                 : 'bg-red-50 text-red-700 border-red-200';
-                            return gridjs.html(`<span class="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${cls}">${Perfectlum.escapeHtml(c)}</span>`);
+                            return gridjs.html(`<div class="scheduler-cell"><span class="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${cls}">${Perfectlum.escapeHtml(c)}</span></div>`);
                         }
                     },
                     {
                         name: text.actions,
                         sort: false,
                         width: '112px',
-                        formatter: (_, row) => gridjs.html(renderSchedulerTaskActions(row.cells[0].data))
+                        formatter: (_, row) => gridjs.html(renderSchedulerTaskActions(row.cells[1].data))
                     },
                 ],
                 server: {
-                    url: '/api/tasks?sort_mode=due',
+                    url: '/api/tasks?sort_mode=due{{ $selectedDisplayId ? "&display_id=$selectedDisplayId" : "" }}',
                     then: d => {
                         setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 50);
                         return d.data.map(r => [
-                            { id: r.id, displayId: r.displayId, displayName: r.displayName, dueColor: r.dueColor, statusColor: r.statusColor },
-                            r.wsName,
-                            r.wgName,
-                            r.facName,
                             r.taskName,
+                            {
+                                id: r.id,
+                                displayId: r.displayId,
+                                wsId: r.wsId,
+                                wgId: r.wgId,
+                                facId: r.facId,
+                                displayName: r.displayName,
+                                wsName: r.wsName,
+                                wgName: r.wgName,
+                                facName: r.facName,
+                                dueColor: r.dueColor,
+                                statusColor: r.statusColor
+                            },
                             r.scheduleName,
                             r.dueAt,
+                            r.createdAt,
                             r.status,
                             null
                         ]);
@@ -731,8 +838,8 @@
                     container: 'group',
                     table: 'w-full text-sm text-left',
                     thead: 'bg-slate-50/70',
-                    th: 'border-b border-slate-200 bg-transparent px-7 py-4 text-xs font-black uppercase tracking-[0.22em] text-slate-400',
-                    td: 'border-b border-slate-100 bg-transparent px-7 py-4 align-middle',
+                    th: 'border-b border-slate-200 bg-transparent align-middle text-xs font-black uppercase tracking-[0.22em] text-slate-400',
+                    td: 'border-b border-slate-100 bg-transparent align-middle',
                     pagination: 'flex items-center justify-between px-7 py-4 text-xs font-medium text-slate-500'
                 },
                 language: { search: { placeholder: text.searchSchedulerTasks } }

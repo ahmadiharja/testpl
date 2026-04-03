@@ -33,6 +33,28 @@ class DisplaysController extends Controller
         return $display;
     }
 
+    protected function createImmediateCalibrationTask(\App\Models\Display $display, int $userId): \App\Models\Task
+    {
+        $timezone = optional(optional(optional($display->workstation)->workgroup)->facility)->timezone ?: config('app.timezone');
+        $now = Carbon::now($timezone);
+
+        return \App\Models\Task::create([
+            'display_id' => $display->id,
+            'type' => 'cal',
+            'testpattern' => 'SMPTE',
+            'schtype' => 1,
+            'startdate' => $now->format('Y.m.d'),
+            'starttime' => $now->format('H:i'),
+            'status' => 0,
+            'nextrun' => $now->timestamp,
+            'user_id' => $userId,
+            'sync' => 0,
+            'deleted' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
     public function displays(Request $request)
     {
         $user_id=$request->session()->get('id');
@@ -238,6 +260,26 @@ class DisplaysController extends Controller
         } else { // load all facilities
             $facilities = \App\Models\Facility::all();
         }
+
+        $calibrationScope = \App\Models\Task::query()
+            ->join('displays', 'tasks.display_id', '=', 'displays.id')
+            ->join('workstations', 'displays.workstation_id', '=', 'workstations.id')
+            ->join('workgroups', 'workstations.workgroup_id', '=', 'workgroups.id')
+            ->where('tasks.type', 'cal')
+            ->where('tasks.deleted', 0)
+            ->where('tasks.disabled', 0)
+            ->where('tasks.nextrun', '>', 0)
+            ->when($userRole !== 'super', function ($query) use ($user) {
+                return $query->where('workgroups.facility_id', $user->facility_id);
+            });
+
+        $nowTs = now()->timestamp;
+        $calibrationStats = [
+            'activeJobs' => (clone $calibrationScope)->count(),
+            'dueSoon' => (clone $calibrationScope)->whereBetween('tasks.nextrun', [$nowTs, $nowTs + (7 * 24 * 60 * 60)])->count(),
+            'createdRecently' => (clone $calibrationScope)->whereNotNull('tasks.created_at')->where('tasks.created_at', '>=', now()->subDays(7))->count(),
+            'scopeLabel' => $userRole === 'super' ? 'All facilities' : optional($user->facility)->name,
+        ];
         
         
         if($request->input('calibrate')!='')
@@ -383,7 +425,28 @@ class DisplaysController extends Controller
             return redirect('display-calibration');
         }
         
-        return view('display_callibration.display_calibration', ['title'=>'Calibrate Display', 'facilities'=>$facilities]);
+        return view('display_callibration.display_calibration', [
+            'title'=>'Calibrate Display',
+            'facilities'=>$facilities,
+            'calibrationStats' => $calibrationStats,
+        ]);
+    }
+
+    public function quick_calibrate_display(Request $request, $id)
+    {
+        $display = $this->resolveAuthorizedDisplay($request, $id, true);
+
+        if ($display->preference('exclude')) {
+            return response()->json(['message' => 'This display is excluded from calibration tasks.'], 422);
+        }
+
+        $task = $this->createImmediateCalibrationTask($display, (int) $request->session()->get('id'));
+
+        return response()->json([
+            'message' => 'Calibration task created successfully.',
+            'taskId' => $task->id,
+            'dueAt' => Carbon::createFromTimestamp((int) $task->nextrun)->format('d M Y H:i'),
+        ]);
     }
     
     public function fetch_displays_checklist(Request $request)
@@ -1448,6 +1511,8 @@ class DisplaysController extends Controller
             'links' => [
                 'settings' => url('display-settings/' . $display->id),
                 'histories' => url('histories-reports?display_id=' . $display->id),
+                'calibration' => url('display-calibration?display_id=' . $display->id),
+                'scheduler' => url('scheduler?display_id=' . $display->id),
             ],
             'hierarchy' => [
                 'facility' => [

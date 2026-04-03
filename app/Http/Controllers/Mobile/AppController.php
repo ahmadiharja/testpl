@@ -493,6 +493,8 @@ class AppController extends Controller
                 $request->query('from') === 'workspace' ? route('mobile.workspace') : null
             ),
             'initialTaskView' => $initialTaskView,
+            'initialTaskDisplayId' => (int) $request->query('display_id', 0),
+            'initialTaskDisplayName' => trim((string) $request->query('display_name', '')),
         ]);
     }
 
@@ -556,6 +558,8 @@ class AppController extends Controller
             'screenDescription' => 'Due tasks and scheduled work in one mobile queue.',
             'backUrl' => $this->safeMobileReturnUrl($request, route('mobile.dashboard')),
             'initialTaskView' => 'scheduled',
+            'initialTaskDisplayId' => (int) $request->query('display_id', 0),
+            'initialTaskDisplayName' => trim((string) $request->query('display_name', '')),
         ]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Task extends Model
 {
@@ -13,11 +14,22 @@ class Task extends Model
     protected $table='tasks';
     protected $guarded = [];
     public $timestamps = false;
+    public $incrementing = false;
+    protected $keyType = 'int';
 
     public static function boot()
     {
         parent::boot();
         Task::observe(new \App\Observers\TaskObserver);
+
+        static::creating(function (Task $task) {
+            if (!empty($task->id)) {
+                return;
+            }
+
+            $nextId = (int) DB::table($task->getTable())->max('id') + 1;
+            $task->id = max(1, $nextId);
+        });
     }
 
     // Data relationship

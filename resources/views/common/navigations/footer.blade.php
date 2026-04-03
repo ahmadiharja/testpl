@@ -99,6 +99,8 @@
     <!-- Custom Notifications -->
     <div id="notification-center" class="fixed top-6 right-6 z-[9999] flex flex-col gap-3"></div>
 
+    @include('tasks.schedule_task_modal')
+    @include('common.modals.action-confirm-modal')
     @include('common.modals.hierarchical-location-modal')
 
     <script>

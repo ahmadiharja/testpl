@@ -787,6 +787,7 @@
                 moveLoading: false,
                 moveSaving: false,
                 moveError: '',
+                quickCalibrating: false,
                 structureMapOpen: false,
                 displayDetailBase: @json(url('/m/displays')),
                 displayDetailQueryString: @json(request()->getQueryString() ?? ''),
@@ -1053,6 +1054,72 @@
 
                     const title = this.detail?.name || 'Display';
                     heading.textContent = title;
+                },
+
+                mobileSchedulerUrl() {
+                    const displayId = this.detail?.id || this.displayId;
+                    const displayName = this.detail?.name || '';
+                    const params = new URLSearchParams({
+                        view: 'scheduled',
+                        display_id: String(displayId),
+                        return_to: window.location.href,
+                    });
+
+                    if (displayName) {
+                        params.set('display_name', displayName);
+                    }
+
+                    return `${@json(route('mobile.tasks'))}?${params.toString()}`;
+                },
+
+                openSchedulerEditor() {
+                    if (!this.detail?.permissions?.edit) {
+                        return;
+                    }
+
+                    const displayId = this.detail?.id || this.displayId;
+                    const hierarchy = this.detail?.hierarchy || {};
+
+                    if (typeof window.openTaskEditorWithPayload !== 'function') {
+                        window.location.href = this.mobileSchedulerUrl();
+                        return;
+                    }
+
+                    window.openTaskEditorWithPayload({
+                        id: 0,
+                        displays: [displayId],
+                        facility2: hierarchy.facility?.id || '',
+                        workgroup2: hierarchy.workgroup?.id || '',
+                        workstation2: hierarchy.workstation?.id || '',
+                    });
+                },
+
+                async quickCalibrateDisplay() {
+                    if (!this.detail?.permissions?.edit || this.quickCalibrating) {
+                        return;
+                    }
+
+                    if (typeof window.openTaskEditorWithPayload !== 'function') {
+                        window.location.href = this.mobileSchedulerUrl();
+                        return;
+                    }
+
+                    const displayId = this.detail?.id || this.displayId;
+                    const hierarchy = this.detail?.hierarchy || {};
+
+                    window.openTaskEditorWithPayload({
+                        id: 0,
+                        tasktype: 'cal',
+                        quick_calibration: '1',
+                        lock_tasktype: '1',
+                        displays: [displayId],
+                        facility2: hierarchy.facility?.id || '',
+                        workgroup2: hierarchy.workgroup?.id || '',
+                        workstation2: hierarchy.workstation?.id || '',
+                    }, {
+                        title: 'Calibrate Display',
+                        subtitle: `Set the schedule window for ${this.detail?.name || 'this display'} before creating the calibration task.`,
+                    });
                 },
 
                 async loadDetail(id, { syncForms = true, preserveDetail = true } = {}) {
@@ -1544,6 +1611,18 @@
                             <i data-lucide="sliders-horizontal" class="h-3.5 w-3.5"></i>
                             <span>Settings</span>
                         </button>
+                        <template x-if="detail.permissions?.edit">
+                            <button type="button" class="mobile-detail-tool" :disabled="quickCalibrating" @click="quickCalibrateDisplay()">
+                                <i data-lucide="monitor-play" class="h-3.5 w-3.5"></i>
+                                <span x-text="quickCalibrating ? 'Calibrating...' : 'Calibrate'"></span>
+                            </button>
+                        </template>
+                        <template x-if="detail.permissions?.edit">
+                            <button type="button" class="mobile-detail-tool" @click="openSchedulerEditor()">
+                                <i data-lucide="calendar-clock" class="h-3.5 w-3.5"></i>
+                                <span>Scheduler</span>
+                            </button>
+                        </template>
                         <template x-if="detail.permissions?.move">
                             <button type="button" class="mobile-detail-tool" :class="{ 'active': movePanelOpen }" @click="toggleMovePanel()">
                                 <i data-lucide="move" class="h-3.5 w-3.5"></i>

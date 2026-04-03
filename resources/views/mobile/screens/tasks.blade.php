@@ -258,6 +258,8 @@
                     const tabs = Array.from(document.querySelectorAll('[data-task-view]'));
                     const perPage = 10;
                     const initialView = @json(($initialTaskView ?? 'due') === 'scheduled' ? 'scheduled' : 'due');
+                    const initialDisplayId = @json((int) ($initialTaskDisplayId ?? 0));
+                    const initialDisplayName = @json((string) ($initialTaskDisplayName ?? ''));
                     const cache = new Map();
                     let requestToken = 0;
                     let timer = null;
@@ -265,19 +267,29 @@
                     let currentKeyword = '';
                     let currentView = initialView;
 
+                    const filteredSubcopy = (base) => {
+                        if (!initialDisplayId) {
+                            return base;
+                        }
+
+                        return initialDisplayName
+                            ? `${base} Filtered to ${initialDisplayName}.`
+                            : `${base} This view is filtered to the current display.`;
+                    };
+
                     const viewDefs = {
                         due: {
                             loading: 'Loading due tasks...',
                             empty: 'No due tasks matched this filter.',
-                            subcopy: 'Due tasks that already need operational follow-up.',
-                            buildUrl: (keyword, page) => `/api/due-tasks?limit=${perPage}&page=${page}${keyword ? `&search=${encodeURIComponent(keyword)}` : ''}`,
+                            subcopy: filteredSubcopy('Due tasks that already need operational follow-up.'),
+                            buildUrl: (keyword, page) => `/api/due-tasks?limit=${perPage}&page=${page}${initialDisplayId ? `&display_id=${encodeURIComponent(initialDisplayId)}` : ''}${keyword ? `&search=${encodeURIComponent(keyword)}` : ''}`,
                             pill: 'Task',
                         },
                         scheduled: {
                             loading: 'Loading scheduled work...',
                             empty: 'No schedules matched this filter.',
-                            subcopy: 'Nearest due schedules are shown first so upcoming work is easier to prioritize.',
-                            buildUrl: (keyword, page) => `/api/tasks?sort_mode=due&limit=${perPage}&page=${page}${keyword ? `&search=${encodeURIComponent(keyword)}` : ''}`,
+                            subcopy: filteredSubcopy('Nearest due schedules are shown first so upcoming work is easier to prioritize.'),
+                            buildUrl: (keyword, page) => `/api/tasks?sort_mode=due&limit=${perPage}&page=${page}${initialDisplayId ? `&display_id=${encodeURIComponent(initialDisplayId)}` : ''}${keyword ? `&search=${encodeURIComponent(keyword)}` : ''}`,
                             pill: 'Schedule',
                         },
                     };

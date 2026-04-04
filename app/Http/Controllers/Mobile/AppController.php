@@ -481,7 +481,10 @@ class AppController extends Controller
             return $redirect;
         }
 
-        $initialTaskView = $request->query('view') === 'scheduled' ? 'scheduled' : 'due';
+        $requestedView = (string) $request->query('view', 'due');
+        $initialTaskView = in_array($requestedView, ['calibrate', 'scheduled', 'due'], true)
+            ? $requestedView
+            : 'due';
 
         return $this->mobileView($request, 'mobile.screens.tasks', [
             'activeTab' => 'tasks',
@@ -495,6 +498,7 @@ class AppController extends Controller
             'initialTaskView' => $initialTaskView,
             'initialTaskDisplayId' => (int) $request->query('display_id', 0),
             'initialTaskDisplayName' => trim((string) $request->query('display_name', '')),
+            'taskFilters' => $this->displayFilters($request, $this->resolveUser($request)),
         ]);
     }
 
@@ -560,6 +564,7 @@ class AppController extends Controller
             'initialTaskView' => 'scheduled',
             'initialTaskDisplayId' => (int) $request->query('display_id', 0),
             'initialTaskDisplayName' => trim((string) $request->query('display_name', '')),
+            'taskFilters' => $this->displayFilters($request, $this->resolveUser($request)),
         ]);
     }
 

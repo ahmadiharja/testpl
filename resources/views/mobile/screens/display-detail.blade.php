@@ -167,8 +167,9 @@
             scroll-behavior: auto;
             overscroll-behavior-x: contain;
             -webkit-overflow-scrolling: touch;
-            touch-action: auto;
-            cursor: grab;
+            touch-action: pan-x pinch-zoom;
+            position: relative;
+            z-index: 2;
             scrollbar-width: none;
         }
 
@@ -831,6 +832,27 @@
 
                 init() {
                     this.loadDetail(this.displayId, { syncForms: true, preserveDetail: false });
+                },
+
+                switchTab(tab) {
+                    this.activeTab = tab;
+
+                    this.$nextTick(() => {
+                        const target = {
+                            overview: this.$refs.overviewSection,
+                            history: this.$refs.historySection,
+                            settings: this.$refs.settingsSection,
+                        }[tab];
+
+                        if (!target) {
+                            return;
+                        }
+
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start',
+                        });
+                    });
                 },
 
                 textOrDash(value) {
@@ -1594,20 +1616,20 @@
                         </span>
                     </div>
 
-                    <div class="mobile-detail-tool-row no-scrollbar" data-mobile-drag-scroll>
+                    <div class="mobile-detail-tool-row no-scrollbar">
                         <button type="button" class="mobile-detail-tool" @click="openStructureMap()">
                             <i data-lucide="map" class="h-3.5 w-3.5"></i>
                             <span>Map</span>
                         </button>
-                        <button type="button" class="mobile-detail-tool" :class="{ 'active': activeTab === 'overview' }" @click="activeTab = 'overview'">
+                        <button type="button" class="mobile-detail-tool" :class="{ 'active': activeTab === 'overview' }" @click="switchTab('overview')">
                             <i data-lucide="layout-grid" class="h-3.5 w-3.5"></i>
                             <span>Overview</span>
                         </button>
-                        <button type="button" class="mobile-detail-tool" :class="{ 'active': activeTab === 'history' }" @click="activeTab = 'history'">
+                        <button type="button" class="mobile-detail-tool" :class="{ 'active': activeTab === 'history' }" @click="switchTab('history')">
                             <i data-lucide="history" class="h-3.5 w-3.5"></i>
                             <span>History</span>
                         </button>
-                        <button type="button" class="mobile-detail-tool" :class="{ 'active': activeTab === 'settings' }" @click="activeTab = 'settings'">
+                        <button type="button" class="mobile-detail-tool" :class="{ 'active': activeTab === 'settings' }" @click="switchTab('settings')">
                             <i data-lucide="sliders-horizontal" class="h-3.5 w-3.5"></i>
                             <span>Settings</span>
                         </button>
@@ -1621,12 +1643,6 @@
                             <button type="button" class="mobile-detail-tool" @click="openSchedulerEditor()">
                                 <i data-lucide="calendar-clock" class="h-3.5 w-3.5"></i>
                                 <span>Scheduler</span>
-                            </button>
-                        </template>
-                        <template x-if="detail.permissions?.move">
-                            <button type="button" class="mobile-detail-tool" :class="{ 'active': movePanelOpen }" @click="toggleMovePanel()">
-                                <i data-lucide="move" class="h-3.5 w-3.5"></i>
-                                <span x-text="movePanelOpen ? 'Close move' : 'Move'"></span>
                             </button>
                         </template>
                     </div>
@@ -1652,56 +1668,6 @@
                         </template>
                     </div>
 
-                        <div x-show="movePanelOpen" x-cloak class="mt-4 space-y-3 rounded-[1rem] border border-slate-200 bg-slate-50 px-3 py-3.5">
-                            <div x-show="moveError" x-cloak class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-[12px] text-rose-700" x-text="moveError"></div>
-
-                            <div x-show="moveLoading" x-cloak class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-[12px] text-slate-500">Loading move options...</div>
-
-                            <template x-if="!moveLoading">
-                                <div class="space-y-3">
-                                    <label class="block">
-                                        <span class="mb-2 block text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Facility</span>
-                                        <select class="mobile-select" x-model="moveForm.facilityId" @change="onMoveFacilityChange()">
-                                            <option value="">Select facility</option>
-                                            <template x-for="facility in moveOptions.facilities" :key="`facility-${facility.id}`">
-                                                <option :value="String(facility.id)" x-text="facility.name"></option>
-                                            </template>
-                                        </select>
-                                    </label>
-
-                                    <label class="block">
-                                        <span class="mb-2 block text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Workgroup</span>
-                                        <select class="mobile-select" x-model="moveForm.workgroupId" @change="onMoveWorkgroupChange()">
-                                            <option value="">Select workgroup</option>
-                                            <template x-for="workgroup in moveOptions.workgroups" :key="`workgroup-${workgroup.id}`">
-                                                <option :value="String(workgroup.id)" x-text="workgroup.name"></option>
-                                            </template>
-                                        </select>
-                                    </label>
-
-                                    <label class="block">
-                                        <span class="mb-2 block text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Workstation</span>
-                                        <select class="mobile-select" x-model="moveForm.workstationId">
-                                            <option value="">Select workstation</option>
-                                            <template x-for="workstation in moveOptions.workstations" :key="`workstation-${workstation.id}`">
-                                                <option :value="String(workstation.id)" x-text="workstation.name"></option>
-                                            </template>
-                                        </select>
-                                    </label>
-
-                                    <div class="flex justify-end gap-2 pt-1">
-                                        <button type="button" class="mobile-detail-link" @click="movePanelOpen = false">Cancel</button>
-                                        <button
-                                            type="button"
-                                            class="mobile-detail-link primary"
-                                            :disabled="!moveForm.workstationId || moveSaving"
-                                            @click="moveDisplay()"
-                                            x-text="moveSaving ? 'Moving...' : 'Move Display'">
-                                        </button>
-                                    </div>
-                                </div>
-                            </template>
-                        </div>
                     </section>
 
                     <section class="mobile-panel">
@@ -1756,13 +1722,13 @@
 
                 <section class="mobile-panel p-2">
                     <div class="mobile-detail-tabs no-scrollbar">
-                        <button type="button" class="mobile-detail-tab" :class="{ 'active': activeTab === 'overview' }" @click="activeTab = 'overview'">Overview</button>
-                        <button type="button" class="mobile-detail-tab" :class="{ 'active': activeTab === 'history' }" @click="activeTab = 'history'">History</button>
-                        <button type="button" class="mobile-detail-tab" :class="{ 'active': activeTab === 'settings' }" @click="activeTab = 'settings'">Settings</button>
+                        <button type="button" class="mobile-detail-tab" :class="{ 'active': activeTab === 'overview' }" @click="switchTab('overview')">Overview</button>
+                        <button type="button" class="mobile-detail-tab" :class="{ 'active': activeTab === 'history' }" @click="switchTab('history')">History</button>
+                        <button type="button" class="mobile-detail-tab" :class="{ 'active': activeTab === 'settings' }" @click="switchTab('settings')">Settings</button>
                     </div>
                 </section>
 
-                <section x-show="activeTab === 'overview'" x-cloak class="space-y-4">
+                <section x-ref="overviewSection" x-show="activeTab === 'overview'" x-cloak class="space-y-4">
                     <section class="mobile-panel p-4">
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div>
@@ -1901,7 +1867,7 @@
                     </section>
                 </section>
 
-                <section x-show="activeTab === 'history'" x-cloak class="space-y-4">
+                <section x-ref="historySection" x-show="activeTab === 'history'" x-cloak class="space-y-4">
                     <section class="mobile-panel p-4">
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div>
@@ -2112,7 +2078,7 @@
                     </section>
                 </section>
 
-                <section x-show="activeTab === 'settings'" x-cloak class="space-y-4">
+                <section x-ref="settingsSection" x-show="activeTab === 'settings'" x-cloak class="space-y-4">
                     <section class="mobile-panel p-4">
                         <div class="mobile-detail-settings-toolbar">
                             <div>

@@ -74,11 +74,18 @@ class auth
             return redirect(ClientSurface::loginUrl($request));
         }
 
-        $role=\App\Models\ModelRoles::where([['model_type', 'App\Models\User'], ['model_id', $user->id]])->orWhere([['model_type', 'App\User'], ['model_id', $user->id]])->first();
-        if($role->role_id=='1') $role='super';
-        elseif($role->role_id=='2') $role='admin';
-        elseif($role->role_id=='3') $role='user';
-        else $role='user';
+        $roleModel=\App\Models\ModelRoles::where([
+            ['model_type', 'App\Models\User'],
+            ['model_id', $user->id],
+        ])->orWhere([
+            ['model_type', 'App\User'],
+            ['model_id', $user->id],
+        ])->first();
+        $role=match ((string) ($roleModel->role_id ?? '3')) {
+            '1' => 'super',
+            '2' => 'admin',
+            default => 'user',
+        };
 
         $path=$request->path();
         if($role!='super' AND ($path=='site-settings' OR $path=='build-version')) {

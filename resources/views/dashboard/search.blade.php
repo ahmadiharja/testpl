@@ -95,7 +95,7 @@
 
 <script>
     (function () {
-        const canManage = @json(in_array(($role ?? session('role')), ['super', 'admin'], true));
+        const canManage = @json((($role ?? session('role')) === 'super') || (($role ?? session('role')) === 'admin'));
 
         function selectedDisplayIds() {
             return Array.from(document.querySelectorAll('#displays_field input[name="displays[]"]:checked'))

@@ -63,27 +63,42 @@ class DashboardController extends Controller
         $ids = request()->input('id') ? explode(',', request()->input('id')) : [];
 
         
-        // Calculate due tasks count (Tasks + QA Tasks)
-        $tasksCount = \App\Models\Task::where('tasks.deleted', 0)
+        // Calculate due tasks count using direct joins so shared hosting does not
+        // spend time on nested EXISTS chains for every dashboard hit.
+        $tasksCount = DB::table('tasks')
+            ->join('displays', 'displays.id', '=', 'tasks.display_id')
+            ->join('display_preferences', function ($join) {
+                $join->on('display_preferences.display_id', '=', 'displays.id')
+                    ->where('display_preferences.name', '=', 'exclude')
+                    ->where('display_preferences.value', '=', '0');
+            })
+            ->leftJoin('workstations', 'workstations.id', '=', 'displays.workstation_id')
+            ->leftJoin('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+            ->where('tasks.deleted', 0)
             ->where('tasks.disabled', 0)
             ->where('tasks.nextrun', '>', 0)
-            ->whereHas('display.preferences', function ($q) {
-                $q->where('name', 'exclude')->where('value', '0');
-            })
             ->when($facility_id, function ($q) use ($facility_id) {
-                return $q->whereHas('display.workstation.workgroup', fn($qw) => $qw->where('facility_id', $facility_id));
+                return $q->where('workgroups.facility_id', '=', $facility_id);
             })
-            ->count();
+            ->distinct('tasks.id')
+            ->count('tasks.id');
 
-        $qaTasksCount = \App\Models\QATask::where('qa_tasks.deleted', 0)
+        $qaTasksCount = DB::table('qa_tasks')
+            ->join('displays', 'displays.id', '=', 'qa_tasks.display_id')
+            ->join('display_preferences', function ($join) {
+                $join->on('display_preferences.display_id', '=', 'displays.id')
+                    ->where('display_preferences.name', '=', 'exclude')
+                    ->where('display_preferences.value', '=', '0');
+            })
+            ->leftJoin('workstations', 'workstations.id', '=', 'displays.workstation_id')
+            ->leftJoin('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+            ->where('qa_tasks.deleted', 0)
             ->where('qa_tasks.nextdate', '>', 0)
-            ->whereHas('display.preferences', function ($q) {
-                $q->where('name', 'exclude')->where('value', '0');
-            })
             ->when($facility_id, function ($q) use ($facility_id) {
-                return $q->whereHas('display.workstation.workgroup', fn($qw) => $qw->where('facility_id', $facility_id));
+                return $q->where('workgroups.facility_id', '=', $facility_id);
             })
-            ->count();
+            ->distinct('qa_tasks.id')
+            ->count('qa_tasks.id');
 
         $due_tasks = $tasksCount + $qaTasksCount;
         $due_tasks_recents = $due_tasks;

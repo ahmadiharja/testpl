@@ -77,6 +77,73 @@ class Synchronize extends Controller
         return $this->workstation->displays()->where('client_id', $client_id)->first();
     }
 
+    private function normalizeSyncTimestamp($value)
+    {
+        if ($value === null || $value === '' || $value === 'Never') {
+            return null;
+        }
+
+        return is_numeric($value) ? (int) $value : $value;
+    }
+
+    private function isUtcMidnightTimestamp($value)
+    {
+        return is_int($value) && $value > 0 && ($value % 86400) === 0;
+    }
+
+    private function qaTaskPreserveWindowSeconds($freq, $freqCodes)
+    {
+        $haystack = strtolower(trim(sprintf('%s %s', (string) $freq, (string) $freqCodes)));
+
+        return match (true) {
+            str_contains($haystack, 'quarter') => 100 * 86400,
+            str_contains($haystack, 'month') => 35 * 86400,
+            str_contains($haystack, 'week') => 8 * 86400,
+            str_contains($haystack, 'day') => 2 * 86400,
+            default => 2 * 86400,
+        };
+    }
+
+    /**
+     * Preserve the existing exact next run when the client only sends a
+     * day-anchor timestamp at 00:00:00 UTC for a periodic QA task.
+     */
+    private function shouldPreserveQaTaskExactNextdate($existingTask, $incomingTask)
+    {
+        if (!$existingTask) {
+            return false;
+        }
+
+        $incomingNextdate = $this->normalizeSyncTimestamp($incomingTask['nextdate'] ?? null);
+        $existingNextdate = $this->normalizeSyncTimestamp($existingTask->getRawOriginal('nextdate'));
+
+        if (!is_int($incomingNextdate) || !is_int($existingNextdate)) {
+            return false;
+        }
+
+        if (!$this->isUtcMidnightTimestamp($incomingNextdate)) {
+            return false;
+        }
+
+        if ($this->isUtcMidnightTimestamp($existingNextdate)) {
+            return false;
+        }
+
+        // If the new timestamp moves forward to a deliberate midnight schedule,
+        // let it through. We only protect the case where a precise runtime is
+        // collapsed back to a day anchor.
+        if ($incomingNextdate > $existingNextdate) {
+            return false;
+        }
+
+        $windowSeconds = $this->qaTaskPreserveWindowSeconds(
+            $incomingTask['freq'] ?? $existingTask->freq,
+            $incomingTask['freqCodes'] ?? $existingTask->freqCodes
+        );
+
+        return abs($existingNextdate - $incomingNextdate) <= $windowSeconds;
+    }
+
     /**
      * Main processing 
      * 
@@ -618,6 +685,10 @@ class Synchronize extends Controller
                     continue;
                 }
                 $where = ['taskKey' => $task['taskKey'], 'display_id' => $display->id];
+                $existingTask = QATask::where($where)->first();
+
+                $incomingNextdate = $this->normalizeSyncTimestamp($task['nextdate'] ?? null);
+                $incomingNextdateFixed = $this->normalizeSyncTimestamp($task['nextdateFixed'] ?? null);
 
                 // IMPORTANT - reset update_data for each task
                 $update_data = [
@@ -625,12 +696,28 @@ class Synchronize extends Controller
                     'freq' => $task['freq'],
                     'freqCodes' => $task['freqCodes'],
                     'lastrundate' => $task['lastrundate'],
-                    'nextdate' => $task['nextdate'],
-                    'nextdateFixed' => $task['nextdateFixed'],
+                    'nextdate' => $incomingNextdate,
+                    'nextdateFixed' => $incomingNextdateFixed,
                     'taskStatus' => $task['taskStatus'],
                     'exceptions' => json_encode($task['exceptions']),
                     'stepsIds' => json_encode($task['stepsIds'])
                 ];
+
+                if ($this->shouldPreserveQaTaskExactNextdate($existingTask, $task)) {
+                    $preservedNextdate = (int) $existingTask->getRawOriginal('nextdate');
+                    $update_data['nextdate'] = $preservedNextdate;
+                    $update_data['nextdateFixed'] = $incomingNextdateFixed ?? $incomingNextdate;
+
+                    $this->logger->info('DEBUG: PRESERVE_QATASK_NEXTDATE' . json_encode([
+                        'taskKey' => $task['taskKey'],
+                        'display_id' => $display->id,
+                        'freq' => $task['freq'] ?? null,
+                        'incoming_nextdate' => $incomingNextdate,
+                        'incoming_nextdateFixed' => $incomingNextdateFixed,
+                        'preserved_nextdate' => $preservedNextdate,
+                    ]));
+                }
+
                 // special case handle
                 $update_data['sync'] = 1;
                 $this->logger->info('DEBUG: UPDATE DATA' . json_encode($update_data));

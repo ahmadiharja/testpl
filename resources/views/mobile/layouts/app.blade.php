@@ -1,3 +1,23 @@
+@php
+    $supportedLocales = config('app.supported_locales', []);
+    $currentLocale = app()->getLocale();
+    $mobileLocaleOptions = collect($supportedLocales)->map(function ($meta, $code) {
+        return [
+            'code' => $code,
+            'label' => $meta['label'] ?? strtoupper($code),
+            'native' => $meta['native'] ?? ($meta['label'] ?? strtoupper($code)),
+            'flag' => $meta['flag'] ?? '🌐',
+            'flagUrl' => isset($meta['flag_asset']) ? asset($meta['flag_asset']) : null,
+        ];
+    })->values()->all();
+    $mobileCurrentLocaleMeta = [
+        'code' => $currentLocale,
+        'label' => $supportedLocales[$currentLocale]['label'] ?? strtoupper($currentLocale),
+        'native' => $supportedLocales[$currentLocale]['native'] ?? strtoupper($currentLocale),
+        'flag' => $supportedLocales[$currentLocale]['flag'] ?? '🌐',
+        'flagUrl' => isset($supportedLocales[$currentLocale]['flag_asset']) ? asset($supportedLocales[$currentLocale]['flag_asset']) : null,
+    ];
+@endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
@@ -612,6 +632,78 @@
             backdrop-filter: blur(12px);
         }
 
+        .mobile-locale-menu {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 0.55rem);
+            z-index: 80;
+            width: min(16rem, calc(100vw - 2rem));
+            border-radius: 1.2rem;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+            backdrop-filter: blur(12px);
+            padding: 0.45rem;
+        }
+
+        .mobile-locale-item {
+            display: flex;
+            width: 100%;
+            align-items: center;
+            gap: 0.7rem;
+            border-radius: 1rem;
+            padding: 0.68rem 0.72rem;
+            text-align: left;
+            transition: background 160ms ease, color 160ms ease;
+        }
+
+        .mobile-locale-item.active {
+            background: rgba(14, 165, 233, 0.1);
+            color: #075985;
+        }
+
+        .mobile-locale-item:not(.active) {
+            color: #334155;
+        }
+
+        .mobile-locale-item:not(.active):active {
+            background: rgba(241, 245, 249, 0.95);
+        }
+
+        .mobile-locale-flag {
+            display: inline-flex;
+            height: 1.9rem;
+            width: 1.9rem;
+            flex: 0 0 auto;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            background: rgba(248, 250, 252, 0.95);
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+        }
+
+        .mobile-locale-meta {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .mobile-locale-title {
+            font-size: 12.5px;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .mobile-locale-code {
+            margin-top: 0.1rem;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #94a3b8;
+        }
+
         .mobile-appbar-title {
             font-size: 1rem;
             font-weight: 650;
@@ -767,9 +859,44 @@
                             </div>
                         </div>
 
-                        <a id="mobile-appbar-profile" href="{{ route('mobile.profile') }}" class="mobile-appbar-button shrink-0">
-                            <i data-lucide="user-round" class="h-4 w-4"></i>
-                        </a>
+                        <div class="flex items-center gap-2">
+                            <div class="relative" x-data="mobileLanguageSwitcher()" @click.outside="close()" @keydown.escape.window="close()">
+                                <button type="button" class="mobile-appbar-button shrink-0" @click="toggle()" :aria-expanded="open ? 'true' : 'false'" title="{{ __('Language') }}">
+                                    <span class="mobile-locale-flag !h-6 !w-6 border-none bg-transparent shadow-none">
+                                        <template x-if="current.flagUrl">
+                                            <img :src="current.flagUrl" :alt="current.native" class="h-full w-full object-cover">
+                                        </template>
+                                        <template x-if="!current.flagUrl">
+                                            <span class="text-[14px] leading-none" x-text="current.flag"></span>
+                                        </template>
+                                    </span>
+                                </button>
+
+                                <div x-cloak x-show="open" class="mobile-locale-menu">
+                                    <template x-for="item in locales" :key="item.code">
+                                        <button type="button" class="mobile-locale-item" :class="{ 'active': item.code === current.code }" @click="select(item.code)">
+                                            <span class="mobile-locale-flag">
+                                                <template x-if="item.flagUrl">
+                                                    <img :src="item.flagUrl" :alt="item.native" class="h-full w-full object-cover">
+                                                </template>
+                                                <template x-if="!item.flagUrl">
+                                                    <span class="text-[14px] leading-none" x-text="item.flag"></span>
+                                                </template>
+                                            </span>
+                                            <span class="mobile-locale-meta">
+                                                <span class="mobile-locale-title block" x-text="item.native"></span>
+                                                <span class="mobile-locale-code block" x-text="item.code"></span>
+                                            </span>
+                                            <i x-show="item.code === current.code" data-lucide="check" class="h-4 w-4 shrink-0 text-sky-600"></i>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <a id="mobile-appbar-profile" href="{{ route('mobile.profile') }}" class="mobile-appbar-button shrink-0">
+                                <i data-lucide="user-round" class="h-4 w-4"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -795,6 +922,52 @@
     @stack('scripts')
     <!-- mobile-page-scripts-end -->
     <div id="mobile-page-runtime-scripts" hidden></div>
+    <script>
+        if (!window.mobileLanguageSwitcher) {
+            window.mobileLanguageSwitcher = function () {
+                return {
+                    open: false,
+                    locales: @json($mobileLocaleOptions),
+                    current: @json($mobileCurrentLocaleMeta),
+                    endpoint: @json(route('locale.update')),
+                    csrf: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+
+                    toggle() {
+                        this.open = !this.open;
+                    },
+
+                    close() {
+                        this.open = false;
+                    },
+
+                    async select(code) {
+                        if (!code || code === this.current.code) {
+                            this.close();
+                            return;
+                        }
+
+                        const response = await fetch(this.endpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': this.csrf,
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                            body: JSON.stringify({ locale: code }),
+                        });
+
+                        if (!response.ok) {
+                            window.notify?.('error', 'Language could not be updated.');
+                            return;
+                        }
+
+                        window.location.reload();
+                    },
+                };
+            };
+        }
+    </script>
     <script>
         if (typeof window.notify !== 'function') {
             window.notify = function (type, msg) {

@@ -238,9 +238,9 @@
         }
 
         .mobile-detail-tabs {
-            display: flex;
-            gap: 0.45rem;
-            overflow-x: auto;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.35rem;
             padding: 0.26rem;
             border-radius: 999px;
             background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.9));
@@ -249,6 +249,10 @@
         }
 
         .mobile-detail-tab {
+            display: inline-flex;
+            width: 100%;
+            align-items: center;
+            justify-content: center;
             white-space: nowrap;
             border-radius: 999px;
             padding: 0.52rem 0.88rem;
@@ -1620,18 +1624,6 @@
                         <button type="button" class="mobile-detail-tool" @click="openStructureMap()">
                             <i data-lucide="map" class="h-3.5 w-3.5"></i>
                             <span>Map</span>
-                        </button>
-                        <button type="button" class="mobile-detail-tool" :class="{ 'active': activeTab === 'overview' }" @click="switchTab('overview')">
-                            <i data-lucide="layout-grid" class="h-3.5 w-3.5"></i>
-                            <span>Overview</span>
-                        </button>
-                        <button type="button" class="mobile-detail-tool" :class="{ 'active': activeTab === 'history' }" @click="switchTab('history')">
-                            <i data-lucide="history" class="h-3.5 w-3.5"></i>
-                            <span>History</span>
-                        </button>
-                        <button type="button" class="mobile-detail-tool" :class="{ 'active': activeTab === 'settings' }" @click="switchTab('settings')">
-                            <i data-lucide="sliders-horizontal" class="h-3.5 w-3.5"></i>
-                            <span>Settings</span>
                         </button>
                         <template x-if="detail.permissions?.edit">
                             <button type="button" class="mobile-detail-tool" :disabled="quickCalibrating" @click="quickCalibrateDisplay()">

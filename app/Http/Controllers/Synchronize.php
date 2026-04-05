@@ -145,6 +145,42 @@ class Synchronize extends Controller
     }
 
     /**
+     * Resolve which QA timestamps should be stored.
+     *
+     * nextdate:
+     * - exact runtime when we have a precise timestamp
+     * - preserved runtime when the client only sends a midnight UTC anchor
+     *
+     * nextdateFixed:
+     * - day-anchor sent by client/remote
+     * - falls back to nextdate when no explicit anchor exists
+     */
+    private function resolveQaTaskScheduleTimestamps($existingTask, array $incomingTask): array
+    {
+        $incomingNextdate = $this->normalizeSyncTimestamp($incomingTask['nextdate'] ?? null);
+        $incomingNextdateFixed = $this->normalizeSyncTimestamp($incomingTask['nextdateFixed'] ?? null);
+
+        $resolved = [
+            'nextdate' => $incomingNextdate,
+            'nextdateFixed' => $incomingNextdateFixed,
+            'preserved' => false,
+        ];
+
+        if ($this->shouldPreserveQaTaskExactNextdate($existingTask, $incomingTask)) {
+            $resolved['nextdate'] = (int) $existingTask->getRawOriginal('nextdate');
+            $resolved['nextdateFixed'] = $incomingNextdateFixed ?? $incomingNextdate;
+            $resolved['preserved'] = true;
+            return $resolved;
+        }
+
+        if ($resolved['nextdateFixed'] === null && $this->isUtcMidnightTimestamp($incomingNextdate)) {
+            $resolved['nextdateFixed'] = $incomingNextdate;
+        }
+
+        return $resolved;
+    }
+
+    /**
      * Main processing 
      * 
      * @param  \Illuminate\Http\Request  $request
@@ -687,8 +723,9 @@ class Synchronize extends Controller
                 $where = ['taskKey' => $task['taskKey'], 'display_id' => $display->id];
                 $existingTask = QATask::where($where)->first();
 
-                $incomingNextdate = $this->normalizeSyncTimestamp($task['nextdate'] ?? null);
-                $incomingNextdateFixed = $this->normalizeSyncTimestamp($task['nextdateFixed'] ?? null);
+                $resolvedSchedule = $this->resolveQaTaskScheduleTimestamps($existingTask, $task);
+                $incomingNextdate = $resolvedSchedule['nextdate'];
+                $incomingNextdateFixed = $resolvedSchedule['nextdateFixed'];
 
                 // IMPORTANT - reset update_data for each task
                 $update_data = [
@@ -703,18 +740,14 @@ class Synchronize extends Controller
                     'stepsIds' => json_encode($task['stepsIds'])
                 ];
 
-                if ($this->shouldPreserveQaTaskExactNextdate($existingTask, $task)) {
-                    $preservedNextdate = (int) $existingTask->getRawOriginal('nextdate');
-                    $update_data['nextdate'] = $preservedNextdate;
-                    $update_data['nextdateFixed'] = $incomingNextdateFixed ?? $incomingNextdate;
-
+                if ($resolvedSchedule['preserved']) {
                     $this->logger->info('DEBUG: PRESERVE_QATASK_NEXTDATE' . json_encode([
                         'taskKey' => $task['taskKey'],
                         'display_id' => $display->id,
                         'freq' => $task['freq'] ?? null,
-                        'incoming_nextdate' => $incomingNextdate,
+                        'incoming_nextdate' => $this->normalizeSyncTimestamp($task['nextdate'] ?? null),
                         'incoming_nextdateFixed' => $incomingNextdateFixed,
-                        'preserved_nextdate' => $preservedNextdate,
+                        'preserved_nextdate' => $incomingNextdate,
                     ]));
                 }
 

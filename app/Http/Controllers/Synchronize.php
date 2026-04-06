@@ -77,6 +77,30 @@ class Synchronize extends Controller
         return $this->workstation->displays()->where('client_id', $client_id)->first();
     }
 
+    private function resolveHistoryDisplay($clientId)
+    {
+        $display = $this->getDisplay($clientId);
+        if ($display) {
+            return $display;
+        }
+
+        $fallbackDisplays = $this->workstation->displays()->get();
+
+        if ($fallbackDisplays->count() === 1) {
+            $fallback = $fallbackDisplays->first();
+            $this->logger->info('DEBUG: HISTORY_DISPLAY_FALLBACK ' . json_encode([
+                'workstation_id' => $this->workstation->id,
+                'requested_client_id' => $clientId,
+                'fallback_display_id' => $fallback->id,
+                'fallback_client_id' => $fallback->client_id,
+            ]));
+
+            return $fallback;
+        }
+
+        return null;
+    }
+
     private function normalizeSyncTimestamp($value)
     {
         if ($value === null || $value === '' || $value === 'Never') {
@@ -885,7 +909,7 @@ class Synchronize extends Controller
         foreach ($this->req_data as $history) {
             $client_id = $history['displayid'];
             // get the server display 
-            $display = $this->getDisplay($client_id);
+            $display = $this->resolveHistoryDisplay($client_id);
             if (!$display) continue;
             
             if(!isset($history['regulation'])) $history['regulation']='';

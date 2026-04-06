@@ -121,7 +121,7 @@ class Task extends Model
         if($this->startdate == null)
             return Carbon::createFromTimestamp(0, $timezone);
 
-        return Carbon::createFromFormat('Y-m-d H:i', $this->startdate.' '.$this->starttime);
+        return Carbon::createFromFormat('Y-m-d H:i', $this->startdate.' '.$this->starttime, $timezone);
     }
     // Get due date
     public function getStartdatetimedisplayAttribute() {

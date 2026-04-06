@@ -835,7 +835,7 @@ class DashboardController extends Controller
                 'workstations.name as ws_name', 'workstations.workgroup_id as wg_id', 'workstations.last_connected as ws_last_connected',
                 'workgroups.name as wg_name', 'workgroups.facility_id as fac_id',
                 'workgroups.address as wg_address', 'workgroups.city as wg_city', 'workgroups.state as wg_state',
-                'facilities.name as fac_name',
+                'facilities.name as fac_name', 'facilities.timezone as fac_timezone',
             ])
             ->get();
 
@@ -1112,8 +1112,9 @@ class DashboardController extends Controller
             $syncAt = $r->latest_hours_synced_at ?: $r->updated_at ?: $r->ws_last_connected;
             $hoursAt = $r->latest_hours_at;
             $hoursSyncedAt = $r->latest_hours_synced_at;
-            $syncFormatted = $syncAt ? \Carbon\Carbon::parse($syncAt)->format('d M Y H:i') : '-';
-            $createdFormatted = $r->created_at ? \Carbon\Carbon::parse($r->created_at)->format('d M Y H:i') : '-';
+            $displayTimezone = $r->fac_timezone ?: config('app.timezone', 'UTC');
+            $syncFormatted = $syncAt ? \Carbon\Carbon::parse($syncAt)->setTimezone($displayTimezone)->format('d M Y H:i') : '-';
+            $createdFormatted = $r->created_at ? \Carbon\Carbon::parse($r->created_at)->setTimezone($displayTimezone)->format('d M Y H:i') : '-';
             $failedSummary = $failedHistorySummaryMap[(int) $r->id] ?? [];
             $issueText = $extractLatestErrorText($errors);
             $failedCheckText = trim((string) ($failedSummary['latest_failed_check_text'] ?? ''));
@@ -1151,9 +1152,9 @@ class DashboardController extends Controller
                 'location'    => count($parts) ? implode(', ', $parts) : '-',
                 'updatedAt'   => $syncFormatted,
                 'createdAt'   => $createdFormatted,
-                'latestHistoryAt' => $r->latest_history_at ? \Carbon\Carbon::parse($r->latest_history_at)->format('d M Y H:i') : '-',
-                'latestHoursAt' => $hoursAt ? \Carbon\Carbon::parse($hoursAt)->format('d M Y H:i') : '-',
-                'latestHoursSyncedAt' => $hoursSyncedAt ? \Carbon\Carbon::parse($hoursSyncedAt)->format('d M Y H:i') : '-',
+                'latestHistoryAt' => $r->latest_history_at ? \Carbon\Carbon::parse($r->latest_history_at)->setTimezone($displayTimezone)->format('d M Y H:i') : '-',
+                'latestHoursAt' => $hoursAt ? \Carbon\Carbon::parse($hoursAt)->setTimezone($displayTimezone)->format('d M Y H:i') : '-',
+                'latestHoursSyncedAt' => $hoursSyncedAt ? \Carbon\Carbon::parse($hoursSyncedAt)->setTimezone($displayTimezone)->format('d M Y H:i') : '-',
                 'latestHoursDuration' => $r->latest_hours_duration !== null ? (float) $r->latest_hours_duration : null,
                 'latestHoursFormatted' => $formatHours($r->latest_hours_duration),
                 'latestActivityMode' => 'sync',

@@ -30,6 +30,7 @@
         'created' => __('Created'),
         'dueDate' => __('Due Date'),
         'status' => __('Status'),
+        'enabled' => __('Enabled'),
         'actions' => __('Actions'),
     ];
 @endphp
@@ -68,6 +69,7 @@
     #tasks-grid .gridjs-td {
         vertical-align: middle !important;
         padding: 1.1rem 1.75rem !important;
+        overflow: visible !important;
     }
 
     #tasks-grid .scheduler-cell {
@@ -91,11 +93,21 @@
         align-items: center;
         justify-content: flex-end;
         line-height: 1;
+        position: relative;
+        z-index: 5;
     }
 
     #tasks-grid .scheduler-cell-action > .relative {
         display: inline-flex;
         align-items: center;
+    }
+
+    .scheduler-grid-shell,
+    .scheduler-grid-shell > div,
+    .scheduler-grid-shell .gridjs-container,
+    .scheduler-grid-shell .gridjs-wrapper,
+    .scheduler-grid-shell .gridjs-footer {
+        overflow: visible !important;
     }
 </style>
 @endpush
@@ -272,8 +284,8 @@
                 </div>
             </div>
 
-            <div class="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_16px_44px_rgba(15,23,42,0.06)]">
-                <x-data-table id="tasks-grid" />
+            <div class="scheduler-grid-shell overflow-visible rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_16px_44px_rgba(15,23,42,0.06)]">
+                <x-data-table id="tasks-grid" class="overflow-visible" />
             </div>
         </div>
 
@@ -786,6 +798,18 @@
                         }
                     },
                     {
+                        name: text.enabled,
+                        width: '118px',
+                        sort: false,
+                        formatter: (c, row) => {
+                            const enabled = row.cells[1].data.enabledColor === 'success';
+                            const cls = enabled
+                                ? 'bg-sky-50 text-sky-700 border-sky-200'
+                                : 'bg-slate-100 text-slate-600 border-slate-200';
+                            return gridjs.html(`<div class="scheduler-cell"><span class="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${cls}">${Perfectlum.escapeHtml(c)}</span></div>`);
+                        }
+                    },
+                    {
                         name: text.actions,
                         sort: false,
                         width: '112px',
@@ -809,12 +833,14 @@
                                 wgName: r.wgName,
                                 facName: r.facName,
                                 dueColor: r.dueColor,
-                                statusColor: r.statusColor
+                                statusColor: r.statusColor,
+                                enabledColor: r.enabledColor
                             },
                             r.scheduleName,
                             r.dueAt,
                             r.createdAt,
                             r.status,
+                            r.enabledLabel,
                             null
                         ]);
                     },

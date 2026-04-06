@@ -1449,7 +1449,6 @@ class DashboardController extends Controller
             ->leftJoin('task_types',     'tasks.type',   '=', 'task_types.key')
             ->leftJoin('schedule_types', 'tasks.schtype','=', 'schedule_types.client_id')
             ->where('tasks.deleted', 0)
-            ->where('tasks.disabled', 0)
             ->where(function ($q) {
                 $q->where('tasks.nextrun', '>', 0)
                     ->orWhere('tasks.nextrun', 0);
@@ -1474,7 +1473,7 @@ class DashboardController extends Controller
             }))
             ->select([
                 DB::raw("'task' as record_type"),
-                'tasks.id', 'tasks.display_id', 'tasks.status',
+                'tasks.id', 'tasks.display_id', 'tasks.status', 'tasks.disabled', 'tasks.deleted',
                 'task_types.title as task_name',
                 'schedule_types.title as schedule_name',
                 'tasks.nextrun as due_at',
@@ -1519,6 +1518,8 @@ class DashboardController extends Controller
                 DB::raw("'qa_task' as record_type"),
                 'qa_tasks.id', 'qa_tasks.display_id',
                 DB::raw('0 as status'),
+                DB::raw('0 as disabled'),
+                DB::raw('0 as deleted'),
                 'qa_tasks.name as task_name',
                 'qa_tasks.freq as schedule_name',
                 'qa_tasks.nextdate as due_at',
@@ -1600,6 +1601,7 @@ class DashboardController extends Controller
             $derivedStatusColor = ($r->status ?? 0) == 0 && $ts && $isPast
                 ? 'danger'
                 : (($r->status ?? 0) == 0 ? 'success' : 'danger');
+            $enabled = ((int) ($r->disabled ?? 0) !== 1) && ((int) ($r->deleted ?? 0) !== 1);
             return [
                 'id'          => $r->id,
                 'type'        => $r->record_type,
@@ -1618,6 +1620,8 @@ class DashboardController extends Controller
                 'dueColor'    => $isPast ? 'danger' : ($isSoon ? 'warning' : 'success'),
                 'status'      => $derivedStatus,
                 'statusColor' => $derivedStatusColor,
+                'enabledLabel'=> $enabled ? 'Enabled' : 'Disabled',
+                'enabledColor'=> $enabled ? 'success' : 'slate',
             ];
         });
 

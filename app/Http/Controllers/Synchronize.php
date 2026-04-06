@@ -204,6 +204,46 @@ class Synchronize extends Controller
         return $resolved;
     }
 
+    private function resolveCalibrationTaskNextRun(Display $display, array $task): ?int
+    {
+        if (($task['deleted'] ?? 0) == 1) {
+            return null;
+        }
+
+        $scheduleType = (string) ($task['schtype'] ?? '');
+        if ($scheduleType === '' || $scheduleType === '0') {
+            return null;
+        }
+
+        $startDate = trim((string) ($task['startdate'] ?? ''));
+        $startTime = trim((string) ($task['starttime'] ?? ''));
+        if ($startDate === '' || $startTime === '') {
+            return null;
+        }
+
+        $normalizedDate = str_replace('.', '-', $startDate);
+        $normalizedTime = substr($startTime, 0, 5);
+        $timezone = optional(optional(optional($display->workstation)->workgroup)->facility)->timezone
+            ?: config('app.timezone', 'UTC');
+
+        try {
+            return Carbon::createFromFormat('Y-m-d H:i', "{$normalizedDate} {$normalizedTime}", $timezone)
+                ->utc()
+                ->timestamp;
+        } catch (\Throwable $e) {
+            $this->logger->info('DEBUG: CALTASK_NEXTRUN_RESOLVE_FAILED ' . json_encode([
+                'display_id' => $display->id,
+                'client_display_id' => $display->client_id,
+                'startdate' => $startDate,
+                'starttime' => $startTime,
+                'timezone' => $timezone,
+                'message' => $e->getMessage(),
+            ]));
+
+            return null;
+        }
+    }
+
     /**
      * Main processing 
      * 
@@ -706,6 +746,11 @@ class Synchronize extends Controller
                     $update_data['created_at'] = $timestamp;
                 }
                 $update_data['updated_at'] = $timestamp;
+
+                $resolvedNextRun = $this->resolveCalibrationTaskNextRun($display, $task);
+                if ($resolvedNextRun !== null) {
+                    $update_data['nextrun'] = $resolvedNextRun;
+                }
 
                 Task::updateOrCreate($where, $update_data);
             }

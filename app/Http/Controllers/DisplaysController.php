@@ -1047,6 +1047,7 @@ class DisplaysController extends Controller
         $preferences = $display->preferences->pluck('value', 'name');
         $workstation = $display->workstation;
         $workgroup = optional($workstation)->workgroup;
+        $facilityTimezone = $facility?->timezone ?: config('app.timezone', 'UTC');
         $siblingDisplays = $workstation
             ? $workstation->displays()->with('preferences')->get()->sortBy(fn($item) => $item->treetext ?: ('Display #' . $item->id))->values()
             : collect();
@@ -1461,9 +1462,6 @@ class DisplaysController extends Controller
                 ? Carbon::parse($workstation->getRawOriginal('last_connected'))
                 : null,
             $latestHoursActivityAt ? Carbon::parse($latestHoursActivityAt) : null,
-            $recentHistories->max('time')
-                ? Carbon::createFromTimestamp((int) $recentHistories->max('time'))
-                : null,
         ])->filter();
 
         $lastSyncAt = $syncCandidates->sortByDesc(fn ($date) => $date->timestamp)->first();
@@ -1502,7 +1500,7 @@ class DisplaysController extends Controller
             'monthlyStraightLine' => $display->monthly_straight_line ?: '-',
             'currentValue' => $display->current_value ?: '-',
             'expectedReplacementDate' => $display->expected_replacement_date ?: '-',
-            'lastSync' => $lastSyncAt ? $lastSyncAt->format('d M Y H:i') : '-',
+            'lastSync' => $lastSyncAt ? $lastSyncAt->copy()->timezone($facilityTimezone)->format('d M Y H:i') : '-',
             'latestError' => $latestError,
             'liveErrors' => $liveErrors->values()->all(),
             'runningHours' => [

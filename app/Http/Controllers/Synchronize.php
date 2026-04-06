@@ -701,6 +701,11 @@ class Synchronize extends Controller
                 }
                 // special case handle
                 $update_data['sync'] = 1;
+                $timestamp = Carbon::now()->toDateTimeString();
+                if (!$existingTask) {
+                    $update_data['created_at'] = $timestamp;
+                }
+                $update_data['updated_at'] = $timestamp;
 
                 Task::updateOrCreate($where, $update_data);
             }

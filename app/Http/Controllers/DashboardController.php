@@ -832,7 +832,7 @@ class DashboardController extends Controller
                 'displays.id', 'displays.manufacturer', 'displays.model', 'displays.serial',
                 'displays.status', 'displays.connected', 'displays.workstation_id',
                 'displays.created_at', 'displays.updated_at', 'displays.errors',
-                'workstations.name as ws_name', 'workstations.workgroup_id as wg_id',
+                'workstations.name as ws_name', 'workstations.workgroup_id as wg_id', 'workstations.last_connected as ws_last_connected',
                 'workgroups.name as wg_name', 'workgroups.facility_id as fac_id',
                 'workgroups.address as wg_address', 'workgroups.city as wg_city', 'workgroups.state as wg_state',
                 'facilities.name as fac_name',
@@ -939,12 +939,14 @@ class DashboardController extends Controller
             $hoursAt = $hoursMeta['latest_hours_at'] ?? null;
             $hoursSyncedAt = $hoursMeta['latest_hours_synced_at'] ?? null;
             $displayUpdatedAt = $row->updated_at ? (string) $row->updated_at : null;
+            $workstationLastConnected = $row->ws_last_connected ? (string) $row->ws_last_connected : null;
             $createdAt = $row->created_at ? (string) $row->created_at : null;
 
             $activityCandidates = collect([
                 ['source' => 'history', 'value' => $historyAt],
                 ['source' => 'hours', 'value' => $hoursSyncedAt],
                 ['source' => 'sync', 'value' => $displayUpdatedAt],
+                ['source' => 'workstation', 'value' => $workstationLastConnected],
             ])->filter(fn ($item) => !empty($item['value']))
                 ->sortByDesc('value')
                 ->values();
@@ -1107,7 +1109,7 @@ class DashboardController extends Controller
         $data = $rows->map(function ($r) use ($role, $formatHours, $failedHistorySummaryMap, $extractLatestErrorText) {
             $parts = array_filter([$r->wg_address, $r->wg_city, $r->wg_state]);
             $errors = json_decode($r->errors ?? '[]', true);
-            $syncAt = $r->latest_hours_synced_at ?: $r->updated_at;
+            $syncAt = $r->latest_hours_synced_at ?: $r->updated_at ?: $r->ws_last_connected;
             $hoursAt = $r->latest_hours_at;
             $hoursSyncedAt = $r->latest_hours_synced_at;
             $syncFormatted = $syncAt ? \Carbon\Carbon::parse($syncAt)->format('d M Y H:i') : '-';

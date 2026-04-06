@@ -675,6 +675,19 @@
 
             <div class="mobile-user-panel-body">
                 <div class="mobile-user-action-grid">
+                    @if(in_array($mobileRole ?? 'user', ['super', 'admin'], true))
+                        <a href="{{ route('mobile.settings', ['return_to' => route('mobile.profile')]) }}" class="mobile-user-action-card">
+                            <span class="mobile-user-action-icon">
+                                <i data-lucide="settings-2" class="h-5 w-5"></i>
+                            </span>
+                            <span class="min-w-0 flex-1">
+                                <span class="mobile-user-action-title">Settings</span>
+                                <span class="mobile-user-action-copy">Review mobile-ready site, application, and alert configuration in your current operational scope.</span>
+                            </span>
+                            <i data-lucide="chevron-right" class="h-4 w-4 shrink-0 text-slate-400"></i>
+                        </a>
+                    @endif
+
                     <a href="{{ route('mobile.tasks', ['view' => 'scheduled', 'return_to' => route('mobile.profile')]) }}" class="mobile-user-action-card">
                         <span class="mobile-user-action-icon">
                             <i data-lucide="calendar-clock" class="h-5 w-5"></i>

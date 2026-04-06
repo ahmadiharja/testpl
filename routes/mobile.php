@@ -29,6 +29,10 @@ Route::prefix('m')->name('mobile.')->group(function () {
     Route::get('notifications', [AppController::class, 'notifications'])->name('notifications');
     Route::get('search', [AppController::class, 'search'])->name('search');
     Route::get('profile', [AppController::class, 'profile'])->name('profile');
+    Route::get('settings', [AppController::class, 'settings'])->name('settings');
+    Route::match(['get', 'post'], 'settings/site', [AppController::class, 'settingsSite'])->name('settings.site');
+    Route::get('settings/application', [AppController::class, 'settingsApplication'])->name('settings.application');
+    Route::get('settings/alerts', [AppController::class, 'settingsAlerts'])->name('settings.alerts');
     Route::get('profile/settings', [AppController::class, 'profileSettings'])->name('profile.settings');
     Route::post('profile/settings', [AppController::class, 'profileSettings'])->name('profile.settings.update');
     Route::post('profile/remove-image', [AppController::class, 'profileRemoveImage'])->name('profile.remove-image');

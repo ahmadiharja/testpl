@@ -3,16 +3,21 @@
 namespace App\Http\Controllers\Mobile;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\BuildVersionJob;
+use App\Models\Alert;
 use App\Models\Display;
+use App\Models\ErrorLimit;
 use App\Models\Facility;
 use App\Models\QATask;
 use App\Models\Setting;
+use App\Models\SettingSMTP;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\Workgroup;
 use App\Models\Workstation;
 use App\Support\ClientSurface;
 use App\Support\SessionActivity;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -71,15 +76,286 @@ class AppController extends Controller
         $settings = $this->loadSettings();
         $user = $this->resolveUser($request);
         $platform = $request->session()->get('platform', 'perfectlum');
+        $role = $this->resolveRole($request, $user);
 
         return view($view, array_merge([
             'title' => $data['screenTitle'] ?? 'Mobile Workspace',
             'settings' => $settings,
             'siteName' => $settings['Site name'] ?? 'PerfectLum',
             'mobileUser' => $user,
+            'mobileRole' => $role,
             'mobilePlatform' => $platform,
             'platformLabel' => $platform === 'perfectchroma' ? 'PerfectChroma' : 'PerfectLum',
         ], $data));
+    }
+
+    protected function resolveRole(Request $request, ?User $user = null): string
+    {
+        $role = (string) $request->session()->get('role', '');
+        if ($role !== '') {
+            return $role;
+        }
+
+        if (!$user) {
+            return 'user';
+        }
+
+        if (method_exists($user, 'hasRole')) {
+            if ($user->hasRole('super')) {
+                return 'super';
+            }
+
+            if ($user->hasRole('admin')) {
+                return 'admin';
+            }
+        }
+
+        return 'user';
+    }
+
+    protected function canAccessMobileSettings(string $role): bool
+    {
+        return in_array($role, ['super', 'admin'], true);
+    }
+
+    protected function canAccessMobileSiteSettings(string $role): bool
+    {
+        return $role === 'super';
+    }
+
+    protected function settingOptionPayloadHasMeaningfulValues($value): bool
+    {
+        if ($value === null || $value === '') {
+            return false;
+        }
+
+        $decoded = $value;
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return trim($value) !== '';
+            }
+        }
+
+        if (is_array($decoded)) {
+            foreach ($decoded as $key => $item) {
+                if ((string) $key !== '' || (string) $item !== '') {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        return (string) $decoded !== '';
+    }
+
+    protected function mergeSettingOptionPayloads($existing, $incoming)
+    {
+        if (!$this->settingOptionPayloadHasMeaningfulValues($existing)) {
+            return $incoming;
+        }
+
+        if (!$this->settingOptionPayloadHasMeaningfulValues($incoming)) {
+            return $existing;
+        }
+
+        if (!is_string($existing) || !is_string($incoming)) {
+            return $existing;
+        }
+
+        $existingDecoded = json_decode($existing, true);
+        $incomingDecoded = json_decode($incoming, true);
+
+        if (
+            json_last_error() !== JSON_ERROR_NONE ||
+            !is_array($existingDecoded) ||
+            !is_array($incomingDecoded)
+        ) {
+            return $existing;
+        }
+
+        $merged = $existingDecoded;
+        foreach ($incomingDecoded as $key => $value) {
+            if (!array_key_exists($key, $merged) || $merged[$key] === '' || $merged[$key] === null) {
+                $merged[$key] = $value;
+            }
+        }
+
+        return json_encode($merged, JSON_UNESCAPED_UNICODE);
+    }
+
+    protected function buildWorkstationOptionCatalog(array $workstationIds): array
+    {
+        $settingNames = [
+            'units',
+            'LumUnits',
+            'AmbientStable',
+            'CalibrationPresents',
+            'CalibrationType',
+            'ColorTemperatureAdjustment',
+            'WhiteLevel_u_extcombo',
+            'UsedRegulation',
+        ];
+
+        $rows = \App\Models\SettingsName::whereIn('setting_name', $settingNames)
+            ->where(function ($query) use ($workstationIds) {
+                $query->whereNull('workstation_id');
+
+                if (!empty($workstationIds)) {
+                    $query->orWhereIn('workstation_id', $workstationIds);
+                }
+            })
+            ->get(['setting_name', 'setting_value']);
+
+        $catalog = [];
+        foreach ($rows as $row) {
+            $catalog[$row->setting_name] = $this->mergeSettingOptionPayloads(
+                $catalog[$row->setting_name] ?? null,
+                $row->setting_value
+            );
+        }
+
+        return $catalog;
+    }
+
+    protected function settingsSummary(Request $request, User $user): array
+    {
+        $role = $this->resolveRole($request, $user);
+        $facilityId = $role === 'super' ? null : $user->facility_id;
+
+        $facilityCount = Facility::query()
+            ->when($facilityId, fn ($query) => $query->where('id', $facilityId))
+            ->count();
+
+        $workgroupCount = Workgroup::query()
+            ->when($facilityId, fn ($query) => $query->where('facility_id', $facilityId))
+            ->count();
+
+        $workstationCount = Workstation::query()
+            ->when($facilityId, function ($query) use ($facilityId) {
+                return $query->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+                    ->where('workgroups.facility_id', $facilityId);
+            })
+            ->count();
+
+        $displayCount = Display::query()
+            ->when($facilityId, function ($query) use ($facilityId) {
+                return $query->join('workstations', 'workstations.id', '=', 'displays.workstation_id')
+                    ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+                    ->where('workgroups.facility_id', $facilityId);
+            })
+            ->count();
+
+        $alerts = Alert::query()
+            ->when($facilityId, fn ($query) => $query->where('facility_id', $facilityId));
+
+        $smtp = SettingSMTP::query()->first();
+        $errorLimits = ErrorLimit::query()->whereNotIn('id', ['all_qa_steps_ok'])->get();
+
+        return [
+            'role' => $role,
+            'siteName' => Setting::query()->where('title', 'Site name')->value('value') ?: 'PerfectLum',
+            'smtp' => [
+                'senderName' => $smtp?->sendername ?: '-',
+                'senderEmail' => $smtp?->senderemail ?: '-',
+                'host' => $smtp?->host ?: '-',
+                'port' => $smtp?->port ?: '-',
+                'username' => $smtp?->username ?: '-',
+                'encryption' => $smtp?->encryption ?: 'None',
+            ],
+            'application' => [
+                'facilityCount' => $facilityCount,
+                'workgroupCount' => $workgroupCount,
+                'workstationCount' => $workstationCount,
+                'displayCount' => $displayCount,
+                'scopeLabel' => $role === 'super'
+                    ? 'All facilities'
+                    : ($user->facility?->name ?: 'Current facility'),
+            ],
+            'alerts' => [
+                'total' => (clone $alerts)->count(),
+                'active' => (clone $alerts)->where('actived', 1)->count(),
+                'daily' => (clone $alerts)->where('daily_report', 1)->count(),
+                'emails' => (clone $alerts)->orderByDesc('actived')->orderBy('email')->limit(3)->pluck('email')->filter()->values()->all(),
+                'thresholdCount' => $errorLimits->count(),
+                'thresholdPreview' => $errorLimits->take(3)->map(fn ($item) => [
+                    'title' => $item->title,
+                    'operator' => $item->operator,
+                    'value' => $item->value,
+                ])->values()->all(),
+            ],
+        ];
+    }
+
+    protected function mobileApplicationSettingsPayload(User $user, string $role): array
+    {
+        $facilities = $role === 'super'
+            ? Facility::all()
+            : ($user->facility ? collect([$user->facility]) : collect());
+
+        $facilityIds = $facilities->pluck('id')->filter()->values();
+        $treeFacilities = Facility::with([
+            'workgroups' => function ($query) {
+                $query->select('id', 'facility_id', 'name')->orderBy('name');
+            },
+            'workgroups.workstations' => function ($query) {
+                $query->select('id', 'workgroup_id', 'name')->orderBy('name');
+            },
+        ])
+            ->when($facilityIds->isNotEmpty(), function ($query) use ($facilityIds) {
+                $query->whereIn('id', $facilityIds);
+            }, function ($query) {
+                $query->whereRaw('1 = 0');
+            })
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $treeData = [];
+        foreach ($treeFacilities as $facility) {
+            $facilityKey = 'fa-' . $facility->id;
+            $treeData[] = [
+                'id' => $facilityKey,
+                'parent' => '#',
+                'text' => $facility->name,
+                'type' => 'facility',
+                'state' => ['opened' => true],
+            ];
+
+            foreach ($facility->workgroups as $workgroup) {
+                $workgroupKey = 'wg-' . $workgroup->id;
+                $treeData[] = [
+                    'id' => $workgroupKey,
+                    'parent' => $facilityKey,
+                    'text' => $workgroup->name,
+                    'type' => 'workgroup',
+                    'state' => ['opened' => true],
+                ];
+
+                foreach ($workgroup->workstations as $workstation) {
+                    $treeData[] = [
+                        'id' => 'ws-' . $workstation->id,
+                        'parent' => $workgroupKey,
+                        'text' => $workstation->name,
+                        'type' => 'workstation',
+                        'state' => ['opened' => true],
+                    ];
+                }
+            }
+        }
+
+        $workstationIds = Workstation::query()
+            ->when($role !== 'super', function ($query) use ($user) {
+                return $query->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+                    ->where('workgroups.facility_id', '=', $user->facility_id);
+            })
+            ->pluck('workstations.id')
+            ->toArray();
+
+        return [
+            'treeData' => $treeData,
+            'optionCatalog' => $this->buildWorkstationOptionCatalog($workstationIds),
+        ];
     }
 
     protected function dashboardSummary(Request $request, ?User $user): array
@@ -822,6 +1098,187 @@ class AppController extends Controller
             'eyebrow' => 'Account',
             'screenTitle' => 'Profile',
             'screenDescription' => 'Account and workspace context.',
+        ]);
+    }
+
+    public function settings(Request $request)
+    {
+        if ($redirect = $this->redirectIfNotReady($request)) {
+            return $redirect;
+        }
+
+        $user = $this->resolveUser($request);
+        if (!$user) {
+            return redirect()->route('mobile.login');
+        }
+
+        $role = $this->resolveRole($request, $user);
+        abort_unless($this->canAccessMobileSettings($role), 403);
+
+        return $this->mobileView($request, 'mobile.screens.settings', [
+            'activeTab' => 'profile',
+            'eyebrow' => 'Admin Console',
+            'screenTitle' => 'Settings',
+            'screenDescription' => 'Operational configuration and alert readiness.',
+            'backUrl' => route('mobile.profile'),
+            'settingsSummary' => $this->settingsSummary($request, $user),
+        ]);
+    }
+
+    public function settingsSite(Request $request)
+    {
+        if ($redirect = $this->redirectIfNotReady($request)) {
+            return $redirect;
+        }
+
+        $user = $this->resolveUser($request);
+        if (!$user) {
+            return redirect()->route('mobile.login');
+        }
+
+        $role = $this->resolveRole($request, $user);
+        abort_unless($this->canAccessMobileSiteSettings($role), 403);
+
+        if ($request->isMethod('post')) {
+            $action = (string) $request->input('settings_action', 'branding');
+
+            if ($action === 'branding') {
+                $siteName = (string) $request->input('site');
+                $senderEmail = (string) $request->input('email');
+                $senderName = (string) $request->input('sender');
+
+                if ($request->file('site_logo')) {
+                    $file = $request->file('site_logo');
+                    $destinationPath = 'site_logo';
+                    $extension = $file->getClientOriginalExtension();
+                    $fileName = Str::slug(Carbon::now()->toDayDateTimeString()) . rand(11111, 99999) . '.' . $extension;
+
+                    if ($file->move($destinationPath, $fileName)) {
+                        Setting::where('title', 'Site logo')->update(['value' => $destinationPath . '/' . $fileName]);
+                    }
+                }
+
+                if ($request->file('favicon')) {
+                    $file = $request->file('favicon');
+                    $destinationPath = 'favicon';
+                    $extension = $file->getClientOriginalExtension();
+                    $fileName = Str::slug(Carbon::now()->toDayDateTimeString()) . rand(11111, 99999) . '.' . $extension;
+
+                    if ($file->move($destinationPath, $fileName)) {
+                        Setting::where('title', 'favicon')->update(['value' => $destinationPath . '/' . $fileName]);
+                    }
+                }
+
+                Setting::where('title', 'Site name')->update(['value' => $siteName]);
+                SettingSMTP::where('id', 1)->update([
+                    'sendername' => $senderName,
+                    'senderemail' => $senderEmail,
+                ]);
+
+                $request->session()->flash('success', 'Site settings updated successfully.');
+                return redirect()->route('mobile.settings.site');
+            }
+
+            if ($action === 'smtp') {
+                SettingSMTP::where('id', 1)->update([
+                    'host' => (string) $request->input('host'),
+                    'port' => (string) $request->input('port'),
+                    'username' => (string) $request->input('username'),
+                    'password' => (string) $request->input('password'),
+                    'sendername' => (string) $request->input('sender_name'),
+                    'senderemail' => (string) $request->input('sender_email'),
+                ]);
+
+                $request->session()->flash('success', 'SMTP settings updated successfully.');
+                return redirect()->route('mobile.settings.site', ['tab' => 'smtp']);
+            }
+
+            if ($action === 'release') {
+                BuildVersionJob::dispatch(
+                    (string) $request->input('next_version'),
+                    (string) $request->input('comment'),
+                    $user
+                );
+
+                $request->session()->flash('success', 'Version ' . $request->input('next_version') . ' is building. You will receive an email when it is completed.');
+                return redirect()->route('mobile.settings.site', ['tab' => 'release']);
+            }
+        }
+
+        return $this->mobileView($request, 'mobile.screens.settings-site', [
+            'activeTab' => 'profile',
+            'eyebrow' => 'Admin Console',
+            'screenTitle' => 'Site Settings',
+            'screenDescription' => 'Branding, SMTP delivery, and release creation.',
+            'backUrl' => $this->safeMobileReturnUrl($request, route('mobile.settings')),
+            'siteSettingsData' => Setting::pluck('value', 'title')->toArray(),
+            'smtpDetails' => SettingSMTP::query()->first(),
+            'siteSettingsInitialTab' => in_array($request->query('tab'), ['branding', 'smtp', 'release'], true)
+                ? $request->query('tab')
+                : 'branding',
+        ]);
+    }
+
+    public function settingsApplication(Request $request)
+    {
+        if ($redirect = $this->redirectIfNotReady($request)) {
+            return $redirect;
+        }
+
+        $user = $this->resolveUser($request);
+        if (!$user) {
+            return redirect()->route('mobile.login');
+        }
+
+        $role = $this->resolveRole($request, $user);
+        abort_unless($this->canAccessMobileSettings($role), 403);
+
+        return $this->mobileView($request, 'mobile.screens.settings-application', array_merge([
+            'activeTab' => 'profile',
+            'eyebrow' => 'Admin Console',
+            'screenTitle' => 'Application Settings',
+            'screenDescription' => 'Bulk workstation settings for the current scope.',
+            'backUrl' => $this->safeMobileReturnUrl($request, route('mobile.settings')),
+        ], $this->mobileApplicationSettingsPayload($user, $role)));
+    }
+
+    public function settingsAlerts(Request $request)
+    {
+        if ($redirect = $this->redirectIfNotReady($request)) {
+            return $redirect;
+        }
+
+        $user = $this->resolveUser($request);
+        if (!$user) {
+            return redirect()->route('mobile.login');
+        }
+
+        $role = $this->resolveRole($request, $user);
+        abort_unless($this->canAccessMobileSettings($role), 403);
+
+        $facilities = Facility::query()
+            ->when($role !== 'super', function ($query) use ($user) {
+                return $query->where('id', $user->facility_id);
+            })
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn ($facility) => [
+                'id' => (string) $facility->id,
+                'name' => $facility->name,
+            ])
+            ->values();
+
+        return $this->mobileView($request, 'mobile.screens.settings-alerts', [
+            'activeTab' => 'profile',
+            'eyebrow' => 'Admin Console',
+            'screenTitle' => 'Alert Settings',
+            'screenDescription' => 'Recipients, thresholds, and SMTP delivery.',
+            'backUrl' => $this->safeMobileReturnUrl($request, route('mobile.settings')),
+            'mobileAlertRole' => $role,
+            'smtpDetails' => SettingSMTP::query()->first(),
+            'errorLimits' => ErrorLimit::query()->whereNotIn('id', ['all_qa_steps_ok'])->get(),
+            'alertFacilities' => $facilities,
+            'alertDefaultFacilityId' => $role === 'super' ? '' : (string) $user->facility_id,
         ]);
     }
 

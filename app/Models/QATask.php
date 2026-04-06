@@ -16,6 +16,18 @@ class QATask extends Model
     public $primaryKey = 'id';
     // Timestamps
     public $timestamps = true;
+    public $incrementing = false;
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (!$model->getKey()) {
+                $model->id = ((int) static::withTrashed()->max('id')) + 1;
+            }
+        });
+    }
     
     /**
      * The attributes that are mass assignable.

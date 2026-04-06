@@ -1107,10 +1107,10 @@ class DashboardController extends Controller
         $data = $rows->map(function ($r) use ($role, $formatHours, $failedHistorySummaryMap, $extractLatestErrorText) {
             $parts = array_filter([$r->wg_address, $r->wg_city, $r->wg_state]);
             $errors = json_decode($r->errors ?? '[]', true);
-            $activityAt = $r->latest_activity_at ?: $r->updated_at;
+            $syncAt = $r->latest_hours_synced_at ?: $r->updated_at;
             $hoursAt = $r->latest_hours_at;
             $hoursSyncedAt = $r->latest_hours_synced_at;
-            $activityFormatted = $activityAt ? \Carbon\Carbon::parse($activityAt)->format('d M Y H:i') : '-';
+            $syncFormatted = $syncAt ? \Carbon\Carbon::parse($syncAt)->format('d M Y H:i') : '-';
             $createdFormatted = $r->created_at ? \Carbon\Carbon::parse($r->created_at)->format('d M Y H:i') : '-';
             $failedSummary = $failedHistorySummaryMap[(int) $r->id] ?? [];
             $issueText = $extractLatestErrorText($errors);
@@ -1147,15 +1147,15 @@ class DashboardController extends Controller
                 'status'      => $r->status,
                 'connected'   => (bool) $r->connected,
                 'location'    => count($parts) ? implode(', ', $parts) : '-',
-                'updatedAt'   => $activityFormatted,
+                'updatedAt'   => $syncFormatted,
                 'createdAt'   => $createdFormatted,
                 'latestHistoryAt' => $r->latest_history_at ? \Carbon\Carbon::parse($r->latest_history_at)->format('d M Y H:i') : '-',
                 'latestHoursAt' => $hoursAt ? \Carbon\Carbon::parse($hoursAt)->format('d M Y H:i') : '-',
                 'latestHoursSyncedAt' => $hoursSyncedAt ? \Carbon\Carbon::parse($hoursSyncedAt)->format('d M Y H:i') : '-',
                 'latestHoursDuration' => $r->latest_hours_duration !== null ? (float) $r->latest_hours_duration : null,
                 'latestHoursFormatted' => $formatHours($r->latest_hours_duration),
-                'latestActivityMode' => $r->latest_activity_source,
-                'latestActivitySource' => $r->latest_activity_source,
+                'latestActivityMode' => 'sync',
+                'latestActivitySource' => 'sync',
                 'attentionText' => $attentionText,
                 'attentionMode' => $attentionMode,
                 'latestFailedHistoryName' => $failedSummary['latest_failed_history_name'] ?? ($r->latest_failed_history_name ?: null),

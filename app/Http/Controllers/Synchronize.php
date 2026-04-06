@@ -643,6 +643,7 @@ class Synchronize extends Controller
                 $display = $this->getDisplay($task['displayId']);
                 if (!$display) continue;
 
+                $isServerTask = isset($task['serverTaskId']) && $task['serverTaskId'] != '';
                 if (isset($task['serverTaskId']) && $task['serverTaskId'] != '') { // server task
                     // Do not update if server changed
                     if (in_array($task['serverTaskId'], $excludeServers)) {
@@ -655,6 +656,17 @@ class Synchronize extends Controller
                         continue;
                     }
                     $where = array('client_id' => $task['taskId'], 'display_id' => $display->id);
+                }
+
+                $existingTask = Task::where($where)->first();
+
+                if (!$isServerTask && !$existingTask && !$this->isCompleteClientCalibrationTaskPayload($task)) {
+                    $this->logger->info('DEBUG: SKIP_INCOMPLETE_CLIENT_CALTASK ' . json_encode([
+                        'display_id' => $display->id,
+                        'client_task_id' => $task['taskId'] ?? null,
+                        'payload_keys' => array_keys($task),
+                    ]));
+                    continue;
                 }
 
                 // IMPORTANT - reset update_data for each task
@@ -673,6 +685,27 @@ class Synchronize extends Controller
         // Delete all tasks that have deleted=1 and sync=1
         // use toBase to prevent ambiguous column updated_at
         $this->workstation->tasks()->where(['deleted' => 1, 'tasks.sync' => 1])->toBase()->delete();
+    }
+
+    private function isCompleteClientCalibrationTaskPayload(array $task): bool
+    {
+        if (($task['deleted'] ?? 0) == 1) {
+            return true;
+        }
+
+        $required = ['type', 'schtype'];
+        foreach ($required as $field) {
+            if (!array_key_exists($field, $task) || $task[$field] === '' || $task[$field] === null) {
+                return false;
+            }
+        }
+
+        $scheduleType = (string) ($task['schtype'] ?? '');
+        if ($scheduleType === '0') {
+            return true;
+        }
+
+        return !empty($task['startdate']) && !empty($task['starttime']);
     }
 
     private function QATASKS()

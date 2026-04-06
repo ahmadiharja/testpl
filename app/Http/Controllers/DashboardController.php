@@ -1528,6 +1528,7 @@ class DashboardController extends Controller
                 'workstations.name as ws_name',
                 'workgroups.name as wg_name',
                 'facilities.name as fac_name',
+                'facilities.timezone as fac_timezone',
             ]);
 
         $allRows = $taskRows->get()->merge($qaRows->get())

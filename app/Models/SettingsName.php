@@ -12,6 +12,7 @@ class SettingsName extends Model
     public $primaryKey = 'id';
     // Timestamps
     public $timestamps = true;
+    public $incrementing = false;
 
     /**
      * The attributes that are mass assignable.
@@ -21,6 +22,17 @@ class SettingsName extends Model
     protected $fillable = [
         'setting_name', 'setting_value', 'workstation_id'
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (!$model->getKey()) {
+                $model->id = ((int) static::max('id')) + 1;
+            }
+        });
+    }
     
     public function workstation(){
         return $this->belongsTo('App\Models\Workstation');

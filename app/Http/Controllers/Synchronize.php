@@ -399,6 +399,11 @@ class Synchronize extends Controller
             }
         }
 
+        // Some client builds only call DISPLAY/SETTINGSNAMES during remote sync,
+        // so treat this as a valid heartbeat for workstation connectivity.
+        $this->workstation->last_connected = Carbon::now();
+        $this->workstation->save();
+
         return true;
     }
 
@@ -829,6 +834,11 @@ class Synchronize extends Controller
             //$this->logger->error("Settings update data: " . json_encode($update_data, 1));
             SettingsName::updateOrCreate($where, $update_data);
         }
+
+        // Older/limited clients may never call PREFERENCES, so keep the
+        // workstation heartbeat fresh when SETTINGSNAMES arrives.
+        $this->workstation->last_connected = Carbon::now();
+        $this->workstation->save();
     }
 
     /**

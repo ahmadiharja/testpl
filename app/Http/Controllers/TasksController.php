@@ -86,6 +86,23 @@ class TasksController extends Controller
         return $query->pluck('displays.id')->map(fn ($id) => (int) $id)->all();
     }
 
+    protected function resolveTaskTimezone(?\App\Models\Task $task): string
+    {
+        return optional(optional(optional(optional($task?->display)->workstation)->workgroup)->facility)->timezone
+            ?: config('app.timezone');
+    }
+
+    protected function computeTaskNextRunTimestamp(\App\Models\Task $task): int
+    {
+        $timezone = $this->resolveTaskTimezone($task);
+        $startDate = str_replace('.', '-', (string) $task->startdate);
+        $startTime = (string) ($task->starttime ?: '00:00');
+
+        return Carbon::createFromFormat('Y-m-d H:i', trim($startDate . ' ' . $startTime), $timezone)
+            ->utc()
+            ->timestamp;
+    }
+
     public function edit_task(Request $request)
     {
         $user = $this->taskManager($request);
@@ -207,8 +224,7 @@ class TasksController extends Controller
                 $task->display_id = $displayId;
                 $task->user_id = $user?->id;
                 $this->setTask($task, $request);
-                $dat=$request->input('startdate').' '.$request->input('starttime');
-                $task->nextrun = Carbon::createFromFormat('Y-m-d H:i', $dat)->timestamp;
+                $task->nextrun = $this->computeTaskNextRunTimestamp($task);
                 $task->created_at = now();
                 $task->updated_at = now();
                 $task->save();
@@ -226,6 +242,7 @@ class TasksController extends Controller
             }
 
             $this->setTask($task, $request);
+            $task->nextrun = $this->computeTaskNextRunTimestamp($task);
             $task->updated_at = now();
             $task->save();
         }

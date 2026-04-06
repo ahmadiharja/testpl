@@ -442,19 +442,6 @@ class DisplaysController extends Controller
 
         $task = $this->createImmediateCalibrationTask($display, (int) $request->session()->get('id'));
 
-        $syncCandidates = collect([
-            $display->updated_at ? Carbon::parse($display->updated_at) : null,
-            $workstation?->getRawOriginal('last_connected')
-                ? Carbon::parse($workstation->getRawOriginal('last_connected'))
-                : null,
-            $latestHoursActivityAt ? Carbon::parse($latestHoursActivityAt) : null,
-            $recentHistories->max('time')
-                ? Carbon::createFromTimestamp((int) $recentHistories->max('time'))
-                : null,
-        ])->filter();
-
-        $lastSyncAt = $syncCandidates->sortByDesc(fn ($date) => $date->timestamp)->first();
-
         return response()->json([
             'message' => 'Calibration task created successfully.',
             'taskId' => $task->id,
@@ -1467,6 +1454,19 @@ class DisplaysController extends Controller
                 'connectedLabel' => $item->connected ? 'Online' : 'Offline',
             ];
         })->values();
+
+        $syncCandidates = collect([
+            $display->updated_at ? Carbon::parse($display->updated_at) : null,
+            $workstation?->getRawOriginal('last_connected')
+                ? Carbon::parse($workstation->getRawOriginal('last_connected'))
+                : null,
+            $latestHoursActivityAt ? Carbon::parse($latestHoursActivityAt) : null,
+            $recentHistories->max('time')
+                ? Carbon::createFromTimestamp((int) $recentHistories->max('time'))
+                : null,
+        ])->filter();
+
+        $lastSyncAt = $syncCandidates->sortByDesc(fn ($date) => $date->timestamp)->first();
 
         return response()->json([
             'id' => $display->id,

@@ -7,6 +7,45 @@ use DB;
 
 class DashboardController extends Controller
 {
+    protected function resolveRecordDueTimestamp($record): int
+    {
+        $rawDueAt = (int) ($record->due_at ?? 0);
+        if ($rawDueAt > 0) {
+            return $rawDueAt;
+        }
+
+        if (($record->record_type ?? null) !== 'task') {
+            return 0;
+        }
+
+        $startdate = trim((string) ($record->startdate ?? $record->startdate1 ?? ''));
+        $starttime = trim((string) ($record->starttime ?? ''));
+        if ($startdate === '' || $starttime === '') {
+            return 0;
+        }
+
+        try {
+            return \Carbon\Carbon::createFromFormat(
+                'Y-m-d H:i',
+                "{$startdate} {$starttime}",
+                $record->fac_timezone ?: config('app.timezone', 'UTC')
+            )->utc()->timestamp;
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
+    protected function formatRecordDueAt($record, int $timestamp): string
+    {
+        if ($timestamp <= 0) {
+            return '-';
+        }
+
+        return \Carbon\Carbon::createFromTimestampUTC($timestamp)
+            ->setTimezone($record->fac_timezone ?: config('app.timezone', 'UTC'))
+            ->format('d M Y H:i');
+    }
+
     public function dashboard(Request $request){
 
         //$request->session()->put('id', '32');
@@ -76,7 +115,10 @@ class DashboardController extends Controller
             ->leftJoin('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
             ->where('tasks.deleted', 0)
             ->where('tasks.disabled', 0)
-            ->where('tasks.nextrun', '>', 0)
+            ->where(function ($q) {
+                $q->where('tasks.nextrun', '>', 0)
+                    ->orWhere('tasks.nextrun', 0);
+            })
             ->when($facility_id, function ($q) use ($facility_id) {
                 return $q->where('workgroups.facility_id', '=', $facility_id);
             })
@@ -361,8 +403,12 @@ class DashboardController extends Controller
             ->join('schedule_types', 'tasks.schtype', '=', 'schedule_types.client_id')
             ->where('tasks.deleted', 0)
             ->where('tasks.disabled', 0)
-            ->where('tasks.nextrun', '>', 0)
-            ->where('tasks.nextrun', '<=', $nowTimestamp)
+            ->where(function ($q) use ($nowTimestamp) {
+                $q->where(function ($q2) use ($nowTimestamp) {
+                    $q2->where('tasks.nextrun', '>', 0)
+                        ->where('tasks.nextrun', '<=', $nowTimestamp);
+                })->orWhere('tasks.nextrun', 0);
+            })
             ->when($facility_id, fn($q) => $q->where('workgroups.facility_id', $facility_id))
             ->when($display_id, fn($q) => $q->where('tasks.display_id', $display_id))
             ->when(!empty($terms), function ($query) use ($terms) {
@@ -387,6 +433,8 @@ class DashboardController extends Controller
                 'task_types.title as task_name',
                 'schedule_types.title as schedule_name',
                 'tasks.startdate as startdate1',
+                'tasks.startdate as startdate',
+                'tasks.starttime as starttime',
                 'tasks.nextrun as due_at',
                 'tasks.nextrun as due_date_sort',
                 'displays.manufacturer', 'displays.model', 'displays.serial', 'displays.workstation_id',
@@ -394,6 +442,7 @@ class DashboardController extends Controller
                 'workgroups.id as wg_id', 'workgroups.name as wg_name',
                 'facilities.id as fac_id',
                 'facilities.name as fac_name',
+                'facilities.timezone as fac_timezone',
             ])
             ->get();
 
@@ -439,10 +488,16 @@ class DashboardController extends Controller
             ->get();
 
         // Same ordering used by the old due-tasks page: due date desc, then id desc.
-        $allTasks = $taskRows->merge($qaRows)->sort(function ($a, $b) {
-            $dueCompare = ((int) $b->due_date_sort) <=> ((int) $a->due_date_sort);
-            return $dueCompare !== 0 ? $dueCompare : ((int) $b->id <=> (int) $a->id);
-        });
+        $allTasks = $taskRows->merge($qaRows)
+            ->map(function ($row) use ($nowTimestamp) {
+                $row->computed_due_at = $this->resolveRecordDueTimestamp($row);
+                return $row;
+            })
+            ->filter(fn($row) => (int) ($row->computed_due_at ?? 0) > 0 && (int) $row->computed_due_at <= $nowTimestamp)
+            ->sort(function ($a, $b) {
+                $dueCompare = ((int) $b->computed_due_at) <=> ((int) $a->computed_due_at);
+                return $dueCompare !== 0 ? $dueCompare : ((int) $b->id <=> (int) $a->id);
+            });
         $total = $allTasks->count();
         $rows = $allTasks->slice($offset, $limit)->values();
 
@@ -452,14 +507,15 @@ class DashboardController extends Controller
             $ser = $record->serial ?? '';
             $displayName = trim($mfg . ' ' . $mod . ' (' . $ser . ')');
             
-            $dueAtTimestamp = (int)$record->due_at;
-            $dueAtFormatted = $dueAtTimestamp ? \Carbon\Carbon::createFromTimestamp($dueAtTimestamp)->format('d M Y H:i') : '-';
+            $dueAtTimestamp = (int) ($record->computed_due_at ?? 0);
+            $dueAtFormatted = $this->formatRecordDueAt($record, $dueAtTimestamp);
             
             $isPast = false;
             $isToday = false;
             $diffForHumans = '-';
             if ($dueAtTimestamp) {
-                $dueObj = \Carbon\Carbon::createFromTimestamp($dueAtTimestamp);
+                $dueObj = \Carbon\Carbon::createFromTimestampUTC($dueAtTimestamp)
+                    ->setTimezone($record->fac_timezone ?: config('app.timezone', 'UTC'));
                 $isPast = $dueObj->isPast();
                 $isToday = $dueObj->isToday();
                 $diffForHumans = $isPast ? $dueObj->diffForHumans() : 'Not overdue';
@@ -1391,7 +1447,10 @@ class DashboardController extends Controller
             ->leftJoin('schedule_types', 'tasks.schtype','=', 'schedule_types.client_id')
             ->where('tasks.deleted', 0)
             ->where('tasks.disabled', 0)
-            ->where('tasks.nextrun', '>', 0)
+            ->where(function ($q) {
+                $q->where('tasks.nextrun', '>', 0)
+                    ->orWhere('tasks.nextrun', 0);
+            })
             ->whereNotNull('tasks.type')
             ->whereNotNull('tasks.schtype')
             ->when($dueScope === 'due', fn($q) => $q->where('tasks.nextrun', '<=', $nowTimestamp))
@@ -1416,6 +1475,8 @@ class DashboardController extends Controller
                 'task_types.title as task_name',
                 'schedule_types.title as schedule_name',
                 'tasks.nextrun as due_at',
+                'tasks.startdate as startdate',
+                'tasks.starttime as starttime',
                 'tasks.created_at as created_at',
                 'displays.manufacturer', 'displays.model', 'displays.serial',
                 'displays.workstation_id',
@@ -1425,6 +1486,7 @@ class DashboardController extends Controller
                 'workstations.name as ws_name',
                 'workgroups.name as wg_name',
                 'facilities.name as fac_name',
+                'facilities.timezone as fac_timezone',
             ]);
 
         $qaRows = DB::table('qa_tasks')
@@ -1468,8 +1530,19 @@ class DashboardController extends Controller
                 'facilities.name as fac_name',
             ]);
 
-        $allRows = $taskRows->get()->merge($qaRows->get());
-        $nowTimestamp = \Carbon\Carbon::now()->timestamp;
+        $allRows = $taskRows->get()->merge($qaRows->get())
+            ->map(function ($row) {
+                $row->computed_due_at = $this->resolveRecordDueTimestamp($row);
+                return $row;
+            })
+            ->filter(function ($row) use ($dueScope, $nowTimestamp) {
+                $ts = (int) ($row->computed_due_at ?? 0);
+                if ($ts <= 0) {
+                    return false;
+                }
+
+                return $dueScope === 'due' ? $ts <= $nowTimestamp : true;
+            });
 
         $allRows = match ($sortMode) {
             'latest' => $allRows->sort(function ($a, $b) {
@@ -1479,12 +1552,12 @@ class DashboardController extends Controller
                 return $createdCompare !== 0 ? $createdCompare : ($b->id <=> $a->id);
             }),
             'due_desc' => $allRows->sort(function ($a, $b) {
-                $dueCompare = ((int) $b->due_at) <=> ((int) $a->due_at);
+                $dueCompare = ((int) $b->computed_due_at) <=> ((int) $a->computed_due_at);
                 return $dueCompare !== 0 ? $dueCompare : ($b->id <=> $a->id);
             }),
             default => $allRows->sort(function ($a, $b) use ($nowTimestamp) {
-                $dueA = (int) ($a->due_at ?? 0);
-                $dueB = (int) ($b->due_at ?? 0);
+                $dueA = (int) ($a->computed_due_at ?? 0);
+                $dueB = (int) ($b->computed_due_at ?? 0);
                 $isUpcomingA = $dueA >= $nowTimestamp ? 0 : 1;
                 $isUpcomingB = $dueB >= $nowTimestamp ? 0 : 1;
 
@@ -1506,14 +1579,23 @@ class DashboardController extends Controller
         $rows    = $allRows->slice($offset, $limit)->values();
 
         $data = $rows->map(function($r) {
-            $ts = (int)$r->due_at;
-            $dueFormatted = $ts ? \Carbon\Carbon::createFromTimestamp($ts)->format('d M Y H:i') : '-';
+            $ts = (int) ($r->computed_due_at ?? 0);
+            $dueFormatted = $this->formatRecordDueAt($r, $ts);
             $createdFormatted = $r->created_at
                 ? \Carbon\Carbon::parse($r->created_at)->format('d M Y H:i')
                 : 'Not recorded';
-            $isPast = $ts && \Carbon\Carbon::createFromTimestamp($ts)->isPast();
-            $isSoon = $ts && !$isPast && \Carbon\Carbon::createFromTimestamp($ts)->diffInDays(\Carbon\Carbon::now()) <= 7;
+            $dueObj = $ts
+                ? \Carbon\Carbon::createFromTimestampUTC($ts)->setTimezone($r->fac_timezone ?: config('app.timezone', 'UTC'))
+                : null;
+            $isPast = $dueObj ? $dueObj->isPast() : false;
+            $isSoon = $dueObj ? (!$isPast && $dueObj->diffInDays(\Carbon\Carbon::now($r->fac_timezone ?: config('app.timezone', 'UTC'))) <= 7) : false;
             $statusMap = [0 => 'OK', 1 => 'Failed', 2 => 'Run Error'];
+            $derivedStatus = ($r->status ?? 0) == 0 && $ts && $isPast
+                ? 'Due'
+                : ($statusMap[$r->status] ?? 'Unknown');
+            $derivedStatusColor = ($r->status ?? 0) == 0 && $ts && $isPast
+                ? 'danger'
+                : (($r->status ?? 0) == 0 ? 'success' : 'danger');
             return [
                 'id'          => $r->id,
                 'type'        => $r->record_type,
@@ -1530,8 +1612,8 @@ class DashboardController extends Controller
                 'createdAt'   => $createdFormatted,
                 'dueAt'       => $dueFormatted,
                 'dueColor'    => $isPast ? 'danger' : ($isSoon ? 'warning' : 'success'),
-                'status'      => $statusMap[$r->status] ?? 'Unknown',
-                'statusColor' => $r->status == 0 ? 'success' : 'danger',
+                'status'      => $derivedStatus,
+                'statusColor' => $derivedStatusColor,
             ];
         });
 

@@ -827,19 +827,55 @@ class DashboardController extends Controller
 
         $total = (clone $baseQuery)->distinct()->count('displays.id');
 
-        $baseRows = (clone $baseQuery)
-            ->select([
-                'displays.id', 'displays.manufacturer', 'displays.model', 'displays.serial',
-                'displays.status', 'displays.connected', 'displays.workstation_id',
-                'displays.created_at', 'displays.updated_at', 'displays.errors',
-                'workstations.name as ws_name', 'workstations.workgroup_id as wg_id', 'workstations.last_connected as ws_last_connected',
-                'workgroups.name as wg_name', 'workgroups.facility_id as fac_id',
-                'workgroups.address as wg_address', 'workgroups.city as wg_city', 'workgroups.state as wg_state',
-                'facilities.name as fac_name', 'facilities.timezone as fac_timezone',
-            ])
-            ->get();
+        $baseSelect = [
+            'displays.id', 'displays.manufacturer', 'displays.model', 'displays.serial',
+            'displays.status', 'displays.connected', 'displays.workstation_id',
+            'displays.created_at', 'displays.updated_at', 'displays.errors',
+            'workstations.name as ws_name', 'workstations.workgroup_id as wg_id', 'workstations.last_connected as ws_last_connected',
+            'workgroups.name as wg_name', 'workgroups.facility_id as fac_id',
+            'workgroups.address as wg_address', 'workgroups.city as wg_city', 'workgroups.state as wg_state',
+            'facilities.name as fac_name', 'facilities.timezone as fac_timezone',
+        ];
 
-        $displayIds = $baseRows->pluck('id')
+        $sqlSortableModes = ['updated_at', 'id', 'manufacturer', 'status', 'display_name'];
+        $useSqlPaging = in_array($sort, $sqlSortableModes, true);
+
+        if ($useSqlPaging) {
+            $rows = (clone $baseQuery)->select($baseSelect);
+
+            switch ($sort) {
+                case 'id':
+                    $rows->orderBy('displays.id', $order);
+                    break;
+                case 'manufacturer':
+                    $rows->orderBy('displays.manufacturer', $order)
+                        ->orderBy('displays.model', $order)
+                        ->orderBy('displays.serial', $order);
+                    break;
+                case 'status':
+                    $rows->orderBy('displays.status', $order)
+                        ->orderBy('displays.updated_at', 'desc');
+                    break;
+                case 'display_name':
+                    $rows->orderByRaw(
+                        "LOWER(CONCAT(COALESCE(displays.manufacturer, ''), ' ', COALESCE(displays.model, ''), ' ', COALESCE(displays.serial, ''))) {$order}"
+                    )->orderBy('displays.id', 'asc');
+                    break;
+                case 'updated_at':
+                default:
+                    $rows->orderBy('displays.updated_at', $order)
+                        ->orderBy('displays.id', 'desc');
+                    break;
+            }
+
+            $rows = $rows->offset($offset)->limit($limit)->get();
+        } else {
+            $rows = (clone $baseQuery)
+                ->select($baseSelect)
+                ->get();
+        }
+
+        $displayIds = $rows->pluck('id')
             ->map(fn ($id) => (int) $id)
             ->filter()
             ->unique()
@@ -856,41 +892,6 @@ class DashboardController extends Controller
                 ->map(fn ($value) => $value ? (string) $value : null)
                 ->all();
 
-        $latestFailedHistoryMap = [];
-
-        if ($displayIds->isNotEmpty()) {
-            $expectedDisplayCount = $displayIds->count();
-
-            foreach (
-                DB::table('histories')
-                    ->select(['id', 'display_id', 'name', 'updated_at', 'time'])
-                    ->whereNull('deleted_at')
-                    ->where('result', 3)
-                    ->whereIn('display_id', $displayIds->all())
-                    ->orderBy('display_id')
-                    ->orderByDesc('updated_at')
-                    ->orderByDesc('time')
-                    ->orderByDesc('id')
-                    ->cursor() as $row
-            ) {
-                $displayId = (int) $row->display_id;
-
-                if (isset($latestFailedHistoryMap[$displayId])) {
-                    continue;
-                }
-
-                $latestFailedHistoryMap[$displayId] = [
-                    'name' => trim((string) ($row->name ?? '')) ?: null,
-                    'updated_at' => $row->updated_at ? (string) $row->updated_at : null,
-                    'time' => $row->time ? (int) $row->time : null,
-                ];
-
-                if (count($latestFailedHistoryMap) >= $expectedDisplayCount) {
-                    break;
-                }
-            }
-        }
-
         $hoursSummaryMap = [];
 
         if ($displayIds->isNotEmpty()) {
@@ -901,7 +902,6 @@ class DashboardController extends Controller
                     ->select(['id', 'display_id', 'start', 'duration', 'updated_at'])
                     ->whereIn('display_id', $displayIds->all())
                     ->orderBy('display_id')
-                    ->orderByDesc('updated_at')
                     ->orderByDesc('start')
                     ->orderByDesc('id')
                     ->cursor() as $row
@@ -924,13 +924,8 @@ class DashboardController extends Controller
             }
         }
 
-        $rows = $baseRows->map(function ($row) use ($historyActivityMap, $hoursSummaryMap, $latestFailedHistoryMap) {
+        $rows = $rows->map(function ($row) use ($historyActivityMap, $hoursSummaryMap) {
             $historyAt = $historyActivityMap[$row->id] ?? null;
-            $latestFailedHistory = $latestFailedHistoryMap[$row->id] ?? [
-                'name' => null,
-                'updated_at' => null,
-                'time' => null,
-            ];
             $hoursMeta = $hoursSummaryMap[$row->id] ?? [
                 'latest_hours_at' => null,
                 'latest_hours_duration' => null,
@@ -961,71 +956,73 @@ class DashboardController extends Controller
             $row->latest_hours_synced_at = $hoursSyncedAt;
             $row->latest_activity_at = $latestActivityAt;
             $row->latest_activity_source = $latestActivitySource;
-            $row->latest_failed_history_name = $latestFailedHistory['name'] ?? null;
-            $row->latest_failed_history_at = $latestFailedHistory['updated_at'] ?? null;
-            $row->latest_failed_history_time = $latestFailedHistory['time'] ?? null;
+            $row->latest_failed_history_name = null;
+            $row->latest_failed_history_at = null;
+            $row->latest_failed_history_time = null;
 
             return $row;
         })->values();
 
-        $rows = $rows->sort(function ($a, $b) use ($sort, $order) {
-            $direction = $order === 'asc' ? 1 : -1;
+        if (!$useSqlPaging) {
+            $rows = $rows->sort(function ($a, $b) use ($sort, $order) {
+                $direction = $order === 'asc' ? 1 : -1;
 
-            $normalizeString = function ($value) {
-                return mb_strtolower(trim((string) ($value ?? '')));
-            };
+                $normalizeString = function ($value) {
+                    return mb_strtolower(trim((string) ($value ?? '')));
+                };
 
-            $compare = function ($left, $right) use ($direction) {
-                if ($left === $right) {
-                    return 0;
-                }
-
-                if ($left === null || $left === '') {
-                    return 1;
-                }
-
-                if ($right === null || $right === '') {
-                    return -1;
-                }
-
-                return $left <=> $right;
-            };
-
-            switch ($sort) {
-                case 'display_name':
-                    $left = $normalizeString(($a->manufacturer ?? '') . ' ' . ($a->model ?? '') . ' ' . ($a->serial ?? ''));
-                    $right = $normalizeString(($b->manufacturer ?? '') . ' ' . ($b->model ?? '') . ' ' . ($b->serial ?? ''));
-                    return $compare($left, $right) * $direction;
-
-                case 'status':
-                    return $compare((int) ($a->status ?? 0), (int) ($b->status ?? 0)) * $direction;
-
-                case 'display_hours':
-                    $hoursCompare = $compare(
-                        $a->latest_hours_duration !== null ? (float) $a->latest_hours_duration : null,
-                        $b->latest_hours_duration !== null ? (float) $b->latest_hours_duration : null
-                    );
-
-                    if ($hoursCompare !== 0) {
-                        return $hoursCompare * $direction;
+                $compare = function ($left, $right) use ($direction) {
+                    if ($left === $right) {
+                        return 0;
                     }
 
-                    return $compare($a->latest_hours_synced_at, $b->latest_hours_synced_at) * $direction;
+                    if ($left === null || $left === '') {
+                        return 1;
+                    }
 
-                case 'manufacturer':
-                    return $compare($normalizeString($a->manufacturer), $normalizeString($b->manufacturer)) * $direction;
+                    if ($right === null || $right === '') {
+                        return -1;
+                    }
 
-                case 'id':
-                    return $compare((int) $a->id, (int) $b->id) * $direction;
+                    return $left <=> $right;
+                };
 
-                case 'latest_activity':
-                case 'updated_at':
-                default:
-                    return $compare($a->latest_activity_at, $b->latest_activity_at) * $direction;
-            }
-        })->values();
+                switch ($sort) {
+                    case 'display_name':
+                        $left = $normalizeString(($a->manufacturer ?? '') . ' ' . ($a->model ?? '') . ' ' . ($a->serial ?? ''));
+                        $right = $normalizeString(($b->manufacturer ?? '') . ' ' . ($b->model ?? '') . ' ' . ($b->serial ?? ''));
+                        return $compare($left, $right) * $direction;
 
-        $rows = $rows->slice($offset, $limit)->values();
+                    case 'status':
+                        return $compare((int) ($a->status ?? 0), (int) ($b->status ?? 0)) * $direction;
+
+                    case 'display_hours':
+                        $hoursCompare = $compare(
+                            $a->latest_hours_duration !== null ? (float) $a->latest_hours_duration : null,
+                            $b->latest_hours_duration !== null ? (float) $b->latest_hours_duration : null
+                        );
+
+                        if ($hoursCompare !== 0) {
+                            return $hoursCompare * $direction;
+                        }
+
+                        return $compare($a->latest_hours_synced_at, $b->latest_hours_synced_at) * $direction;
+
+                    case 'manufacturer':
+                        return $compare($normalizeString($a->manufacturer), $normalizeString($b->manufacturer)) * $direction;
+
+                    case 'id':
+                        return $compare((int) $a->id, (int) $b->id) * $direction;
+
+                    case 'latest_activity':
+                    case 'updated_at':
+                    default:
+                        return $compare($a->latest_activity_at, $b->latest_activity_at) * $direction;
+                }
+            })->values();
+
+            $rows = $rows->slice($offset, $limit)->values();
+        }
 
         $failedHistorySummaryMap = [];
         $pageDisplayIds = $rows->pluck('id')

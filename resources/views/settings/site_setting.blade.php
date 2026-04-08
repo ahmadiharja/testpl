@@ -292,8 +292,6 @@
     </div>
 </div>
 
-@include('common.navigations.footer')
-
 <script>
     document.getElementById('imageUpload')?.addEventListener('change', function (event) {
         const file = event.target.files?.[0];
@@ -353,3 +351,5 @@
         computeNextVersion(document.querySelector('input[type="radio"][name="type"]:checked')?.value || 'build');
     })();
 </script>
+
+@include('common.navigations.footer')

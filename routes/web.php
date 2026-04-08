@@ -94,7 +94,9 @@ Route::group(['middleware' => 'auth'], function(){
   Route::get('d-fail', [DashboardController::class, 'd_fail']);
   Route::get('d-ok', [DashboardController::class, 'd_ok']);
   Route::get('due-tasks', [DashboardController::class, 'due_tasks']);
+  Route::get('client-monitor', [DashboardController::class, 'client_monitor']);
   Route::get('api/due-tasks', [DashboardController::class, 'api_due_tasks']);
+  Route::get('api/client-monitor', [DashboardController::class, 'api_client_monitor']);
   Route::get('api/displays-failed', [DashboardController::class, 'api_displays_failed']);
   Route::get('api/latest-performed', [DashboardController::class, 'api_latest_performed']);
   Route::get('api/connection-watchlist', [DashboardController::class, 'api_connection_watchlist']);

@@ -41,7 +41,9 @@
 @endphp
 
 <!-- TOP HEADER -->
-<header class="h-20 flex items-center justify-between px-6 lg:px-12 shrink-0 border-b relative z-40" 
+<header id="desktop-top-header"
+        data-desktop-shell-signature="{{ $desktopShellSignature ?? '' }}"
+        class="h-20 flex items-center justify-between px-6 lg:px-12 shrink-0 border-b relative z-40" 
         :class="theme === 'perfectlum' ? 'border-gray-100 bg-white/80 backdrop-blur-xl' : 'border-white/5 bg-[#0A0A0B]/80 backdrop-blur-xl'">
     
     <div class="flex items-center gap-6">

@@ -278,9 +278,10 @@ class DashboardController extends Controller
             ->join('workstations', 'workstations.id', '=', 'displays.workstation_id')
             ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
             ->join('facilities', 'facilities.id', '=', 'workgroups.facility_id')
-            ->leftJoin('display_preferences as exclude_pref', function ($join) {
-                $join->on('exclude_pref.display_id', '=', 'displays.id')
-                    ->where('exclude_pref.name', '=', 'exclude');
+            ->leftJoin('display_preferences as excluded_pref', function ($join) {
+                $join->on('excluded_pref.display_id', '=', 'displays.id')
+                    ->where('excluded_pref.name', '=', 'exclude')
+                    ->where('excluded_pref.value', '=', '1');
             })
             ->select([
                 'displays.id',
@@ -297,10 +298,7 @@ class DashboardController extends Controller
                     ->orWhere('displays.model', 'like', $like)
                     ->orWhere('displays.serial', 'like', $like);
             })
-            ->where(function ($q) {
-                $q->whereNull('exclude_pref.value')
-                    ->orWhere('exclude_pref.value', '0');
-            })
+            ->whereNull('excluded_pref.id')
             ->orderBy('displays.manufacturer')
             ->orderBy('displays.model')
             ->orderBy('displays.serial')
@@ -371,16 +369,375 @@ class DashboardController extends Controller
         ]);
     }
 
+    public function client_monitor(Request $request)
+    {
+        $user = \App\Models\User::find($request->session()->get('id'));
+        $role = (string) $request->session()->get('role', '');
+
+        if (!$user || $role !== 'super') {
+            abort(403);
+        }
+
+        return view('dashboard.client_monitor', [
+            'title' => 'Client Monitor',
+            'role' => $role,
+        ]);
+    }
+
+    public function api_client_monitor(Request $request)
+    {
+        $user = \App\Models\User::find($request->session()->get('id'));
+        $role = (string) $request->session()->get('role', '');
+        if (!$user || $role !== 'super') {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $requestedFacilityId = $request->get('facility_id');
+        $facilityId = ($requestedFacilityId !== null && $requestedFacilityId !== '') ? (int) $requestedFacilityId : null;
+        $lineLimit = max(20, min((int) $request->get('line_limit', 48), 120));
+        $staleMinutes = max(5, min((int) $request->get('stale_minutes', 15), 180));
+        $now = now();
+        $staleThreshold = (clone $now)->subMinutes($staleMinutes);
+
+        $workstationsBase = DB::table('workstations')
+            ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+            ->join('facilities', 'facilities.id', '=', 'workgroups.facility_id')
+            ->when($facilityId, fn($q) => $q->where('facilities.id', $facilityId));
+
+        $displaysBase = DB::table('displays')
+            ->join('workstations', 'workstations.id', '=', 'displays.workstation_id')
+            ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+            ->join('facilities', 'facilities.id', '=', 'workgroups.facility_id')
+            ->when($facilityId, fn($q) => $q->where('facilities.id', $facilityId));
+
+        $workstationsTotal = (int) (clone $workstationsBase)->count();
+        $workstationsOnline = (int) (clone $workstationsBase)->where('workstations.last_connected', '>=', $staleThreshold)->count();
+        $workstationsOffline = max(0, $workstationsTotal - $workstationsOnline);
+        $displaysTotal = (int) (clone $displaysBase)->count();
+        $displaysConnected = (int) (clone $displaysBase)->where('displays.connected', 1)->count();
+        $displaysDisconnected = (int) (clone $displaysBase)->where('displays.connected', 0)->count();
+        $displaysFailed = (int) (clone $displaysBase)->where('displays.status', 2)->count();
+
+        $historyBase = DB::table('histories')
+            ->join('displays', 'displays.id', '=', 'histories.display_id')
+            ->join('workstations', 'workstations.id', '=', 'displays.workstation_id')
+            ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+            ->join('facilities', 'facilities.id', '=', 'workgroups.facility_id')
+            ->when($facilityId, fn($q) => $q->where('facilities.id', $facilityId));
+
+        $sinceEpoch = $now->copy()->subMinutes(10)->timestamp;
+        $throughput = (clone $historyBase)
+            ->where('histories.time', '>=', $sinceEpoch)
+            ->selectRaw('
+                COUNT(*) as total,
+                SUM(CASE WHEN histories.result = 2 THEN 1 ELSE 0 END) as success_count,
+                SUM(CASE WHEN histories.result <> 2 THEN 1 ELSE 0 END) as failed_count
+            ')
+            ->first();
+
+        $oneThird = max(8, (int) ceil($lineLimit / 3));
+        $oneQuarter = max(6, (int) ceil($lineLimit / 4));
+
+        $makeSnippet = static function ($value, int $max = 140): string {
+            $text = trim(preg_replace('/\s+/', ' ', (string) $value));
+            if ($text === '') {
+                return '-';
+            }
+            if (function_exists('mb_strlen') && function_exists('mb_substr')) {
+                return mb_strlen($text) > $max ? (mb_substr($text, 0, $max - 3) . '...') : $text;
+            }
+            return strlen($text) > $max ? (substr($text, 0, $max - 3) . '...') : $text;
+        };
+
+        $events = collect();
+
+        $heartbeatRows = (clone $workstationsBase)
+            ->select([
+                DB::raw('UNIX_TIMESTAMP(workstations.last_connected) as ts'),
+                'workstations.id as workstation_id',
+                'workstations.name as workstation_name',
+                'workgroups.name as workgroup_name',
+                'facilities.name as facility_name',
+            ])
+            ->whereNotNull('workstations.last_connected')
+            ->orderBy('workstations.last_connected', 'desc')
+            ->limit($oneThird)
+            ->get();
+
+        $events = $events->concat($heartbeatRows->map(function ($row) {
+            return [
+                'timestamp' => (int) ($row->ts ?? 0),
+                'level' => 'INFO',
+                'line' => sprintf(
+                    '[HEARTBEAT] ws=%s(%d) wg=%s fac=%s',
+                    $row->workstation_name ?: '-',
+                    (int) $row->workstation_id,
+                    $row->workgroup_name ?: '-',
+                    $row->facility_name ?: '-'
+                ),
+            ];
+        }));
+
+        $displayRows = (clone $displaysBase)
+            ->select([
+                DB::raw('UNIX_TIMESTAMP(displays.updated_at) as ts'),
+                'displays.id as display_id',
+                'displays.connected',
+                'displays.status',
+                'displays.manufacturer',
+                'displays.model',
+                'displays.serial',
+                'workstations.name as workstation_name',
+                'workgroups.name as workgroup_name',
+                'facilities.name as facility_name',
+            ])
+            ->whereNotNull('displays.updated_at')
+            ->orderBy('displays.updated_at', 'desc')
+            ->limit($oneThird)
+            ->get();
+
+        $events = $events->concat($displayRows->map(function ($row) {
+            $connected = (int) $row->connected === 1;
+            $failed = (int) $row->status === 2;
+            $level = $connected ? ($failed ? 'WARN' : 'INFO') : 'WARN';
+            $state = $connected ? 'CONNECTED' : 'DISCONNECTED';
+            $status = $failed ? 'NOT_OK' : 'OK';
+            $displayName = trim(($row->manufacturer ?? '') . ' ' . ($row->model ?? '') . ' (' . ($row->serial ?? '-') . ')');
+
+            return [
+                'timestamp' => (int) ($row->ts ?? 0),
+                'level' => $level,
+                'line' => sprintf(
+                    '[DISPLAY] state=%s status=%s display=%d "%s" ws=%s wg=%s fac=%s',
+                    $state,
+                    $status,
+                    (int) $row->display_id,
+                    $displayName,
+                    $row->workstation_name ?: '-',
+                    $row->workgroup_name ?: '-',
+                    $row->facility_name ?: '-'
+                ),
+            ];
+        }));
+
+        $historyRows = (clone $historyBase)
+            ->select([
+                'histories.id as history_id',
+                'histories.time',
+                'histories.result',
+                'histories.name as history_name',
+                'histories.header',
+                'histories.levels',
+                'histories.steps',
+                'histories.measurements',
+                'displays.id as display_id',
+                'displays.manufacturer',
+                'displays.model',
+                'displays.serial',
+                'workstations.name as workstation_name',
+                'workgroups.name as workgroup_name',
+                'facilities.name as facility_name',
+            ])
+            ->orderBy('histories.time', 'desc')
+            ->orderBy('histories.id', 'desc')
+            ->limit($oneQuarter)
+            ->get();
+
+        $events = $events->concat($historyRows->flatMap(function ($row) use ($makeSnippet) {
+            $isOk = (int) $row->result === 2;
+            $displayName = trim(($row->manufacturer ?? '') . ' ' . ($row->model ?? '') . ' (' . ($row->serial ?? '-') . ')');
+            $payload = $row->measurements ?: ($row->steps ?: ($row->header ?: $row->levels));
+            $payloadSnippet = $makeSnippet($payload, 160);
+
+            return collect([
+                [
+                    'timestamp' => (int) $row->time,
+                    'level' => $isOk ? 'INFO' : 'ERROR',
+                    'line' => sprintf(
+                        '[SYNC_%s] history=%d test="%s" display=%d "%s" ws=%s',
+                        $isOk ? 'OK' : 'FAIL',
+                        (int) $row->history_id,
+                        $row->history_name ?: '-',
+                        (int) $row->display_id,
+                        $displayName,
+                        $row->workstation_name ?: '-'
+                    ),
+                ],
+                [
+                    'timestamp' => (int) $row->time,
+                    'level' => 'INFO',
+                    'line' => sprintf(
+                        '[RX_PAYLOAD] history=%d bytes~%d data=%s',
+                        (int) $row->history_id,
+                        strlen((string) $payload),
+                        $payloadSnippet
+                    ),
+                ],
+            ]);
+        }));
+
+        $jobRows = DB::table('jobs')
+            ->select([
+                DB::raw('UNIX_TIMESTAMP(created_at) as ts'),
+                'id',
+                'queue',
+                'payload',
+                'attempts',
+            ])
+            ->orderBy('id', 'desc')
+            ->limit(max(4, (int) ceil($lineLimit / 8)))
+            ->get();
+
+        $events = $events->concat($jobRows->map(function ($row) use ($makeSnippet) {
+            $payload = (string) ($row->payload ?? '');
+            return [
+                'timestamp' => (int) ($row->ts ?? 0),
+                'level' => 'INFO',
+                'line' => sprintf(
+                    '[TX_PAYLOAD] job=%d queue=%s attempts=%d bytes=%d data=%s',
+                    (int) $row->id,
+                    $row->queue ?: '-',
+                    (int) $row->attempts,
+                    strlen($payload),
+                    $makeSnippet($payload, 160)
+                ),
+            ];
+        }));
+
+        $failedJobRows = DB::table('failed_jobs')
+            ->select([
+                DB::raw('UNIX_TIMESTAMP(failed_at) as ts'),
+                'id',
+                'queue',
+                'payload',
+            ])
+            ->orderBy('id', 'desc')
+            ->limit(4)
+            ->get();
+
+        $events = $events->concat($failedJobRows->map(function ($row) use ($makeSnippet) {
+            $payload = (string) ($row->payload ?? '');
+            return [
+                'timestamp' => (int) ($row->ts ?? 0),
+                'level' => 'ERROR',
+                'line' => sprintf(
+                    '[TX_PAYLOAD_FAILED] failed_job=%d queue=%s bytes=%d data=%s',
+                    (int) $row->id,
+                    $row->queue ?: '-',
+                    strlen($payload),
+                    $makeSnippet($payload, 160)
+                ),
+            ];
+        }));
+
+        $notificationRows = DB::table('notifications')
+            ->select([
+                DB::raw('UNIX_TIMESTAMP(created_at) as ts'),
+                'id',
+                'type',
+                'notifiable_id',
+                'data',
+            ])
+            ->orderBy('created_at', 'desc')
+            ->limit(6)
+            ->get();
+
+        $events = $events->concat($notificationRows->map(function ($row) use ($makeSnippet) {
+            $payload = (string) ($row->data ?? '');
+            return [
+                'timestamp' => (int) ($row->ts ?? 0),
+                'level' => 'INFO',
+                'line' => sprintf(
+                    '[TX_NOTIFY_PAYLOAD] notif=%s user=%d type=%s bytes=%d data=%s',
+                    $row->id ?: '-',
+                    (int) ($row->notifiable_id ?? 0),
+                    $row->type ?: '-',
+                    strlen($payload),
+                    $makeSnippet($payload, 160)
+                ),
+            ];
+        }));
+
+        $latestNotification = $notificationRows->first();
+        if ($latestNotification) {
+            $latestPayload = (string) ($latestNotification->data ?? '');
+            $events->push([
+                'timestamp' => $now->timestamp,
+                'level' => 'INFO',
+                'line' => sprintf(
+                    '[TX_PAYLOAD] source=notification notif=%s user=%d bytes=%d data=%s',
+                    $latestNotification->id ?: '-',
+                    (int) ($latestNotification->notifiable_id ?? 0),
+                    strlen($latestPayload),
+                    $makeSnippet($latestPayload, 160)
+                ),
+            ]);
+        } elseif ($jobRows->isEmpty() && $failedJobRows->isEmpty()) {
+            $events->push([
+                'timestamp' => $now->timestamp,
+                'level' => 'INFO',
+                'line' => '[TX_PAYLOAD] source=queue data=no recent outbound payload snapshot',
+            ]);
+        }
+
+        $events->push([
+            'timestamp' => $now->timestamp,
+            'level' => 'INFO',
+            'line' => sprintf(
+                '[TX_CHANNEL] jobs=%d failed_jobs=%d notifications=%d',
+                $jobRows->count(),
+                $failedJobRows->count(),
+                $notificationRows->count()
+            ),
+        ]);
+
+        $events = $events
+            ->filter(fn($event) => (int) ($event['timestamp'] ?? 0) > 0)
+            ->sort(function ($a, $b) {
+                return ((int) ($b['timestamp'] ?? 0)) <=> ((int) ($a['timestamp'] ?? 0));
+            })
+            ->take($lineLimit)
+            ->values()
+            ->map(function ($event) {
+                $timeLabel = \Carbon\Carbon::createFromTimestampUTC((int) $event['timestamp'])
+                    ->setTimezone(config('app.timezone', 'UTC'))
+                    ->format('Y-m-d H:i:s');
+
+                return [
+                    'timestamp' => (int) $event['timestamp'],
+                    'level' => $event['level'],
+                    'line' => sprintf('%s %-5s %s', $timeLabel, $event['level'], $event['line']),
+                ];
+            });
+
+        return response()->json([
+            'generated_at' => $now->toIso8601String(),
+            'summary' => [
+                'workstations_total' => $workstationsTotal,
+                'workstations_online' => $workstationsOnline,
+                'workstations_offline' => $workstationsOffline,
+                'displays_total' => $displaysTotal,
+                'displays_connected' => $displaysConnected,
+                'displays_disconnected' => $displaysDisconnected,
+                'displays_failed' => $displaysFailed,
+                'sync_last_10m_total' => (int) ($throughput->total ?? 0),
+                'sync_last_10m_ok' => (int) ($throughput->success_count ?? 0),
+                'sync_last_10m_fail' => (int) ($throughput->failed_count ?? 0),
+            ],
+            'terminal_lines' => $events->pluck('line'),
+        ]);
+    }
+
     public function api_due_tasks(Request $request)
     {
         $user_id = $request->session()->get('id');
         $user = \App\Models\User::find($user_id);
         $role = $request->session()->get('role');
-        
+
         if (!$user) {
             return response()->json(['data' => [], 'total' => 0]);
         }
-        
+
         $requestedFacilityId = $request->get('facility_id');
         $facility_id = $role === 'super'
             ? ($requestedFacilityId !== null && $requestedFacilityId !== '' ? $requestedFacilityId : null)
@@ -393,8 +750,16 @@ class DashboardController extends Controller
         $offset = ($page - 1) * $limit;
         $nowTimestamp = now()->timestamp;
 
-        // This mirrors the old list_tasks query structure and only adds a "already due" cutoff.
-        $taskRows = DB::table('tasks')
+        $taskFallbackDueExpression = "COALESCE(
+            UNIX_TIMESTAMP(CONVERT_TZ(
+                STR_TO_DATE(CONCAT(REPLACE(tasks.startdate, '.', '-'), ' ', LEFT(tasks.starttime, 5)), '%Y-%m-%d %H:%i'),
+                COALESCE(facilities.timezone, 'UTC'),
+                '+00:00'
+            )),
+            UNIX_TIMESTAMP(STR_TO_DATE(CONCAT(REPLACE(tasks.startdate, '.', '-'), ' ', LEFT(tasks.starttime, 5)), '%Y-%m-%d %H:%i'))
+        )";
+
+        $taskBase = DB::table('tasks')
             ->join('displays', 'tasks.display_id', '=', 'displays.id')
             ->join('workstations', 'displays.workstation_id', '=', 'workstations.id')
             ->join('workgroups', 'workstations.workgroup_id', '=', 'workgroups.id')
@@ -403,12 +768,6 @@ class DashboardController extends Controller
             ->join('schedule_types', 'tasks.schtype', '=', 'schedule_types.client_id')
             ->where('tasks.deleted', 0)
             ->where('tasks.disabled', 0)
-            ->where(function ($q) use ($nowTimestamp) {
-                $q->where(function ($q2) use ($nowTimestamp) {
-                    $q2->where('tasks.nextrun', '>', 0)
-                        ->where('tasks.nextrun', '<=', $nowTimestamp);
-                })->orWhere('tasks.nextrun', 0);
-            })
             ->when($facility_id, fn($q) => $q->where('workgroups.facility_id', $facility_id))
             ->when($display_id, fn($q) => $q->where('tasks.display_id', $display_id))
             ->when(!empty($terms), function ($query) use ($terms) {
@@ -426,34 +785,14 @@ class DashboardController extends Controller
                         });
                     }
                 });
-            })
-            ->select([
-                DB::raw("'task' as record_type"),
-                'tasks.id', 'tasks.display_id',
-                'task_types.title as task_name',
-                'schedule_types.title as schedule_name',
-                'tasks.startdate as startdate1',
-                'tasks.startdate as startdate',
-                'tasks.starttime as starttime',
-                'tasks.nextrun as due_at',
-                'tasks.nextrun as due_date_sort',
-                'displays.manufacturer', 'displays.model', 'displays.serial', 'displays.workstation_id',
-                'workstations.id as ws_id', 'workstations.name as ws_name',
-                'workgroups.id as wg_id', 'workgroups.name as wg_name',
-                'facilities.id as fac_id',
-                'facilities.name as fac_name',
-                'facilities.timezone as fac_timezone',
-            ])
-            ->get();
+            });
 
-        $qaRows = DB::table('qa_tasks')
+        $qaBase = DB::table('qa_tasks')
             ->join('displays', 'qa_tasks.display_id', '=', 'displays.id')
             ->join('workstations', 'displays.workstation_id', '=', 'workstations.id')
             ->join('workgroups', 'workstations.workgroup_id', '=', 'workgroups.id')
             ->join('facilities', 'workgroups.facility_id', '=', 'facilities.id')
-            ->where('qa_tasks.nextdate', '>', 0)
             ->where('qa_tasks.deleted', 0)
-            ->where('qa_tasks.nextdate', '<=', $nowTimestamp)
             ->when($facility_id, fn($q) => $q->where('workgroups.facility_id', $facility_id))
             ->when($display_id, fn($q) => $q->where('qa_tasks.display_id', $display_id))
             ->when(!empty($terms), function ($query) use ($terms) {
@@ -470,13 +809,68 @@ class DashboardController extends Controller
                         });
                     }
                 });
-            })
+            });
+
+        $taskDueFast = (clone $taskBase)
+            ->where('tasks.nextrun', '>', 0)
+            ->where('tasks.nextrun', '<=', $nowTimestamp)
+            ->select([
+                DB::raw("'task' as record_type"),
+                'tasks.id', 'tasks.display_id',
+                'task_types.title as task_name',
+                'schedule_types.title as schedule_name',
+                DB::raw('NULL as startdate1'),
+                DB::raw('NULL as startdate'),
+                DB::raw('NULL as starttime'),
+                DB::raw('tasks.nextrun as due_at'),
+                DB::raw('tasks.nextrun as due_date_sort'),
+                'displays.manufacturer', 'displays.model', 'displays.serial', 'displays.workstation_id',
+                'workstations.id as ws_id', 'workstations.name as ws_name',
+                'workgroups.id as wg_id', 'workgroups.name as wg_name',
+                'facilities.id as fac_id',
+                'facilities.name as fac_name',
+                'facilities.timezone as fac_timezone',
+                DB::raw('tasks.nextrun as computed_due_at'),
+            ]);
+
+        $taskDueFallback = (clone $taskBase)
+            ->where('tasks.nextrun', 0)
+            ->whereNotNull('tasks.startdate')
+            ->whereNotNull('tasks.starttime')
+            ->where('tasks.startdate', '!=', '')
+            ->where('tasks.starttime', '!=', '')
+            ->whereRaw($taskFallbackDueExpression . ' > 0')
+            ->whereRaw($taskFallbackDueExpression . ' <= ?', [$nowTimestamp])
+            ->select([
+                DB::raw("'task' as record_type"),
+                'tasks.id', 'tasks.display_id',
+                'task_types.title as task_name',
+                'schedule_types.title as schedule_name',
+                DB::raw('NULL as startdate1'),
+                DB::raw('NULL as startdate'),
+                DB::raw('NULL as starttime'),
+                DB::raw($taskFallbackDueExpression . ' as due_at'),
+                DB::raw($taskFallbackDueExpression . ' as due_date_sort'),
+                'displays.manufacturer', 'displays.model', 'displays.serial', 'displays.workstation_id',
+                'workstations.id as ws_id', 'workstations.name as ws_name',
+                'workgroups.id as wg_id', 'workgroups.name as wg_name',
+                'facilities.id as fac_id',
+                'facilities.name as fac_name',
+                'facilities.timezone as fac_timezone',
+                DB::raw($taskFallbackDueExpression . ' as computed_due_at'),
+            ]);
+
+        $qaDueRows = (clone $qaBase)
+            ->where('qa_tasks.nextdate', '>', 0)
+            ->where('qa_tasks.nextdate', '<=', $nowTimestamp)
             ->select([
                 DB::raw("'qa_task' as record_type"),
                 'qa_tasks.id', 'qa_tasks.display_id',
                 'qa_tasks.name as task_name',
                 'qa_tasks.freq as schedule_name',
                 DB::raw("'2019-08-27 00:00' as startdate1"),
+                DB::raw('NULL as startdate'),
+                DB::raw('NULL as starttime'),
                 'qa_tasks.nextdate as due_at',
                 'qa_tasks.nextdate as due_date_sort',
                 'displays.manufacturer', 'displays.model', 'displays.serial', 'displays.workstation_id',
@@ -484,32 +878,104 @@ class DashboardController extends Controller
                 'workgroups.id as wg_id', 'workgroups.name as wg_name',
                 'facilities.id as fac_id',
                 'facilities.name as fac_name',
-            ])
-            ->get();
+                'facilities.timezone as fac_timezone',
+                DB::raw('qa_tasks.nextdate as computed_due_at'),
+            ]);
 
-        // Same ordering used by the old due-tasks page: due date desc, then id desc.
-        $allTasks = $taskRows->merge($qaRows)
-            ->map(function ($row) use ($nowTimestamp) {
-                $row->computed_due_at = $this->resolveRecordDueTimestamp($row);
-                return $row;
-            })
-            ->filter(fn($row) => (int) ($row->computed_due_at ?? 0) > 0 && (int) $row->computed_due_at <= $nowTimestamp)
-            ->sort(function ($a, $b) {
-                $dueCompare = ((int) $b->computed_due_at) <=> ((int) $a->computed_due_at);
-                return $dueCompare !== 0 ? $dueCompare : ((int) $b->id <=> (int) $a->id);
-            });
-        $total = $allTasks->count();
-        $rows = $allTasks->slice($offset, $limit)->values();
+        $taskDueRows = DB::query()
+            ->fromSub($taskDueFast->unionAll($taskDueFallback), 'task_due_rows');
+
+        $qaDueRowsScoped = DB::query()
+            ->fromSub($qaDueRows, 'qa_due_rows');
+
+        $allDueRows = (clone $taskDueRows)->unionAll(clone $qaDueRowsScoped);
+
+        $taskCountFast = (clone $taskBase)
+            ->where('tasks.nextrun', '>', 0)
+            ->where('tasks.nextrun', '<=', $nowTimestamp)
+            ->select([
+                DB::raw("'task' as record_type"),
+                'tasks.id',
+                DB::raw('tasks.nextrun as computed_due_at'),
+            ]);
+
+        $taskCountFallback = (clone $taskBase)
+            ->where('tasks.nextrun', 0)
+            ->whereNotNull('tasks.startdate')
+            ->whereNotNull('tasks.starttime')
+            ->where('tasks.startdate', '!=', '')
+            ->where('tasks.starttime', '!=', '')
+            ->whereRaw($taskFallbackDueExpression . ' > 0')
+            ->whereRaw($taskFallbackDueExpression . ' <= ?', [$nowTimestamp])
+            ->select([
+                DB::raw("'task' as record_type"),
+                'tasks.id',
+                DB::raw($taskFallbackDueExpression . ' as computed_due_at'),
+            ]);
+
+        $qaCountRows = (clone $qaBase)
+            ->where('qa_tasks.nextdate', '>', 0)
+            ->where('qa_tasks.nextdate', '<=', $nowTimestamp)
+            ->select([
+                DB::raw("'qa_task' as record_type"),
+                'qa_tasks.id',
+                DB::raw('qa_tasks.nextdate as computed_due_at'),
+            ]);
+
+        $allDueCountRows = DB::query()
+            ->fromSub($taskCountFast->unionAll($taskCountFallback), 'task_due_count_rows')
+            ->unionAll($qaCountRows);
+
+        $withoutTotal = $request->boolean('without_total');
+        $total = $withoutTotal
+            ? null
+            : DB::query()->fromSub($allDueCountRows, 'all_due_count_rows')->count();
+
+        $windowSize = $offset + $limit;
+        if ($windowSize <= 1000) {
+            $taskTopRows = (clone $taskDueRows)
+                ->orderByDesc('computed_due_at')
+                ->orderByDesc('id')
+                ->limit($windowSize)
+                ->get();
+
+            $qaTopRows = (clone $qaDueRowsScoped)
+                ->orderByDesc('computed_due_at')
+                ->orderByDesc('id')
+                ->limit($windowSize)
+                ->get();
+
+            $rows = $taskTopRows
+                ->concat($qaTopRows)
+                ->sort(function ($a, $b) {
+                    $dueA = (int) ($a->computed_due_at ?? 0);
+                    $dueB = (int) ($b->computed_due_at ?? 0);
+                    if ($dueA === $dueB) {
+                        return (int) ($b->id ?? 0) <=> (int) ($a->id ?? 0);
+                    }
+                    return $dueB <=> $dueA;
+                })
+                ->slice($offset, $limit)
+                ->values();
+        } else {
+            $rows = DB::query()
+                ->fromSub($allDueRows, 'all_due_rows')
+                ->orderByDesc('computed_due_at')
+                ->orderByDesc('id')
+                ->offset($offset)
+                ->limit($limit)
+                ->get();
+        }
 
         $formattedData = $rows->map(function ($record) {
             $mfg = $record->manufacturer ?? '';
             $mod = $record->model ?? '';
             $ser = $record->serial ?? '';
             $displayName = trim($mfg . ' ' . $mod . ' (' . $ser . ')');
-            
+
             $dueAtTimestamp = (int) ($record->computed_due_at ?? 0);
             $dueAtFormatted = $this->formatRecordDueAt($record, $dueAtTimestamp);
-            
+
             $isPast = false;
             $isToday = false;
             $diffForHumans = '-';
@@ -552,7 +1018,7 @@ class DashboardController extends Controller
 
         return response()->json([
             'data' => $formattedData,
-            'total' => $total,
+            'total' => $total ?? $formattedData->count(),
         ]);
     }
 
@@ -714,6 +1180,7 @@ class DashboardController extends Controller
             ? ($requestedFacilityId !== null && $requestedFacilityId !== '' ? $requestedFacilityId : null)
             : $user->facility_id;
         $limit = max(1, min((int) $request->get('limit', 5), 20));
+        $withoutTotal = $request->boolean('without_total');
         $staleThreshold = now()->subDays(7);
 
         $query = DB::table('workstations')
@@ -740,13 +1207,14 @@ class DashboardController extends Controller
                     ->orWhere('workstations.last_connected', '<', $staleThreshold);
             });
 
-        $total = (clone $query)->count();
         $rows = (clone $query)
             ->orderByRaw('CASE WHEN workstations.last_connected IS NULL THEN 0 ELSE 1 END')
             ->orderBy('workstations.last_connected', 'asc')
             ->orderBy('workstations.id', 'asc')
             ->limit($limit)
             ->get();
+
+        $total = $withoutTotal ? $rows->count() : (clone $query)->count();
 
         $data = $rows->map(function ($row) {
             $lastConnected = $row->last_connected ? \Carbon\Carbon::parse($row->last_connected) : null;
@@ -801,14 +1269,12 @@ class DashboardController extends Controller
             ->join('workstations', 'workstations.id', '=', 'displays.workstation_id')
             ->join('workgroups',   'workgroups.id',   '=', 'workstations.workgroup_id')
             ->join('facilities',   'facilities.id',   '=', 'workgroups.facility_id')
-            ->leftJoin('display_preferences as exclude_pref', function ($join) {
-                $join->on('exclude_pref.display_id', '=', 'displays.id')
-                    ->where('exclude_pref.name', '=', 'exclude');
+            ->leftJoin('display_preferences as excluded_pref', function ($join) {
+                $join->on('excluded_pref.display_id', '=', 'displays.id')
+                    ->where('excluded_pref.name', '=', 'exclude')
+                    ->where('excluded_pref.value', '=', '1');
             })
-            ->where(function ($q) {
-                $q->whereNull('exclude_pref.value')
-                    ->orWhere('exclude_pref.value', '0');
-            })
+            ->whereNull('excluded_pref.id')
             ->when($facility_id,    fn($q) => $q->where('workgroups.facility_id',  $facility_id))
             ->when($workstation_id, fn($q) => $q->where('displays.workstation_id', $workstation_id))
             ->when($workgroup_id,   fn($q) => $q->where('workstations.workgroup_id', $workgroup_id))
@@ -1192,6 +1658,8 @@ class DashboardController extends Controller
         $staleOnly = $request->boolean('stale');
         $staleThreshold = now()->subDays(7);
         $search = $request->get('search', '');
+        $sort = (string) $request->get('sort', ($staleOnly ? 'lastConnected' : 'name'));
+        $order = strtolower((string) $request->get('order', ($staleOnly ? 'asc' : 'asc'))) === 'desc' ? 'desc' : 'asc';
         $limit  = (int)$request->get('limit', 25);
         $page   = (int)$request->get('page', 1);
         $offset = ($page - 1) * $limit;
@@ -1233,14 +1701,25 @@ class DashboardController extends Controller
 
         $total = $query->count();
         $rowsQuery = (clone $query);
-        if ($staleOnly) {
-            $rowsQuery
-                ->orderByRaw('CASE WHEN workstations.last_connected IS NULL THEN 0 ELSE 1 END')
-                ->orderBy('workstations.last_connected', 'asc')
-                ->orderBy('workstations.id', 'asc');
-        } else {
-            $rowsQuery->orderBy('workstations.id');
+        $sortableMap = [
+            'name' => 'workstations.name',
+            'wgName' => 'workgroups.name',
+            'facName' => 'facilities.name',
+            'sleepTime' => 'workstations.sleep_time',
+            'displaysCount' => DB::raw('COALESCE(dc.cnt, 0)'),
+            'lastConnected' => 'workstations.last_connected',
+        ];
+        $sortColumn = $sortableMap[$sort] ?? 'workstations.name';
+
+        if ($sort === 'lastConnected') {
+            $nullRankExpr = $staleOnly
+                ? "CASE WHEN workstations.last_connected IS NULL THEN 0 ELSE 1 END ASC"
+                : "CASE WHEN workstations.last_connected IS NULL THEN 1 ELSE 0 END ASC";
+            $rowsQuery->orderByRaw($nullRankExpr);
         }
+        $rowsQuery
+            ->orderBy($sortColumn, $order)
+            ->orderBy('workstations.id', 'asc');
 
         $rows = $rowsQuery->offset($offset)->limit($limit)->get();
 
@@ -1289,6 +1768,8 @@ class DashboardController extends Controller
             : $user->facility_id;
         $type = $request->get('type');
         $search = $request->get('search', '');
+        $sort = (string) $request->get('sort', 'name');
+        $order = strtolower((string) $request->get('order', 'asc')) === 'desc' ? 'desc' : 'asc';
         $limit  = (int)$request->get('limit', 25);
         $page   = (int)$request->get('page', 1);
         $offset = ($page - 1) * $limit;
@@ -1326,7 +1807,22 @@ class DashboardController extends Controller
             }));
 
         $total = $query->count();
-        $rows  = (clone $query)->orderBy('workgroups.id')->offset($offset)->limit($limit)->get();
+        $sortableMap = [
+            'name' => 'workgroups.name',
+            'address' => 'workgroups.address',
+            'phone' => 'workgroups.phone',
+            'facName' => 'facilities.name',
+            'workstationsCount' => DB::raw('COALESCE(wsc.cnt, 0)'),
+            'displaysCount' => DB::raw('COALESCE(dsc.cnt, 0)'),
+        ];
+        $sortColumn = $sortableMap[$sort] ?? 'workgroups.name';
+
+        $rows  = (clone $query)
+            ->orderBy($sortColumn, $order)
+            ->orderBy('workgroups.id', 'asc')
+            ->offset($offset)
+            ->limit($limit)
+            ->get();
 
         $data = $rows->map(fn($r) => [
             'id'                => $r->id,
@@ -1366,8 +1862,10 @@ class DashboardController extends Controller
         $display_id     = $request->get('display_id');
         $display_ids    = collect(explode(',', (string) $request->get('display_ids', '')))->filter()->values()->all();
         $search = $request->get('search', '');
-        $limit  = (int)$request->get('limit', 25);
-        $page   = (int)$request->get('page', 1);
+        $sort = (string) $request->get('sort', 'time');
+        $order = strtolower((string) $request->get('order', 'desc')) === 'asc' ? 'asc' : 'desc';
+        $limit  = max(1, min((int)$request->get('limit', 25), 100));
+        $page   = max(1, (int)$request->get('page', 1));
         $offset = ($page - 1) * $limit;
 
         $query = DB::table('histories')
@@ -1379,6 +1877,8 @@ class DashboardController extends Controller
                 'histories.id', 'histories.result', 'histories.name', 'histories.time', 'histories.regulation',
                 'displays.manufacturer', 'displays.model', 'displays.serial',
                 'histories.display_id',
+                'workstations.id as ws_id',
+                'workgroups.id as wg_id',
                 'workstations.name as ws_name',
                 'workgroups.name as wg_name',
                 'facilities.name as fac_name',
@@ -1396,11 +1896,40 @@ class DashboardController extends Controller
             }));
 
         $total = $query->count();
-        $rows  = (clone $query)->orderBy('histories.time', 'desc')->offset($offset)->limit($limit)->get();
+        $rowsQuery = clone $query;
+        switch ($sort) {
+            case 'name':
+                $rowsQuery->orderBy('histories.name', $order);
+                break;
+            case 'pattern':
+                $rowsQuery->orderBy('histories.regulation', $order);
+                break;
+            case 'display_name':
+                $rowsQuery->orderBy('displays.manufacturer', $order)
+                    ->orderBy('displays.model', $order)
+                    ->orderBy('displays.serial', $order);
+                break;
+            case 'ws_name':
+                $rowsQuery->orderBy('workstations.name', $order);
+                break;
+            case 'wg_name':
+                $rowsQuery->orderBy('workgroups.name', $order);
+                break;
+            case 'result':
+                $rowsQuery->orderBy('histories.result', $order);
+                break;
+            case 'time':
+            default:
+                $rowsQuery->orderBy('histories.time', $order);
+                break;
+        }
+        $rows = $rowsQuery->orderBy('histories.id', 'desc')->offset($offset)->limit($limit)->get();
 
         $data = $rows->map(fn($r) => [
             'id'          => $r->id,
             'displayId'   => $r->display_id,
+            'wsId'        => $r->ws_id,
+            'wgId'        => $r->wg_id,
             'name'        => $r->name,
             'pattern'     => $r->regulation ?? '-',
             'displayName' => trim(($r->manufacturer ?? '') . ' ' . ($r->model ?? '')) . ' (' . ($r->serial ?? '') . ')',
@@ -1432,52 +1961,67 @@ class DashboardController extends Controller
         $display_ids    = collect(explode(',', (string) $request->get('display_ids', '')))->filter()->values()->all();
         $search = $request->get('search', '');
         $sortMode = $request->get('sort_mode', 'due');
+        $sort = (string) $request->get('sort', '');
+        $order = strtolower((string) $request->get('order', 'asc')) === 'desc' ? 'desc' : 'asc';
         $dueScope = $request->get('due_scope');
         $nowTimestamp = now()->timestamp;
-        $limit  = (int)$request->get('limit', 25);
-        $page   = (int)$request->get('page', 1);
+        $withoutTotal = $request->boolean('without_total');
+        $limit  = max(1, min((int)$request->get('limit', 25), 100));
+        $page   = max(1, (int)$request->get('page', 1));
         $offset = ($page - 1) * $limit;
 
+        $taskFallbackDueExpression = "COALESCE(
+            UNIX_TIMESTAMP(CONVERT_TZ(
+                STR_TO_DATE(CONCAT(REPLACE(tasks.startdate, '.', '-'), ' ', LEFT(tasks.starttime, 5)), '%Y-%m-%d %H:%i'),
+                COALESCE(facilities.timezone, 'UTC'),
+                '+00:00'
+            )),
+            UNIX_TIMESTAMP(STR_TO_DATE(CONCAT(REPLACE(tasks.startdate, '.', '-'), ' ', LEFT(tasks.starttime, 5)), '%Y-%m-%d %H:%i'))
+        )";
+        $taskDueExpression = "COALESCE(NULLIF(tasks.nextrun, 0), {$taskFallbackDueExpression})";
+
         $taskRows = DB::table('tasks')
-            ->join('displays',    'tasks.display_id',      '=', 'displays.id')
-            ->join('workstations','displays.workstation_id','=', 'workstations.id')
-            ->join('workgroups',  'workstations.workgroup_id','=','workgroups.id')
-            ->join('facilities',  'workgroups.facility_id', '=', 'facilities.id')
-            ->leftJoin('task_types',     'tasks.type',   '=', 'task_types.key')
-            ->leftJoin('schedule_types', 'tasks.schtype','=', 'schedule_types.client_id')
+            ->join('displays', 'tasks.display_id', '=', 'displays.id')
+            ->join('workstations', 'displays.workstation_id', '=', 'workstations.id')
+            ->join('workgroups', 'workstations.workgroup_id', '=', 'workgroups.id')
+            ->join('facilities', 'workgroups.facility_id', '=', 'facilities.id')
+            ->leftJoin('task_types', 'tasks.type', '=', 'task_types.key')
+            ->leftJoin('schedule_types', 'tasks.schtype', '=', 'schedule_types.client_id')
             ->where('tasks.deleted', 0)
-            ->where(function ($q) {
-                $q->where('tasks.nextrun', '>', 0)
-                    ->orWhere('tasks.nextrun', 0);
-            })
             ->whereNotNull('tasks.type')
             ->whereNotNull('tasks.schtype')
-            ->when($dueScope === 'due', fn($q) => $q->where('tasks.nextrun', '<=', $nowTimestamp))
+            ->whereRaw($taskDueExpression . ' > 0')
+            ->when($dueScope === 'due', fn($q) => $q->whereRaw($taskDueExpression . ' <= ?', [$nowTimestamp]))
             ->when($facility_id, fn($q) => $q->where('workgroups.facility_id', $facility_id))
             ->when($workgroup_id, fn($q) => $q->where('workgroups.id', $workgroup_id))
             ->when($workstation_id, fn($q) => $q->where('workstations.id', $workstation_id))
-            ->when($display_id,  fn($q) => $q->where('tasks.display_id', $display_id))
+            ->when($display_id, fn($q) => $q->where('tasks.display_id', $display_id))
             ->when(!empty($display_ids), fn($q) => $q->whereIn('tasks.display_id', $display_ids))
-            ->when($search, fn($q) => $q->where(function($q2) use ($search) {
-                $q2->where('displays.manufacturer','like',"%$search%")
-                   ->orWhere('displays.model',     'like',"%$search%")
-                   ->orWhere('displays.serial',    'like',"%$search%")
-                   ->orWhere('workstations.name',  'like',"%$search%")
-                   ->orWhere('workgroups.name',    'like',"%$search%")
-                   ->orWhere('facilities.name',    'like',"%$search%")
-                   ->orWhere('task_types.title',   'like',"%$search%")
-                   ->orWhere('schedule_types.title','like',"%$search%");
+            ->when($search, fn($q) => $q->where(function ($q2) use ($search) {
+                $q2->where('displays.manufacturer', 'like', "%$search%")
+                    ->orWhere('displays.model', 'like', "%$search%")
+                    ->orWhere('displays.serial', 'like', "%$search%")
+                    ->orWhere('workstations.name', 'like', "%$search%")
+                    ->orWhere('workgroups.name', 'like', "%$search%")
+                    ->orWhere('facilities.name', 'like', "%$search%")
+                    ->orWhere('task_types.title', 'like', "%$search%")
+                    ->orWhere('schedule_types.title', 'like', "%$search%");
             }))
             ->select([
                 DB::raw("'task' as record_type"),
-                'tasks.id', 'tasks.display_id', 'tasks.status', 'tasks.disabled', 'tasks.deleted',
+                'tasks.id',
+                'tasks.display_id',
+                'tasks.status',
+                'tasks.disabled',
+                'tasks.deleted',
                 'task_types.title as task_name',
                 'schedule_types.title as schedule_name',
-                'tasks.nextrun as due_at',
-                'tasks.startdate as startdate',
-                'tasks.starttime as starttime',
+                DB::raw($taskDueExpression . ' as due_at'),
+                DB::raw($taskDueExpression . ' as computed_due_at'),
                 'tasks.created_at as created_at',
-                'displays.manufacturer', 'displays.model', 'displays.serial',
+                'displays.manufacturer',
+                'displays.model',
+                'displays.serial',
                 'displays.workstation_id',
                 'workstations.id as ws_id',
                 'workgroups.id as wg_id',
@@ -1489,10 +2033,10 @@ class DashboardController extends Controller
             ]);
 
         $qaRows = DB::table('qa_tasks')
-            ->join('displays',    'qa_tasks.display_id',   '=', 'displays.id')
-            ->join('workstations','displays.workstation_id','=', 'workstations.id')
-            ->join('workgroups',  'workstations.workgroup_id','=','workgroups.id')
-            ->join('facilities',  'workgroups.facility_id', '=', 'facilities.id')
+            ->join('displays', 'qa_tasks.display_id', '=', 'displays.id')
+            ->join('workstations', 'displays.workstation_id', '=', 'workstations.id')
+            ->join('workgroups', 'workstations.workgroup_id', '=', 'workgroups.id')
+            ->join('facilities', 'workgroups.facility_id', '=', 'facilities.id')
             ->where('qa_tasks.deleted', 0)
             ->where('qa_tasks.nextdate', '>', 0)
             ->where('qa_tasks.nextdate', '<', 4294967295)
@@ -1500,28 +2044,32 @@ class DashboardController extends Controller
             ->when($facility_id, fn($q) => $q->where('workgroups.facility_id', $facility_id))
             ->when($workgroup_id, fn($q) => $q->where('workgroups.id', $workgroup_id))
             ->when($workstation_id, fn($q) => $q->where('workstations.id', $workstation_id))
-            ->when($display_id,  fn($q) => $q->where('qa_tasks.display_id', $display_id))
+            ->when($display_id, fn($q) => $q->where('qa_tasks.display_id', $display_id))
             ->when(!empty($display_ids), fn($q) => $q->whereIn('qa_tasks.display_id', $display_ids))
-            ->when($search, fn($q) => $q->where(function($q2) use ($search) {
-                $q2->where('displays.manufacturer','like',"%$search%")
-                   ->orWhere('displays.model',     'like',"%$search%")
-                   ->orWhere('displays.serial',    'like',"%$search%")
-                   ->orWhere('workstations.name',  'like',"%$search%")
-                   ->orWhere('workgroups.name',    'like',"%$search%")
-                   ->orWhere('facilities.name',    'like',"%$search%")
-                   ->orWhere('qa_tasks.name',      'like',"%$search%");
+            ->when($search, fn($q) => $q->where(function ($q2) use ($search) {
+                $q2->where('displays.manufacturer', 'like', "%$search%")
+                    ->orWhere('displays.model', 'like', "%$search%")
+                    ->orWhere('displays.serial', 'like', "%$search%")
+                    ->orWhere('workstations.name', 'like', "%$search%")
+                    ->orWhere('workgroups.name', 'like', "%$search%")
+                    ->orWhere('facilities.name', 'like', "%$search%")
+                    ->orWhere('qa_tasks.name', 'like', "%$search%");
             }))
             ->select([
                 DB::raw("'qa_task' as record_type"),
-                'qa_tasks.id', 'qa_tasks.display_id',
+                'qa_tasks.id',
+                'qa_tasks.display_id',
                 DB::raw('0 as status'),
                 DB::raw('0 as disabled'),
                 DB::raw('0 as deleted'),
                 'qa_tasks.name as task_name',
                 'qa_tasks.freq as schedule_name',
                 'qa_tasks.nextdate as due_at',
+                'qa_tasks.nextdate as computed_due_at',
                 'qa_tasks.created_at as created_at',
-                'displays.manufacturer', 'displays.model', 'displays.serial',
+                'displays.manufacturer',
+                'displays.model',
+                'displays.serial',
                 'displays.workstation_id',
                 'workstations.id as ws_id',
                 'workgroups.id as wg_id',
@@ -1532,53 +2080,68 @@ class DashboardController extends Controller
                 'facilities.timezone as fac_timezone',
             ]);
 
-        $allRows = $taskRows->get()->merge($qaRows->get())
-            ->map(function ($row) {
-                $row->computed_due_at = $this->resolveRecordDueTimestamp($row);
-                return $row;
-            })
-            ->filter(function ($row) use ($dueScope, $nowTimestamp) {
-                $ts = (int) ($row->computed_due_at ?? 0);
-                if ($ts <= 0) {
-                    return false;
-                }
-
-                return $dueScope === 'due' ? $ts <= $nowTimestamp : true;
-            });
-
-        $allRows = match ($sortMode) {
-            'latest' => $allRows->sort(function ($a, $b) {
-                $createdA = $a->created_at ? strtotime((string) $a->created_at) : 0;
-                $createdB = $b->created_at ? strtotime((string) $b->created_at) : 0;
-                $createdCompare = $createdB <=> $createdA;
-                return $createdCompare !== 0 ? $createdCompare : ($b->id <=> $a->id);
-            }),
-            'due_desc' => $allRows->sort(function ($a, $b) {
-                $dueCompare = ((int) $b->computed_due_at) <=> ((int) $a->computed_due_at);
-                return $dueCompare !== 0 ? $dueCompare : ($b->id <=> $a->id);
-            }),
-            default => $allRows->sort(function ($a, $b) use ($nowTimestamp) {
-                $dueA = (int) ($a->computed_due_at ?? 0);
-                $dueB = (int) ($b->computed_due_at ?? 0);
-                $isUpcomingA = $dueA >= $nowTimestamp ? 0 : 1;
-                $isUpcomingB = $dueB >= $nowTimestamp ? 0 : 1;
-
-                $bucketCompare = $isUpcomingA <=> $isUpcomingB;
-                if ($bucketCompare !== 0) {
-                    return $bucketCompare;
-                }
-
-                if ($isUpcomingA === 0) {
-                    $dueCompare = $dueA <=> $dueB;
-                    return $dueCompare !== 0 ? $dueCompare : ($b->id <=> $a->id);
-                }
-
-                $dueCompare = $dueB <=> $dueA;
-                return $dueCompare !== 0 ? $dueCompare : ($b->id <=> $a->id);
-            }),
+        $buildAllRowsQuery = function () use ($taskRows, $qaRows) {
+            return DB::query()->fromSub((clone $taskRows)->unionAll(clone $qaRows), 'all_scheduler_rows');
         };
-        $total   = $allRows->count();
-        $rows    = $allRows->slice($offset, $limit)->values();
+
+        $rowsQuery = $buildAllRowsQuery();
+        if ($sort !== '') {
+            switch ($sort) {
+                case 'task_name':
+                    $rowsQuery->orderBy('task_name', $order);
+                    break;
+                case 'display_name':
+                    $rowsQuery->orderBy('manufacturer', $order)
+                        ->orderBy('model', $order)
+                        ->orderBy('serial', $order);
+                    break;
+                case 'schedule_name':
+                    $rowsQuery->orderBy('schedule_name', $order);
+                    break;
+                case 'due_at':
+                    $rowsQuery->orderBy('computed_due_at', $order);
+                    break;
+                case 'created_at':
+                    $rowsQuery->orderBy('created_at', $order);
+                    break;
+                default:
+                    break;
+            }
+            $rowsQuery->orderBy('id', $order === 'asc' ? 'asc' : 'desc');
+        } else {
+            switch ($sortMode) {
+                case 'latest':
+                    $rowsQuery->orderBy('created_at', 'desc')->orderBy('id', 'desc');
+                    break;
+                case 'due_desc':
+                    $rowsQuery->orderBy('computed_due_at', 'desc')->orderBy('id', 'desc');
+                    break;
+                default:
+                    $rowsQuery
+                        ->orderByRaw('CASE WHEN computed_due_at >= ? THEN 0 ELSE 1 END', [$nowTimestamp])
+                        ->orderByRaw('CASE WHEN computed_due_at >= ? THEN computed_due_at END ASC', [$nowTimestamp])
+                        ->orderByRaw('CASE WHEN computed_due_at < ? THEN computed_due_at END DESC', [$nowTimestamp])
+                        ->orderBy('id', 'desc');
+                    break;
+            }
+        }
+
+        $countCacheKey = 'scheduler:tasks:count:' . md5(json_encode([
+            'facility_id' => $facility_id,
+            'workgroup_id' => $workgroup_id,
+            'workstation_id' => $workstation_id,
+            'display_id' => $display_id,
+            'display_ids' => $display_ids,
+            'search' => $search,
+            'due_scope' => $dueScope,
+        ]));
+
+        $total = $withoutTotal
+            ? null
+            : cache()->remember($countCacheKey, now()->addSeconds(20), function () use ($buildAllRowsQuery) {
+                return $buildAllRowsQuery()->count();
+            });
+        $rows = $rowsQuery->offset($offset)->limit($limit)->get();
 
         $data = $rows->map(function($r) {
             $ts = (int) ($r->computed_due_at ?? 0);
@@ -1622,7 +2185,10 @@ class DashboardController extends Controller
             ];
         });
 
-        return response()->json(['data' => $data, 'total' => $total]);
+        return response()->json([
+            'data' => $data,
+            'total' => $total,
+        ]);
     }
 
     public function api_calibration_tasks(Request $request)
@@ -1637,6 +2203,8 @@ class DashboardController extends Controller
         $display_id     = $request->get('display_id');
         $display_ids    = collect(explode(',', (string) $request->get('display_ids', '')))->filter()->values()->all();
         $search = $request->get('search', '');
+        $sort   = (string) $request->get('sort', 'created_at');
+        $order  = strtolower((string) $request->get('order', 'desc')) === 'asc' ? 'asc' : 'desc';
         $limit  = (int) $request->get('limit', 25);
         $page   = (int) $request->get('page', 1);
         $offset = ($page - 1) * $limit;
@@ -1697,15 +2265,37 @@ class DashboardController extends Controller
 
         $total = $query->count();
 
-          $rows = (clone $query)
-              ->orderByDesc('tasks.created_at')
-              ->orderByDesc('tasks.id')
-              ->offset($offset)
-              ->limit($limit)
-              ->get();
+        $rowsQuery = (clone $query);
+        switch ($sort) {
+            case 'display_name':
+                $rowsQuery->orderByRaw(
+                    "LOWER(CONCAT(COALESCE(displays.manufacturer,''), ' ', COALESCE(displays.model,''), ' ', COALESCE(displays.serial,''))) {$order}"
+                );
+                break;
+            case 'task_name':
+                $rowsQuery->orderBy('task_types.title', $order);
+                break;
+            case 'schedule_name':
+                $rowsQuery->orderBy('schedule_types.title', $order);
+                break;
+            case 'due_at':
+                $rowsQuery->orderBy('tasks.nextrun', $order);
+                break;
+            case 'created_at':
+            default:
+                $rowsQuery->orderBy('tasks.created_at', $order);
+                break;
+        }
+
+        $rows = $rowsQuery
+            ->orderBy('tasks.id', $order === 'asc' ? 'asc' : 'desc')
+            ->offset($offset)
+            ->limit($limit)
+            ->get();
 
         $data = $rows->map(function ($r) {
             $ts = (int) $r->due_at;
+            $due = $ts ? \Carbon\Carbon::createFromTimestamp($ts) : null;
             return [
                   'id' => $r->id,
                   'displayId' => $r->display_id,
@@ -1718,7 +2308,9 @@ class DashboardController extends Controller
                   'facName' => $r->fac_name ?? '-',
                   'taskName' => $r->task_name ?: 'Calibration',
                   'scheduleName' => $r->schedule_name ?: 'Manual',
-                  'dueAt' => $ts ? \Carbon\Carbon::createFromTimestamp($ts)->format('d M Y H:i') : '-',
+                  'dueAt' => $due ? $due->format('d M Y H:i') : '-',
+                  'dueAtTs' => $ts ?: null,
+                  'dueColor' => $due && $due->isPast() ? 'danger' : 'neutral',
                   'createdAt' => $r->created_at ? \Carbon\Carbon::parse($r->created_at)->format('d M Y H:i') : 'Not recorded',
                   'createdBy' => $r->created_by_fullname ?: ($r->created_by_name ?: ($r->created_by_email ?: 'System')),
                   'statusLabel' => ((int) ($r->disabled ?? 0) === 1 || (int) ($r->deleted ?? 0) === 1) ? 'Inactive' : (((int) ($r->status ?? 0) === 1) ? 'Running' : 'Active'),
@@ -1807,6 +2399,8 @@ class DashboardController extends Controller
 
         $type = $request->get('type');
         $search = $request->get('search', '');
+        $sort = (string) $request->get('sort', 'name');
+        $order = strtolower((string) $request->get('order', 'asc')) === 'desc' ? 'desc' : 'asc';
         $limit  = (int)$request->get('limit', 25);
         $page   = (int)$request->get('page', 1);
         $offset = ($page - 1) * $limit;
@@ -1845,7 +2439,22 @@ class DashboardController extends Controller
             }));
 
         $total = $query->count();
-        $rows  = (clone $query)->orderBy('facilities.id')->offset($offset)->limit($limit)->get();
+        $sortableMap = [
+            'name' => 'facilities.name',
+            'location' => 'facilities.location',
+            'timezone' => 'facilities.timezone',
+            'workgroupsCount' => DB::raw('COALESCE(wgc.cnt, 0)'),
+            'usersCount' => DB::raw('COALESCE(uc.cnt, 0)'),
+            'displaysCount' => DB::raw('COALESCE(dc.cnt, 0)'),
+        ];
+        $sortColumn = $sortableMap[$sort] ?? 'facilities.name';
+
+        $rows  = (clone $query)
+            ->orderBy($sortColumn, $order)
+            ->orderBy('facilities.id', 'asc')
+            ->offset($offset)
+            ->limit($limit)
+            ->get();
 
         $data = $rows->map(fn($r) => [
             'id'               => $r->id,

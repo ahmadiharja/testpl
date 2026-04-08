@@ -20,6 +20,8 @@
         'previous' => __('Previous'),
         'next' => __('Next'),
         'showing' => __('Showing'),
+        'of' => __('of'),
+        'page' => __('Page'),
         'results' => __('results'),
         'loading' => __('Loading...'),
         'noMatchingRecordsFound' => __('No matching records found'),
@@ -33,8 +35,279 @@
         'deleteFacility' => __('Delete Facility'),
         'deleting' => __('Deleting...'),
         'unableToDeleteFacility' => __('Unable to delete facility.'),
+        'displaysNeedAttentionTitle' => __('Displays needing attention'),
+        'loadingAttentionDisplays' => __('Loading displays needing attention...'),
+        'noDisplaysNeedAttention' => __('No displays currently need attention in this facility.'),
+        'unableToLoadAttentionDisplays' => __('Unable to load displays needing attention.'),
+        'close' => __('Close'),
+        'openDisplay' => __('Open Display'),
+        'displayLabel' => __('Display'),
+        'workstationLabel' => __('Workstation'),
+        'workgroupLabel' => __('Workgroup'),
+        'lastSync' => __('Last Sync'),
+        'detail' => __('Detail'),
+        'loadingMore' => __('Loading more...'),
     ];
 @endphp
+
+<style>
+    .facility-table-shell {
+        border-radius: 2rem;
+        border: 1px solid #d5e0ec;
+        background: linear-gradient(180deg, #f7fbff 0%, #ffffff 100%);
+        box-shadow: 0 26px 64px -46px rgba(15, 23, 42, 0.34);
+        overflow: hidden;
+    }
+    .facility-table-controlbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 18px;
+        border-bottom: 1px solid #e3ecf5;
+        background: linear-gradient(180deg, #f4f9ff 0%, #ffffff 100%);
+    }
+    .facility-status-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px;
+        border-radius: 999px;
+        border: 1px solid #d3dfec;
+        background: #f3f8fe;
+    }
+    .facility-status-pill {
+        height: 36px;
+        border-radius: 999px;
+        padding: 0 14px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #4c6077;
+        transition: all .18s ease;
+    }
+    .facility-status-pill:hover {
+        color: #243b53;
+        background: #eff6fd;
+    }
+    .facility-reset-btn {
+        height: 36px;
+        border-radius: 999px;
+        border: 1px solid #d3dfec;
+        background: #fff;
+        color: #4b6078;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 0 14px;
+        transition: all .18s ease;
+    }
+    .facility-reset-btn:hover {
+        border-color: #9ec6ea;
+        color: #1f4f80;
+        background: #f3f9ff;
+    }
+    .facility-table-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 18px;
+        border-bottom: 1px solid #e3ecf5;
+        background: #f8fbff;
+    }
+    .facility-table-search {
+        width: min(440px, 100%);
+        height: 42px;
+        border-radius: 999px;
+        border: 1px solid #c9d8e8;
+        padding: 0 16px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #12263a;
+        background: #fff;
+    }
+    .facility-table-search:focus {
+        outline: none;
+        border-color: #1d9bf0;
+        box-shadow: 0 0 0 3px rgba(29, 155, 240, 0.16);
+    }
+    .facility-table-wrap {
+        overflow-x: auto;
+        background: #fff;
+    }
+    .facility-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 980px;
+        table-layout: fixed;
+    }
+    .facility-table th {
+        padding: 13px 16px;
+        text-align: left;
+        border-bottom: 1px solid #d8e4f0;
+        background: #e9f1fa;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        color: #4d647d;
+        white-space: nowrap;
+    }
+    .facility-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #edf2f8;
+        font-size: 14px;
+        color: #334155;
+        vertical-align: middle;
+        background: #fff;
+    }
+    .facility-table td:not(:first-child) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .facility-table th:nth-child(4),
+    .facility-table th:nth-child(5),
+    .facility-table th:nth-child(6),
+    .facility-table th:nth-child(7),
+    .facility-table td:nth-child(4),
+    .facility-table td:nth-child(5),
+    .facility-table td:nth-child(6),
+    .facility-table td:nth-child(7) {
+        text-align: center;
+    }
+    .facility-table tbody tr:hover td {
+        background: #f7fbff;
+    }
+    .facility-row-clickable {
+        cursor: pointer;
+    }
+    .facility-sort-btn {
+        border: 0;
+        background: transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #5a7087;
+        font: inherit;
+        letter-spacing: inherit;
+        text-transform: inherit;
+        cursor: pointer;
+        padding: 0;
+        border-radius: 999px;
+        padding: 2px 8px;
+        margin-left: -8px;
+        transition: all .18s ease;
+    }
+    .facility-sort-btn:hover {
+        background: #f2f7fd;
+        color: #2f4d6a;
+    }
+    .facility-sort-btn.is-active {
+        background: #e2edf9;
+        color: #24486b;
+    }
+    .facility-sort-indicator {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        background: #d4e3f4;
+        color: #2f5477;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: 0;
+        transition: all .18s ease;
+    }
+    .facility-sort-btn.is-active .facility-sort-indicator {
+        background: #2f6fae;
+        color: #ffffff;
+    }
+    .facility-table-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 16px 14px;
+        border-top: 1px solid #dbe7f3;
+        background: #f7fbff;
+    }
+    .facility-pager {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .facility-page-btn {
+        height: 32px;
+        min-width: 32px;
+        border-radius: 999px;
+        border: 1px solid #c7d6e7;
+        background: #ffffff;
+        color: #2c4158;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 0 12px;
+        transition: all .18s ease;
+    }
+    .facility-page-btn:hover:not(:disabled) {
+        border-color: #1d9bf0;
+        color: #0f5f9f;
+        background: #f0f8ff;
+    }
+    .facility-page-btn:disabled {
+        opacity: .45;
+        cursor: not-allowed;
+    }
+    .facility-row-action {
+        width: 36px;
+        height: 36px;
+        border-radius: 9999px;
+        border: 1px solid #d6dee8;
+        background: #fff;
+        color: #64748b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .facility-empty {
+        padding: 24px 16px;
+        text-align: center;
+        color: #5f7388;
+        font-size: 14px;
+        border-bottom: 1px solid #edf2f8;
+    }
+    @media (max-width: 960px) {
+        .facility-table-controlbar {
+            flex-wrap: wrap;
+            align-items: stretch;
+        }
+        .facility-status-group {
+            width: 100%;
+            justify-content: space-between;
+        }
+        .facility-status-pill {
+            flex: 1 1 0;
+            padding: 0 10px;
+        }
+        .facility-reset-btn {
+            width: 100%;
+            justify-content: center;
+        }
+        .facility-table-toolbar {
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .facility-table-search {
+            width: 100%;
+        }
+        .facility-table-footer {
+            flex-wrap: wrap;
+        }
+    }
+</style>
 
 <div class="flex flex-col gap-6 pb-8">
     <x-page-header title="{{ __('All Facilities') }}" description="{{ __('Manage all geographical or organizational facility nodes.') }}" icon="building-2">
@@ -51,57 +324,86 @@
         @endif
     </x-page-header>
 
-    <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_-32px_rgba(15,23,42,0.18)]">
-        <div class="grid gap-4 lg:grid-cols-[minmax(0,280px)_1fr]">
-            <div class="space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Status') }}</label>
-                <div class="grid h-12 grid-cols-3 rounded-2xl border border-slate-200 bg-white p-1">
-                    <button
-                        id="facility-status-all"
-                        type="button"
-                        data-status=""
-                        class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
-                        <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
-                            <i data-lucide="layers-3" class="h-4 w-4"></i>
-                            <span>{{ __('All') }}</span>
-                        </span>
-                    </button>
-                    <button
-                        id="facility-status-ok"
-                        type="button"
-                        data-status="ok"
-                        class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
-                        <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
-                            <i data-lucide="badge-check" class="h-4 w-4"></i>
-                            <span>{{ __('OK') }}</span>
-                        </span>
-                    </button>
-                    <button
-                        id="facility-status-failed"
-                        type="button"
-                        data-status="failed"
-                        class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
-                        <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
-                            <i data-lucide="triangle-alert" class="h-4 w-4"></i>
-                            <span>{{ __('Not OK') }}</span>
-                        </span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="flex items-end justify-end">
+    <section class="facility-table-shell mb-10">
+        <div class="facility-table-controlbar">
+            <div class="facility-status-group">
                 <button
-                    id="reset-facility-filters"
+                    id="facility-status-all"
                     type="button"
-                    class="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900">
-                    <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
-                    {{ __('Reset Filters') }}
+                    data-status=""
+                    class="facility-status-pill">
+                    <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
+                        <i data-lucide="layers-3" class="h-4 w-4"></i>
+                        <span>{{ __('All') }}</span>
+                    </span>
                 </button>
+                <button
+                    id="facility-status-ok"
+                    type="button"
+                    data-status="ok"
+                    class="facility-status-pill">
+                    <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
+                        <i data-lucide="badge-check" class="h-4 w-4"></i>
+                        <span>{{ __('OK') }}</span>
+                    </span>
+                </button>
+                <button
+                    id="facility-status-failed"
+                    type="button"
+                    data-status="failed"
+                    class="facility-status-pill">
+                    <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
+                        <i data-lucide="triangle-alert" class="h-4 w-4"></i>
+                        <span>{{ __('Not OK') }}</span>
+                    </span>
+                </button>
+            </div>
+            <button
+                id="reset-facility-filters"
+                type="button"
+                class="facility-reset-btn inline-flex items-center gap-2">
+                <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
+                {{ __('Reset Filters') }}
+            </button>
+        </div>
+        <div class="facility-table-toolbar">
+            <input id="facility-table-search" type="text" class="facility-table-search" placeholder="{{ __('Search facilities...') }}">
+            <div class="text-[12px] font-semibold text-slate-500" id="facility-table-meta"></div>
+        </div>
+        <div class="facility-table-wrap">
+            <table class="facility-table">
+                <colgroup>
+                    <col style="width: 27%">
+                    <col style="width: 17%">
+                    <col style="width: 14%">
+                    <col style="width: 11%">
+                    <col style="width: 10%">
+                    <col style="width: 11%">
+                    <col style="width: 10%">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th><button type="button" class="facility-sort-btn" data-facility-sort="name"><span>{{ __('Name') }}</span><span class="facility-sort-indicator" data-facility-sort-indicator="name">↕</span></button></th>
+                        <th><button type="button" class="facility-sort-btn" data-facility-sort="location"><span>{{ __('Location') }}</span><span class="facility-sort-indicator" data-facility-sort-indicator="location">↕</span></button></th>
+                        <th><button type="button" class="facility-sort-btn" data-facility-sort="timezone"><span>{{ __('Timezone') }}</span><span class="facility-sort-indicator" data-facility-sort-indicator="timezone">↕</span></button></th>
+                        <th><button type="button" class="facility-sort-btn" data-facility-sort="workgroupsCount"><span>{{ __('Workgroups') }}</span><span class="facility-sort-indicator" data-facility-sort-indicator="workgroupsCount">↕</span></button></th>
+                        <th><button type="button" class="facility-sort-btn" data-facility-sort="usersCount"><span>{{ __('Users') }}</span><span class="facility-sort-indicator" data-facility-sort-indicator="usersCount">↕</span></button></th>
+                        <th><button type="button" class="facility-sort-btn" data-facility-sort="displaysCount"><span>{{ __('Displays') }}</span><span class="facility-sort-indicator" data-facility-sort-indicator="displaysCount">↕</span></button></th>
+                        <th class="text-center">{{ __('Actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody id="facilities-table-body"></tbody>
+            </table>
+        </div>
+        <div class="facility-table-footer">
+            <div class="text-[12px] font-semibold text-slate-500" id="facility-table-summary"></div>
+            <div class="facility-pager">
+                <button type="button" class="facility-page-btn" id="facility-page-prev">{{ __('Previous') }}</button>
+                <span class="text-[12px] font-semibold text-slate-600" id="facility-page-label">1</span>
+                <button type="button" class="facility-page-btn" id="facility-page-next">{{ __('Next') }}</button>
             </div>
         </div>
     </section>
-
-    <x-data-table id="facilities-grid" class="mb-10 workstation-table-shell" />
 </div>
 
 <div id="facility-action-overlay" class="pointer-events-none fixed inset-0 z-[1200] hidden">
@@ -179,6 +481,66 @@
     </div>
 </div>
 
+<div id="facility-attention-modal" class="fixed inset-0 z-[1300] hidden items-center justify-center bg-slate-950/40 p-6">
+    <div class="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]">
+        <div class="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+            <div>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-rose-400">{{ __('Needs Attention') }}</p>
+                <h3 id="facility-attention-title" class="mt-2 text-2xl font-semibold text-slate-900">{{ __('Displays needing attention') }}</h3>
+                <p id="facility-attention-subtitle" class="mt-2 text-sm text-slate-500"></p>
+            </div>
+            <button id="facility-attention-close" type="button" class="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700">
+                <i data-lucide="x" class="h-5 w-5"></i>
+            </button>
+        </div>
+
+        <div class="flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-5">
+            <div id="facility-attention-loading" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+                {{ __('Loading displays needing attention...') }}
+            </div>
+            <div id="facility-attention-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700"></div>
+            <div id="facility-attention-empty" class="hidden rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-700">{{ __('No displays currently need attention in this facility.') }}</div>
+
+            <div id="facility-attention-list-wrap" class="hidden h-[56vh] overflow-y-auto rounded-2xl border border-slate-200 overscroll-contain">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="sticky top-0 z-10 bg-slate-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                                <button type="button" data-attention-sort="displayName" class="inline-flex items-center gap-1 transition hover:text-slate-700">
+                                    <span>{{ __('Display') }}</span><span data-sort-indicator="displayName">-</span>
+                                </button>
+                            </th>
+                            <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                                <button type="button" data-attention-sort="wgName" class="inline-flex items-center gap-1 transition hover:text-slate-700">
+                                    <span>{{ __('Workgroup') }}</span><span data-sort-indicator="wgName">-</span>
+                                </button>
+                            </th>
+                            <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                                <button type="button" data-attention-sort="wsName" class="inline-flex items-center gap-1 transition hover:text-slate-700">
+                                    <span>{{ __('Workstation') }}</span><span data-sort-indicator="wsName">-</span>
+                                </button>
+                            </th>
+                            <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                                <button type="button" data-attention-sort="updatedAt" class="inline-flex items-center gap-1 transition hover:text-slate-700">
+                                    <span>{{ __('Last Sync') }}</span><span data-sort-indicator="updatedAt">v</span>
+                                </button>
+                            </th>
+                            <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                                <button type="button" data-attention-sort="attentionText" class="inline-flex items-center gap-1 transition hover:text-slate-700">
+                                    <span>{{ __('Detail') }}</span><span data-sort-indicator="attentionText">-</span>
+                                </button>
+                            </th>
+                            <th class="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{{ __('Actions') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody id="facility-attention-list" class="divide-y divide-slate-100 bg-white"></tbody>
+                </table>
+                <div id="facility-attention-more" class="hidden border-t border-slate-200 bg-slate-50 px-4 py-2 text-center text-[12px] font-medium text-slate-500">{{ __('Loading more...') }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 (function () {
     const text = @json($facilityText);
@@ -188,16 +550,32 @@
     const state = {
         actionTarget: null,
         deleteTarget: null,
-        grid: null,
         defaultStatus: @json($initialFacilityStatus),
         selectedStatus: @json($initialFacilityStatus),
+        facilityRows: [],
+        facilityPage: 1,
+        facilityLimit: 10,
+        facilityTotal: 0,
+        facilityLoading: false,
+        facilitySearch: '',
+        facilitySearchTimer: null,
+        facilitySortKey: 'name',
+        facilitySortDir: 'asc',
+        attentionTarget: null,
+        attentionPage: 1,
+        attentionHasMore: false,
+        attentionLoadingMore: false,
+        attentionLimit: 9,
+        attentionRows: [],
+        attentionSortKey: 'updatedAt',
+        attentionSortDir: 'desc',
     };
 
     const els = {};
 
     function init() {
         if (initialized) return;
-        if (!window.Perfectlum || !window.gridjs) {
+        if (!window.Perfectlum) {
             window.setTimeout(init, 50);
             return;
         }
@@ -205,9 +583,11 @@
         initialized = true;
         bindElements();
         bindEvents();
+        updateFacilitySortIndicators();
+        updateAttentionSortIndicators();
         renderStatusFilter();
-        initGrid();
-        window.facilitiesPage = { toggleActionMenu };
+        loadFacilities();
+        window.facilitiesPage = { toggleActionMenu, openEditModal, openDeleteModal };
         window.lucide?.createIcons();
     }
 
@@ -215,7 +595,14 @@
         els.createButton = document.getElementById('create-facility-button');
         els.statusButtons = Array.from(document.querySelectorAll('[data-status]'));
         els.resetFilters = document.getElementById('reset-facility-filters');
-        els.grid = document.getElementById('facilities-grid');
+        els.tableSearch = document.getElementById('facility-table-search');
+        els.tableMeta = document.getElementById('facility-table-meta');
+        els.tableBody = document.getElementById('facilities-table-body');
+        els.tableSummary = document.getElementById('facility-table-summary');
+        els.pagePrev = document.getElementById('facility-page-prev');
+        els.pageNext = document.getElementById('facility-page-next');
+        els.pageLabel = document.getElementById('facility-page-label');
+        els.sortButtons = Array.from(document.querySelectorAll('[data-facility-sort]'));
         els.actionOverlay = document.getElementById('facility-action-overlay');
         els.actionMenu = document.getElementById('facility-action-menu');
         els.actionEdit = document.getElementById('facility-action-edit');
@@ -233,6 +620,18 @@
         els.deleteName = document.getElementById('facility-delete-name');
         els.deleteCancel = document.getElementById('facility-delete-cancel');
         els.deleteConfirm = document.getElementById('facility-delete-confirm');
+
+        els.attentionModal = document.getElementById('facility-attention-modal');
+        els.attentionClose = document.getElementById('facility-attention-close');
+        els.attentionTitle = document.getElementById('facility-attention-title');
+        els.attentionSubtitle = document.getElementById('facility-attention-subtitle');
+        els.attentionLoading = document.getElementById('facility-attention-loading');
+        els.attentionError = document.getElementById('facility-attention-error');
+        els.attentionEmpty = document.getElementById('facility-attention-empty');
+        els.attentionListWrap = document.getElementById('facility-attention-list-wrap');
+        els.attentionList = document.getElementById('facility-attention-list');
+        els.attentionMore = document.getElementById('facility-attention-more');
+        els.attentionSortButtons = Array.from(document.querySelectorAll('[data-attention-sort]'));
     }
 
     function bindEvents() {
@@ -240,13 +639,95 @@
         els.statusButtons.forEach((button) => {
             button.addEventListener('click', () => {
                 state.selectedStatus = button.dataset.status || '';
+                state.facilityPage = 1;
                 renderStatusFilter();
-                reloadGrid();
+                loadFacilities();
             });
         });
         els.resetFilters?.addEventListener('click', resetFilters);
+
+        els.tableSearch?.addEventListener('input', (event) => {
+            const value = String(event.target.value || '').trim();
+            if (state.facilitySearchTimer) {
+                window.clearTimeout(state.facilitySearchTimer);
+            }
+            state.facilitySearchTimer = window.setTimeout(() => {
+                state.facilitySearch = value;
+                state.facilityPage = 1;
+                loadFacilities();
+            }, 260);
+        });
+
+        els.sortButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                const key = button.dataset.facilitySort;
+                if (!key) return;
+                if (state.facilitySortKey === key) {
+                    state.facilitySortDir = state.facilitySortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    state.facilitySortKey = key;
+                    state.facilitySortDir = 'asc';
+                }
+                updateFacilitySortIndicators();
+                state.facilityPage = 1;
+                loadFacilities();
+            });
+        });
+
+        els.pagePrev?.addEventListener('click', () => {
+            if (state.facilityPage <= 1 || state.facilityLoading) return;
+            state.facilityPage -= 1;
+            loadFacilities();
+        });
+
+        els.pageNext?.addEventListener('click', () => {
+            const totalPages = Math.max(1, Math.ceil(state.facilityTotal / state.facilityLimit));
+            if (state.facilityPage >= totalPages || state.facilityLoading) return;
+            state.facilityPage += 1;
+            loadFacilities();
+        });
+
+        els.tableBody?.addEventListener('click', (event) => {
+            const attentionButton = event.target.closest('[data-action="attention"]');
+            if (attentionButton) {
+                const id = Number(attentionButton.dataset.facilityId || 0);
+                const name = decodeURIComponent(attentionButton.dataset.facilityName || '');
+                const failedCount = Number(attentionButton.dataset.failedCount || 0);
+                openAttentionModal(id, name, failedCount);
+                return;
+            }
+
+            const facilityButton = event.target.closest('[data-action="open-facility"]');
+            if (facilityButton) {
+                const id = Number(facilityButton.dataset.facilityId || 0);
+                window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'facility', id } }));
+                return;
+            }
+
+            const actionButton = event.target.closest('[data-action="menu"]');
+            if (actionButton) {
+                toggleActionMenu(event, Number(actionButton.dataset.facilityId || 0), decodeURIComponent(actionButton.dataset.facilityName || ''), actionButton);
+                return;
+            }
+
+            const row = event.target.closest('tr[data-action="open-facility-row"]');
+            if (!row) {
+                return;
+            }
+
+            if (event.target.closest('button, a, input, select, textarea, [role="button"]')) {
+                return;
+            }
+
+            const id = Number(row.dataset.facilityId || 0);
+            if (id > 0) {
+                window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'facility', id } }));
+            }
+        });
+
         document.addEventListener('click', (event) => {
-            if (els.actionOverlay && !els.actionMenu.contains(event.target)) {
+            const clickedToggle = event.target.closest('[data-action="menu"]');
+            if (!clickedToggle && els.actionMenu && !els.actionMenu.contains(event.target)) {
                 closeActionMenu();
             }
         });
@@ -265,13 +746,33 @@
         els.deleteModal?.addEventListener('click', (event) => {
             if (event.target === els.deleteModal) closeDeleteModal();
         });
+
+        els.attentionClose?.addEventListener('click', closeAttentionModal);
+        els.attentionModal?.addEventListener('click', (event) => {
+            if (event.target === els.attentionModal) closeAttentionModal();
+        });
+        els.attentionListWrap?.addEventListener('scroll', maybeLoadMoreAttentionRows);
+        els.attentionSortButtons?.forEach((button) => {
+            button.addEventListener('click', () => {
+                const key = button.dataset.attentionSort;
+                if (!key) return;
+                if (state.attentionSortKey === key) {
+                    state.attentionSortDir = state.attentionSortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    state.attentionSortKey = key;
+                    state.attentionSortDir = key === 'updatedAt' ? 'desc' : 'asc';
+                }
+                updateAttentionSortIndicators();
+                renderAttentionRowsV2(state.attentionRows, false);
+            });
+        });
     }
 
     function renderStatusFilter() {
         els.statusButtons.forEach((button) => {
             const status = button.dataset.status || '';
             const active = status === (state.selectedStatus || '');
-            button.className = 'rounded-[0.9rem] px-3 text-sm font-semibold transition';
+            button.className = 'facility-status-pill';
 
             if (active) {
                 if (status === 'ok') {
@@ -294,13 +795,23 @@
 
     function resetFilters() {
         state.selectedStatus = state.defaultStatus || '';
+        state.facilitySearch = '';
+        state.facilityPage = 1;
+        if (els.tableSearch) {
+            els.tableSearch.value = '';
+        }
         renderStatusFilter();
-        reloadGrid();
+        loadFacilities();
     }
 
-    function buildGridUrl(extra = {}) {
+    function buildFacilitiesUrl(extra = {}) {
         return Perfectlum.buildServerUrl('/api/facilities', {
             type: state.selectedStatus || '',
+            search: state.facilitySearch || '',
+            page: state.facilityPage,
+            limit: state.facilityLimit,
+            sort: state.facilitySortKey || 'name',
+            order: state.facilitySortDir || 'asc',
             ...extra,
         });
     }
@@ -325,117 +836,163 @@
         return true;
     }
 
-    function mapRows(d) {
-        return (d.data || []).filter(facilityMatchesSelectedStatus).map(r => [
-            { id: r.id, name: r.name, okDisplaysCount: r.okDisplaysCount, failedDisplaysCount: r.failedDisplaysCount },
-            r.location,
-            r.timezone,
-            r.workgroupsCount,
-            r.usersCount,
-            r.displaysCount,
-            { id: r.id, name: r.name },
-        ]);
-    }
-
-    function initGrid() {
-        if (!els.grid || state.grid) return;
-
-        state.grid = Perfectlum.createGrid(els.grid, {
-            columns: [
-                {
-                    name: text.name,
-                    formatter: (c) => gridjs.html(`
-                        <div class="flex items-center gap-2.5">
-                            <span class="inline-flex h-2.5 w-2.5 shrink-0 rounded-full ${Number(c.failedDisplaysCount || 0) > 0 ? 'bg-rose-500 shadow-[0_0_0_4px_rgba(244,63,94,0.12)]' : (Number(c.okDisplaysCount || 0) > 0 ? 'bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]' : 'bg-slate-300 shadow-[0_0_0_4px_rgba(148,163,184,0.12)]')}"></span>
-                            <div class="min-w-0">
-                                <button
-                                    type="button"
-                                    onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'facility',id:${c.id}}}))"
-                                    class="cursor-pointer font-medium text-sky-600 transition hover:text-sky-700 hover:underline">
-                                    ${Perfectlum.escapeHtml(c.name)}
-                                </button>
-                                ${Number(c.failedDisplaysCount || 0) > 0
-                                    ? `<p class="mt-1 text-[11px] font-medium text-rose-600">${Perfectlum.escapeHtml(String(c.failedDisplaysCount))} ${Perfectlum.escapeHtml(Number(c.failedDisplaysCount) === 1 ? text.display : text.displays)} ${Perfectlum.escapeHtml(text.needAttention)}</p>`
-                                    : ''}
-                            </div>
-                        </div>
-                    `),
-                },
-                { name: text.location, formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
-                { name: text.timezone, formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
-                { name: text.workgroups, sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
-                { name: text.users, sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
-                { name: text.displaysLabel, sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
-                {
-                    name: text.actions,
-                    sort: false,
-                    width: '112px',
-                    formatter: (c) => gridjs.html(`
-                        <div class="flex justify-center">
-                            <button
-                                type="button"
-                                onclick='window.facilitiesPage && window.facilitiesPage.toggleActionMenu(event, ${c.id}, ${JSON.stringify(c.name)})'
-                                class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700">
-                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-                            </button>
-                        </div>`),
-                },
-            ],
-            server: {
-                url: buildGridUrl(),
-                then: mapRows,
-                total: d => d.total,
-            },
-            pagination: {
-                enabled: true,
-                limit: 10,
-                server: {
-                    url: (_, pg, lim) => buildGridUrl({ page: pg + 1, limit: lim }),
-                },
-            },
-            search: {
-                enabled: true,
-                server: {
-                    url: (_, kw) => buildGridUrl({ search: kw }),
-                },
-            },
-            sort: { multiColumn: false },
-            language: {
-                search: { placeholder: text.searchFacilities },
-                pagination: {
-                    previous: text.previous,
-                    next: text.next,
-                    showing: text.showing,
-                    results: () => text.results,
-                },
-                loading: text.loading,
-                noRecordsFound: text.noMatchingRecordsFound,
-                error: text.unableToLoadData,
-            },
+    function updateFacilitySortIndicators() {
+        document.querySelectorAll('[data-facility-sort]').forEach((button) => {
+            const key = button.getAttribute('data-facility-sort');
+            button.classList.toggle('is-active', key === state.facilitySortKey);
+        });
+        document.querySelectorAll('[data-facility-sort-indicator]').forEach((node) => {
+            const key = node.getAttribute('data-facility-sort-indicator');
+            if (key === state.facilitySortKey) {
+                node.textContent = state.facilitySortDir === 'asc' ? '↑' : '↓';
+            } else {
+                node.textContent = '↕';
+            }
         });
     }
 
-    function reloadGrid() {
-        closeActionMenu();
-        state.grid = null;
-        if (!els.grid) {
-            initGrid();
+    function renderFacilityPager() {
+        const totalPages = Math.max(1, Math.ceil(state.facilityTotal / state.facilityLimit));
+        const current = Math.min(state.facilityPage, totalPages);
+        if (els.pageLabel) {
+            els.pageLabel.textContent = `${text.page || 'Page'} ${current} / ${totalPages}`;
+        }
+        if (els.pagePrev) {
+            els.pagePrev.disabled = state.facilityLoading || current <= 1;
+        }
+        if (els.pageNext) {
+            els.pageNext.disabled = state.facilityLoading || current >= totalPages;
+        }
+
+        const from = state.facilityTotal === 0 ? 0 : ((current - 1) * state.facilityLimit) + 1;
+        const to = Math.min(state.facilityTotal, current * state.facilityLimit);
+        if (els.tableSummary) {
+            els.tableSummary.textContent = `${text.showing || 'Showing'} ${from}-${to} ${text.of || 'of'} ${state.facilityTotal} ${text.results || 'results'}`;
+        }
+        if (els.tableMeta) {
+            const statusLabel = state.selectedStatus === 'ok' ? 'OK' : (state.selectedStatus === 'failed' ? 'Not OK' : 'All');
+            els.tableMeta.textContent = `${statusLabel} • ${state.facilityTotal} ${text.results || 'results'}`;
+        }
+    }
+
+    function rowStatusDotClass(item) {
+        if (Number(item.failedDisplaysCount || 0) > 0) {
+            return 'bg-rose-500 shadow-[0_0_0_4px_rgba(244,63,94,0.14)]';
+        }
+        if (Number(item.okDisplaysCount || 0) > 0) {
+            return 'bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.14)]';
+        }
+        return 'bg-slate-300 shadow-[0_0_0_4px_rgba(148,163,184,0.14)]';
+    }
+
+    function renderFacilityRows() {
+        if (!els.tableBody) return;
+        if (state.facilityLoading) {
+            els.tableBody.innerHTML = `<tr><td colspan="7" class="facility-empty">${Perfectlum.escapeHtml(text.loading || 'Loading...')}</td></tr>`;
             return;
         }
 
-        Perfectlum.remountGrid('facilities-grid', (freshGrid) => {
-            els.grid = freshGrid || document.getElementById('facilities-grid');
-            state.grid = null;
-            initGrid();
-        });
+        const rows = state.facilityRows;
+        if (!rows.length) {
+            els.tableBody.innerHTML = `<tr><td colspan="7" class="facility-empty">${Perfectlum.escapeHtml(text.noMatchingRecordsFound || 'No matching records found')}</td></tr>`;
+            return;
+        }
+
+        els.tableBody.innerHTML = rows.map((item) => {
+            const failedCount = Number(item.failedDisplaysCount || 0);
+            const name = String(item.name || '-');
+            const encodedName = encodeURIComponent(name);
+            return `
+                <tr class="facility-row-clickable" data-action="open-facility-row" data-facility-id="${Number(item.id || 0)}">
+                    <td>
+                        <div class="flex items-center gap-2.5">
+                            <span class="inline-flex h-2.5 w-2.5 shrink-0 rounded-full ${rowStatusDotClass(item)}"></span>
+                            <div class="min-w-0">
+                                <button
+                                    type="button"
+                                    data-action="open-facility"
+                                    data-facility-id="${Number(item.id || 0)}"
+                                    class="cursor-pointer font-semibold text-sky-600 transition hover:text-sky-700 hover:underline">
+                                    ${Perfectlum.escapeHtml(name)}
+                                </button>
+                                ${failedCount > 0
+                                    ? `<button
+                                        type="button"
+                                        data-action="attention"
+                                        data-facility-id="${Number(item.id || 0)}"
+                                        data-facility-name="${encodedName}"
+                                        data-failed-count="${failedCount}"
+                                        class="mt-1 block text-[11px] font-semibold text-rose-600 underline decoration-rose-300 decoration-dashed underline-offset-2 transition hover:text-rose-700">
+                                        ${Perfectlum.escapeHtml(String(failedCount))} ${Perfectlum.escapeHtml(failedCount === 1 ? text.display : text.displays)} ${Perfectlum.escapeHtml(text.needAttention)}
+                                    </button>`
+                                    : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td>${Perfectlum.escapeHtml(item.location || '-')}</td>
+                    <td>${Perfectlum.escapeHtml(item.timezone || '-')}</td>
+                    <td><span class="font-semibold text-slate-700">${Perfectlum.escapeHtml(String(item.workgroupsCount ?? 0))}</span></td>
+                    <td><span class="font-semibold text-slate-700">${Perfectlum.escapeHtml(String(item.usersCount ?? 0))}</span></td>
+                    <td><span class="font-semibold text-slate-700">${Perfectlum.escapeHtml(String(item.displaysCount ?? 0))}</span></td>
+                    <td class="text-center">
+                        <button
+                            type="button"
+                            data-action="menu"
+                            data-facility-id="${Number(item.id || 0)}"
+                            data-facility-name="${encodedName}"
+                            class="facility-row-action mx-auto transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700">
+                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2"></circle><circle cx="12" cy="5" r="2"></circle><circle cx="12" cy="19" r="2"></circle></svg>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 
-    function toggleActionMenu(event, id, name) {
+    async function loadFacilities() {
+        closeActionMenu();
+        state.facilityLoading = true;
+        renderFacilityPager();
+        renderFacilityRows();
+        let hasError = false;
+        try {
+            const payload = await Perfectlum.request(buildFacilitiesUrl());
+            const incoming = Array.isArray(payload?.data) ? payload.data : [];
+            state.facilityRows = incoming.filter(facilityMatchesSelectedStatus);
+            state.facilityTotal = Number(payload?.total || 0);
+            if (!Number.isFinite(state.facilityTotal) || state.facilityTotal < state.facilityRows.length) {
+                state.facilityTotal = state.facilityRows.length;
+            }
+
+            const totalPages = Math.max(1, Math.ceil(state.facilityTotal / state.facilityLimit));
+            if (state.facilityPage > totalPages) {
+                state.facilityPage = totalPages;
+                return loadFacilities();
+            }
+        } catch (error) {
+            hasError = true;
+            state.facilityRows = [];
+            state.facilityTotal = 0;
+            renderFacilityPager();
+            if (els.tableBody) {
+                els.tableBody.innerHTML = `<tr><td colspan="7" class="facility-empty">${Perfectlum.escapeHtml(error.message || text.unableToLoadData || 'Unable to load data')}</td></tr>`;
+            }
+        } finally {
+            state.facilityLoading = false;
+            renderFacilityPager();
+            if (!hasError) {
+                renderFacilityRows();
+            }
+        }
+    }
+
+    function toggleActionMenu(event, id, name, anchorEl = null) {
         if (!canManageFacilities) return;
         event.preventDefault();
         event.stopPropagation();
 
-        const rect = event.currentTarget.getBoundingClientRect();
+        const target = anchorEl || event.currentTarget;
+        const rect = target.getBoundingClientRect();
         const nextOpen = !(state.actionTarget && state.actionTarget.id === id && !els.actionMenu.classList.contains('hidden'));
         state.actionTarget = nextOpen ? { id, name } : null;
 
@@ -452,6 +1009,7 @@
     }
 
     function closeActionMenu() {
+        state.actionTarget = null;
         els.actionOverlay.classList.add('hidden');
         els.actionMenu.classList.add('hidden');
     }
@@ -498,7 +1056,7 @@
                 }
                 await Perfectlum.postForm(form.getAttribute('action') || window.location.pathname, formData);
                 closeEditModal();
-                reloadGrid();
+                loadFacilities();
             } catch (error) {
                 els.editError.textContent = error.message || text.unableToSaveFacility;
                 els.editError.classList.remove('hidden');
@@ -534,6 +1092,186 @@
         els.deleteConfirm.textContent = text.deleteFacility;
     }
 
+    function attentionLastSyncToEpoch(value) {
+        if (!value || value === '-') return 0;
+        const parts = String(value).trim().split(' ');
+        if (parts.length < 4) return 0;
+        const day = Number(parts[0]);
+        const monthMap = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+        const month = monthMap[parts[1]] ?? -1;
+        const year = Number(parts[2]);
+        const hm = String(parts[3] || '').split(':');
+        const hour = Number(hm[0] || 0);
+        const minute = Number(hm[1] || 0);
+        if (month < 0 || !Number.isFinite(day) || !Number.isFinite(year)) return 0;
+        const d = new Date(year, month, day, hour, minute, 0);
+        return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+    }
+
+    function compareAttentionRows(a, b) {
+        const key = state.attentionSortKey;
+        const dir = state.attentionSortDir === 'desc' ? -1 : 1;
+        let av;
+        let bv;
+
+        if (key === 'updatedAt') {
+            av = attentionLastSyncToEpoch(a.updatedAt);
+            bv = attentionLastSyncToEpoch(b.updatedAt);
+            return (av - bv) * dir;
+        }
+
+        av = String(a[key] ?? '').toLowerCase();
+        bv = String(b[key] ?? '').toLowerCase();
+        if (av === bv) return 0;
+        return av > bv ? dir : -dir;
+    }
+
+    function updateAttentionSortIndicators() {
+        document.querySelectorAll('[data-sort-indicator]').forEach((node) => {
+            const key = node.getAttribute('data-sort-indicator');
+            if (key === state.attentionSortKey) {
+                node.textContent = state.attentionSortDir === 'asc' ? '^' : 'v';
+            } else {
+                node.textContent = '-';
+            }
+        });
+    }
+
+    function renderAttentionRowsV2(rows, append = false) {
+        const sortedRows = [...(rows || [])].sort(compareAttentionRows);
+        const html = sortedRows.map((item) => `
+            <tr class="align-top">
+                <td class="px-4 py-3 text-[13px] font-medium text-slate-800">${Perfectlum.escapeHtml(item.displayName || '-')}</td>
+                <td class="px-4 py-3 text-[13px] text-slate-600">${Perfectlum.escapeHtml(item.wgName || '-')}</td>
+                <td class="px-4 py-3 text-[13px] text-slate-600">${Perfectlum.escapeHtml(item.wsName || '-')}</td>
+                <td class="px-4 py-3 text-[13px] text-slate-600">${Perfectlum.escapeHtml(item.updatedAt || '-')}</td>
+                <td class="px-4 py-3 text-[12px] text-rose-600">${Perfectlum.escapeHtml(item.attentionText || 'No alert detail')}</td>
+                <td class="px-4 py-3 text-right">
+                    <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'display',id:${Number(item.displayId || 0)}}}))" class="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[12px] font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+                        ${Perfectlum.escapeHtml(text.openDisplay)}
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+        els.attentionList.innerHTML = html;
+    }
+
+    function fetchAttentionPageV2(page) {
+        return Perfectlum.request(Perfectlum.buildServerUrl('/api/displays', {
+            facility_id: Number(state.attentionTarget.id),
+            type: 'failed',
+            sort: 'updated_at',
+            order: 'desc',
+            limit: state.attentionLimit,
+            page,
+        }));
+    }
+
+    function applyAttentionViewportHeight() {
+        if (!els.attentionListWrap) return;
+        const maxFromViewport = Math.max(280, Math.floor(window.innerHeight * 0.56));
+        els.attentionListWrap.style.height = `${maxFromViewport}px`;
+    }
+
+    async function maybeLoadMoreAttentionRows() {
+        if (!state.attentionHasMore || state.attentionLoadingMore || !state.attentionTarget) return;
+        const node = els.attentionListWrap;
+        if (!node) return;
+        const nearBottom = node.scrollTop + node.clientHeight >= node.scrollHeight - 80;
+        if (!nearBottom) return;
+
+        state.attentionLoadingMore = true;
+        els.attentionMore.textContent = text.loadingMore;
+        els.attentionMore.classList.remove('hidden');
+        try {
+            const nextPage = state.attentionPage + 1;
+            const payload = await fetchAttentionPageV2(nextPage);
+            const rows = Array.isArray(payload.data) ? payload.data : [];
+            if (rows.length) {
+                state.attentionRows = state.attentionRows.concat(rows);
+                renderAttentionRowsV2(state.attentionRows, false);
+                state.attentionPage = nextPage;
+            }
+            state.attentionHasMore = rows.length === state.attentionLimit;
+        } catch (error) {
+            state.attentionHasMore = false;
+        } finally {
+            state.attentionLoadingMore = false;
+            if (!state.attentionHasMore) {
+                els.attentionMore.classList.add('hidden');
+            }
+        }
+    }
+
+    async function openAttentionModal(facilityId, facilityName, failedCount = null) {
+        closeActionMenu();
+        state.attentionTarget = { id: Number(facilityId), name: facilityName || '' };
+        state.attentionPage = 1;
+        state.attentionHasMore = false;
+        state.attentionLoadingMore = false;
+        state.attentionRows = [];
+        els.attentionTitle.textContent = text.displaysNeedAttentionTitle;
+        const suffix = failedCount === null ? '' : ` • ${failedCount} ${failedCount === 1 ? text.display : text.displays}`;
+        els.attentionSubtitle.textContent = `${facilityName || '-'}${suffix}`;
+
+        els.attentionLoading.classList.remove('hidden');
+        els.attentionError.classList.add('hidden');
+        els.attentionEmpty.classList.add('hidden');
+        els.attentionListWrap.classList.add('hidden');
+        els.attentionMore.classList.add('hidden');
+        els.attentionList.innerHTML = '';
+        els.attentionModal.classList.remove('hidden');
+        els.attentionModal.classList.add('flex');
+        applyAttentionViewportHeight();
+        if (els.attentionListWrap) {
+            els.attentionListWrap.scrollTop = 0;
+        }
+
+        try {
+            const payload = await fetchAttentionPageV2(1);
+            const rows = Array.isArray(payload.data) ? payload.data : [];
+            if (!rows.length) {
+                els.attentionEmpty.classList.remove('hidden');
+                return;
+            }
+
+            state.attentionRows = rows;
+            updateAttentionSortIndicators();
+            renderAttentionRowsV2(state.attentionRows, false);
+            state.attentionHasMore = rows.length === state.attentionLimit;
+            if (state.attentionHasMore) {
+                els.attentionMore.textContent = text.loadingMore;
+                els.attentionMore.classList.remove('hidden');
+            }
+            els.attentionListWrap.classList.remove('hidden');
+        } catch (error) {
+            els.attentionError.textContent = error.message || text.unableToLoadAttentionDisplays;
+            els.attentionError.classList.remove('hidden');
+        } finally {
+            els.attentionLoading.classList.add('hidden');
+        }
+    }
+
+    function closeAttentionModal() {
+        state.attentionTarget = null;
+        state.attentionPage = 1;
+        state.attentionHasMore = false;
+        state.attentionLoadingMore = false;
+        state.attentionRows = [];
+        els.attentionModal.classList.add('hidden');
+        els.attentionModal.classList.remove('flex');
+        els.attentionLoading.classList.add('hidden');
+        els.attentionError.classList.add('hidden');
+        els.attentionEmpty.classList.add('hidden');
+        els.attentionListWrap.classList.add('hidden');
+        els.attentionMore.classList.add('hidden');
+        els.attentionList.innerHTML = '';
+        if (els.attentionListWrap) {
+            els.attentionListWrap.scrollTop = 0;
+        }
+    }
+
     async function confirmDelete() {
         if (!state.deleteTarget?.id || els.deleteConfirm.disabled) return;
         els.deleteConfirm.disabled = true;
@@ -548,7 +1286,7 @@
                 throw new Error(payload.msg || text.unableToDeleteFacility);
             }
             closeDeleteModal();
-            reloadGrid();
+            loadFacilities();
         } catch (error) {
             window.alert(error.message || text.unableToDeleteFacility);
             els.deleteConfirm.disabled = false;
@@ -557,6 +1295,8 @@
     }
 
     window.closeFacilityPanel = closeEditModal;
+    window.openFacilityAttentionModal = openAttentionModal;
+    window.addEventListener('resize', applyAttentionViewportHeight);
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init, { once: true });
     } else {

@@ -50,6 +50,8 @@
         'previous' => __('Previous'),
         'next' => __('Next'),
         'showing' => __('Showing'),
+        'of' => __('of'),
+        'page' => __('Page'),
         'results' => __('results'),
         'loading' => __('Loading...'),
         'noMatchingRecordsFound' => __('No matching records found'),
@@ -543,7 +545,7 @@
     .desktop-display-meta-button {
         display: inline-flex;
         align-items: center;
-        gap: 0.35rem;
+        gap: 0;
         border: 0;
         background: transparent;
         padding: 0;
@@ -551,10 +553,45 @@
         font-weight: 600;
         color: #64748b;
         transition: color 160ms ease;
+        min-width: 0;
+        cursor: pointer;
     }
 
     .desktop-display-meta-button:hover {
         color: #0284c7;
+    }
+    .desktop-display-meta-badge {
+        width: 0;
+        height: 18px;
+        border-radius: 999px;
+        background: #1d9bf0;
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0;
+        line-height: 1;
+        opacity: 0;
+        transform: translateX(-6px);
+        overflow: hidden;
+        margin-right: 0;
+        transition: width 180ms ease, opacity 180ms ease, transform 180ms ease, margin-right 180ms ease;
+        flex: 0 0 auto;
+    }
+    .desktop-display-meta-button:hover .desktop-display-meta-badge,
+    .desktop-display-meta-button:focus-visible .desktop-display-meta-badge {
+        width: 18px;
+        opacity: 1;
+        transform: translateX(0);
+        margin-right: 6px;
+    }
+    .desktop-display-meta-label {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .desktop-display-separator {
@@ -1182,6 +1219,446 @@
         color: #64748b;
         font-weight: 600;
     }
+
+    .display-directory-shell {
+        border-radius: 2rem;
+        border: 1px solid #d5e0ec;
+        background: linear-gradient(180deg, #f7fbff 0%, #ffffff 100%);
+        box-shadow: 0 26px 64px -46px rgba(15, 23, 42, 0.34);
+        overflow: hidden;
+    }
+    .display-table-controlbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 18px;
+        border-bottom: 1px solid #e3ecf5;
+        background: linear-gradient(180deg, #f4f9ff 0%, #ffffff 100%);
+    }
+    .display-controls-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+    .display-filter-picker {
+        position: relative;
+        min-width: 220px;
+    }
+    .display-filter-trigger {
+        width: 100%;
+        height: 36px;
+        border-radius: 999px;
+        border: 1px solid #d3dfec;
+        background: #ffffff;
+        color: #4b6078;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 0 12px;
+    }
+    .display-filter-panel {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        right: 0;
+        z-index: 40;
+        border-radius: 16px;
+        border: 1px solid #d3dfec;
+        background: #ffffff;
+        box-shadow: 0 24px 50px -26px rgba(15, 23, 42, 0.32);
+        padding: 10px;
+    }
+    .display-filter-search {
+        width: 100%;
+        height: 34px;
+        border-radius: 10px;
+        border: 1px solid #d7e3ef;
+        padding: 0 10px;
+        font-size: 12px;
+        color: #334155;
+    }
+    .display-filter-search:focus {
+        outline: none;
+        border-color: #1d9bf0;
+        box-shadow: 0 0 0 3px rgba(29, 155, 240, 0.14);
+    }
+    .display-status-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px;
+        border-radius: 999px;
+        border: 1px solid #d3dfec;
+        background: #f3f8fe;
+    }
+    .display-status-pill {
+        height: 36px;
+        border-radius: 999px;
+        padding: 0 14px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #4c6077;
+        transition: all .18s ease;
+    }
+    .display-status-pill:hover {
+        color: #243b53;
+        background: #eff6fd;
+    }
+    .display-reset-btn {
+        height: 36px;
+        border-radius: 999px;
+        border: 1px solid #d3dfec;
+        background: #fff;
+        color: #4b6078;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 0 14px;
+        transition: all .18s ease;
+    }
+    .display-reset-btn:hover {
+        border-color: #9ec6ea;
+        color: #1f4f80;
+        background: #f3f9ff;
+    }
+    .display-table-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 18px;
+        border-bottom: 1px solid #e3ecf5;
+        background: #f8fbff;
+    }
+    .display-table-search {
+        width: min(440px, 100%);
+        height: 42px;
+        border-radius: 999px;
+        border: 1px solid #c9d8e8;
+        padding: 0 16px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #12263a;
+        background: #fff;
+    }
+    .display-table-search:focus {
+        outline: none;
+        border-color: #1d9bf0;
+        box-shadow: 0 0 0 3px rgba(29, 155, 240, 0.16);
+    }
+    .display-table-wrap {
+        overflow-x: auto;
+        background: #fff;
+    }
+    .display-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 1180px;
+        table-layout: fixed;
+    }
+    .display-table th {
+        padding: 13px 16px;
+        text-align: left;
+        border-bottom: 1px solid #d8e4f0;
+        background: #e9f1fa;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        color: #4d647d;
+        white-space: nowrap;
+    }
+    .display-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #edf2f8;
+        font-size: 14px;
+        color: #334155;
+        vertical-align: middle;
+        background: #fff;
+    }
+    .display-table tbody tr:hover td {
+        background: #f7fbff;
+    }
+    .display-sort-btn {
+        border: 0;
+        background: transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #5a7087;
+        font: inherit;
+        letter-spacing: inherit;
+        text-transform: inherit;
+        cursor: pointer;
+        border-radius: 999px;
+        padding: 2px 8px;
+        margin-left: -8px;
+        transition: all .18s ease;
+    }
+    .display-sort-btn:hover {
+        background: #f2f7fd;
+        color: #2f4d6a;
+    }
+    .display-sort-btn.is-active {
+        background: #e2edf9;
+        color: #24486b;
+    }
+    .display-sort-indicator {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        background: #d4e3f4;
+        color: #2f5477;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: 0;
+        transition: all .18s ease;
+    }
+    .display-sort-btn.is-active .display-sort-indicator {
+        background: #2f6fae;
+        color: #ffffff;
+    }
+    .display-table-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 16px 14px;
+        border-top: 1px solid #dbe7f3;
+        background: #f7fbff;
+    }
+    .display-pager {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .display-page-btn {
+        height: 32px;
+        min-width: 32px;
+        border-radius: 999px;
+        border: 1px solid #c7d6e7;
+        background: #ffffff;
+        color: #2c4158;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 0 12px;
+        transition: all .18s ease;
+    }
+    .display-page-btn:hover:not(:disabled) {
+        border-color: #1d9bf0;
+        color: #0f5f9f;
+        background: #f0f8ff;
+    }
+    .display-page-btn:disabled {
+        opacity: .45;
+        cursor: not-allowed;
+    }
+    .display-row-action {
+        width: 36px;
+        height: 36px;
+        border-radius: 9999px;
+        border: 1px solid #d6dee8;
+        background: #fff;
+        color: #64748b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .display-row-clickable {
+        cursor: pointer;
+    }
+    .display-empty {
+        padding: 24px 16px;
+        text-align: center;
+        color: #5f7388;
+        font-size: 14px;
+        border-bottom: 1px solid #edf2f8;
+    }
+    .display-table th:nth-child(1),
+    .display-table td:nth-child(1) {
+        width: 30%;
+    }
+    .display-table th:nth-child(2),
+    .display-table td:nth-child(2) {
+        width: 22%;
+    }
+    .display-table th:nth-child(3),
+    .display-table td:nth-child(3) {
+        width: 17%;
+    }
+    .display-table th:nth-child(4),
+    .display-table td:nth-child(4) {
+        width: 15%;
+    }
+    .display-table th:nth-child(5),
+    .display-table td:nth-child(5) {
+        width: 8%;
+        white-space: nowrap;
+    }
+    .display-table th:nth-child(6),
+    .display-table td:nth-child(6) {
+        width: 8%;
+        text-align: center;
+    }
+    .display-table th:nth-child(4),
+    .display-table td:nth-child(4),
+    .display-table th:nth-child(5),
+    .display-table td:nth-child(5) {
+        text-align: center;
+    }
+    .display-table th:nth-child(2),
+    .display-table td:nth-child(2) {
+        padding-right: 20px;
+    }
+    .display-table th:nth-child(3),
+    .display-table td:nth-child(3),
+    .display-table th:nth-child(4),
+    .display-table td:nth-child(4) {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+    .display-table th:nth-child(5),
+    .display-table td:nth-child(5) {
+        padding-left: 20px;
+    }
+    .display-table th:nth-child(6),
+    .display-table td:nth-child(6) {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+    .display-table td {
+        padding: 10px 16px;
+    }
+    .display-table .desktop-display-summary,
+    .display-table .desktop-display-issue,
+    .display-table .desktop-display-hours,
+    .display-table .desktop-display-updated-block {
+        min-height: auto;
+        max-width: none;
+    }
+    .display-table .desktop-display-summary {
+        gap: 2px;
+    }
+    .display-table .desktop-display-title {
+        font-size: 14px;
+        line-height: 1.25;
+    }
+    .display-table .desktop-display-meta {
+        margin-top: 2px;
+        flex-wrap: nowrap;
+        gap: 4px;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    .display-table .desktop-display-meta-button {
+        min-width: 0;
+        max-width: 132px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .display-table .desktop-display-detail {
+        margin-top: 2px;
+        font-size: 11px;
+        line-height: 1.25;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 1;
+        overflow: hidden;
+    }
+    .display-table .desktop-display-issue-kicker,
+    .display-table .desktop-display-hours-kicker {
+        font-size: 9px;
+        letter-spacing: 0.12em;
+    }
+    .display-table .desktop-display-issue-text,
+    .display-table .desktop-display-hours-text {
+        margin-top: 2px;
+        font-size: 12px;
+        line-height: 1.25;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 1;
+        overflow: hidden;
+    }
+    .display-table .desktop-display-issue-note,
+    .display-table .desktop-display-hours-note {
+        margin-top: 2px;
+        font-size: 10px;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .display-table .desktop-display-updated-date,
+    .display-table .desktop-display-updated-time,
+    .display-table .desktop-display-updated-label {
+        font-size: 12px;
+        line-height: 1.2;
+    }
+    .display-table .desktop-display-updated-block {
+        gap: 2px;
+    }
+    .display-table .desktop-display-status-cell {
+        justify-content: center;
+    }
+    .display-table .desktop-display-status-pill {
+        padding: 0.28rem 0.62rem;
+        font-size: 9px;
+    }
+    .display-table .display-row-action {
+        margin-inline: auto;
+    }
+    @media (max-width: 1300px) {
+        .display-table-controlbar {
+            flex-wrap: wrap;
+            align-items: stretch;
+        }
+        .display-controls-left {
+            flex-wrap: wrap;
+            width: 100%;
+        }
+        .display-filter-picker {
+            min-width: 100%;
+        }
+        .display-status-group {
+            width: 100%;
+            justify-content: space-between;
+        }
+        .display-status-pill {
+            flex: 1 1 0;
+            padding: 0 10px;
+        }
+        .display-reset-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+    @media (max-width: 768px) {
+        .display-table-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .display-table-search {
+            width: 100%;
+        }
+        .display-table-footer {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .display-pager {
+            justify-content: flex-end;
+        }
+        .display-table .desktop-display-meta-button {
+            max-width: 100px;
+        }
+    }
 </style>
 
 <div class="flex flex-col gap-6 pb-8">
@@ -1194,108 +1671,59 @@
         </x-slot>
     </x-page-header>
 
-    <section class="desktop-display-filter-panel rounded-[2rem] p-5">
-        <div class="desktop-display-filter-head">
-            <div>
-                <p class="desktop-display-panel-kicker">{{ __('Fleet filters') }}</p>
-                <h2 class="desktop-display-panel-title">{{ __('Refine by scope and status') }}</h2>
-                <p class="desktop-display-panel-copy">{{ __('Focus the display fleet by hierarchy and condition before scanning the list below.') }}</p>
-            </div>
-
-            <div class="flex items-start justify-end">
-                <button
-                    id="reset-display-filters"
-                    type="button"
-                    class="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900">
-                    <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
-                    {{ __('Reset Filters') }}
-                </button>
-            </div>
-        </div>
-
-        <div class="desktop-display-filter-grid">
-            <div class="min-w-0 space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Facility') }}</label>
-                <div class="relative">
-                    <button
-                        id="display-facility-trigger"
-                        type="button"
-                        class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
+    <section class="display-directory-shell mb-10">
+        <div class="display-table-controlbar">
+            <div class="display-controls-left">
+                <div class="display-filter-picker">
+                    <button id="display-facility-trigger" type="button" class="display-filter-trigger inline-flex items-center justify-between gap-2">
                         <span id="display-facility-label" class="truncate">{{ __('All facilities') }}</span>
                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                     </button>
-                    <div id="display-facility-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                        <input id="display-facility-search" type="text" placeholder="{{ __('Search facilities...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                        <p id="display-facility-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
+                    <div id="display-facility-panel" class="display-filter-panel hidden">
+                        <input id="display-facility-search" type="text" placeholder="{{ __('Search facilities...') }}" class="display-filter-search">
+                        <p id="display-facility-hint" class="mb-2 mt-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="display-facility-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                     </div>
                 </div>
-            </div>
 
-            <div class="min-w-0 space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Workgroup') }}</label>
-                <div class="relative">
-                    <button
-                        id="display-workgroup-trigger"
-                        type="button"
-                        class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
+                <div class="display-filter-picker">
+                    <button id="display-workgroup-trigger" type="button" class="display-filter-trigger inline-flex items-center justify-between gap-2">
                         <span id="display-workgroup-label" class="truncate">{{ __('All workgroups') }}</span>
                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                     </button>
-                    <div id="display-workgroup-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                        <input id="display-workgroup-search" type="text" placeholder="{{ __('Search workgroups...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                        <p id="display-workgroup-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
+                    <div id="display-workgroup-panel" class="display-filter-panel hidden">
+                        <input id="display-workgroup-search" type="text" placeholder="{{ __('Search workgroups...') }}" class="display-filter-search">
+                        <p id="display-workgroup-hint" class="mb-2 mt-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="display-workgroup-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                     </div>
                 </div>
-            </div>
 
-            <div class="min-w-0 space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Workstation') }}</label>
-                <div class="relative">
-                    <button
-                        id="display-workstation-trigger"
-                        type="button"
-                        class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
+                <div class="display-filter-picker">
+                    <button id="display-workstation-trigger" type="button" class="display-filter-trigger inline-flex items-center justify-between gap-2">
                         <span id="display-workstation-label" class="truncate">{{ __('All workstations') }}</span>
                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                     </button>
-                    <div id="display-workstation-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                        <input id="display-workstation-search" type="text" placeholder="{{ __('Search workstations...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                        <p id="display-workstation-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
+                    <div id="display-workstation-panel" class="display-filter-panel hidden">
+                        <input id="display-workstation-search" type="text" placeholder="{{ __('Search workstations...') }}" class="display-filter-search">
+                        <p id="display-workstation-hint" class="mb-2 mt-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="display-workstation-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                     </div>
                 </div>
-            </div>
 
-            <div class="min-w-0 space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Status') }}</label>
-                <div class="grid h-12 grid-cols-3 rounded-2xl border border-slate-200 bg-white p-1">
-                    <button
-                        id="display-status-all"
-                        type="button"
-                        data-status=""
-                        class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
+                <div class="display-status-group">
+                    <button id="display-status-all" type="button" data-status="" class="display-status-pill">
                         <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <i data-lucide="layers-3" class="h-4 w-4"></i>
                             <span>{{ __('All') }}</span>
                         </span>
                     </button>
-                    <button
-                        id="display-status-ok"
-                        type="button"
-                        data-status="ok"
-                        class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
+                    <button id="display-status-ok" type="button" data-status="ok" class="display-status-pill">
                         <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <i data-lucide="badge-check" class="h-4 w-4"></i>
                             <span>{{ __('OK') }}</span>
                         </span>
                     </button>
-                    <button
-                        id="display-status-failed"
-                        type="button"
-                        data-status="failed"
-                        class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
+                    <button id="display-status-failed" type="button" data-status="failed" class="display-status-pill">
                         <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <i data-lucide="triangle-alert" class="h-4 w-4"></i>
                             <span>{{ __('Not OK') }}</span>
@@ -1303,63 +1731,43 @@
                     </button>
                 </div>
             </div>
+
+            <button id="reset-display-filters" type="button" class="display-reset-btn inline-flex items-center gap-2">
+                <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
+                {{ __('Reset Filters') }}
+            </button>
         </div>
-    </section>
 
-    <div class="desktop-display-table-block">
-        <div id="displays-grid-shell" class="desktop-display-grid-shell is-loading" aria-busy="true">
-            <x-data-table id="displays-grid" class="mb-10 workstation-table-shell desktop-display-table-shell" />
+        <div class="display-table-toolbar">
+            <input id="display-table-search" type="text" class="display-table-search" placeholder="{{ __('Search displays...') }}">
+            <div class="text-[12px] font-semibold text-slate-500" id="display-table-meta"></div>
+        </div>
 
-            <div id="displays-grid-loading" class="desktop-display-grid-loading" aria-hidden="true">
-                <div class="desktop-display-grid-loading-surface">
-                    <div class="desktop-display-grid-skeleton-toolbar">
-                        <span class="desktop-display-skeleton-block desktop-display-grid-skeleton-search"></span>
-                    </div>
+        <div class="display-table-wrap">
+            <table class="display-table">
+                <thead>
+                    <tr>
+                        <th><button type="button" data-display-sort="display_name" class="display-sort-btn"><span>{{ __('Display') }}</span><span class="display-sort-indicator" data-display-sort-indicator="display_name">↓</span></button></th>
+                        <th>{{ __('Attention') }}</th>
+                        <th><button type="button" data-display-sort="display_hours" class="display-sort-btn"><span>{{ __('Runtime') }}</span><span class="display-sort-indicator" data-display-sort-indicator="display_hours">↕</span></button></th>
+                        <th><button type="button" data-display-sort="updated_at" class="display-sort-btn"><span>{{ __('Last Sync') }}</span><span class="display-sort-indicator" data-display-sort-indicator="updated_at">↕</span></button></th>
+                        <th><button type="button" data-display-sort="status" class="display-sort-btn"><span>{{ __('Status') }}</span><span class="display-sort-indicator" data-display-sort-indicator="status">↕</span></button></th>
+                        <th class="text-center">{{ __('Actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody id="displays-table-body"></tbody>
+            </table>
+        </div>
 
-                    <div class="desktop-display-grid-skeleton-head">
-                        <div class="desktop-display-grid-skeleton-cell"><span class="desktop-display-skeleton-block desktop-display-skeleton-headline"></span></div>
-                        <div class="desktop-display-grid-skeleton-cell"><span class="desktop-display-skeleton-block desktop-display-skeleton-headline"></span></div>
-                        <div class="desktop-display-grid-skeleton-cell"><span class="desktop-display-skeleton-block desktop-display-skeleton-headline"></span></div>
-                        <div class="desktop-display-grid-skeleton-cell"><span class="desktop-display-skeleton-block desktop-display-skeleton-headline"></span></div>
-                        <div class="desktop-display-grid-skeleton-cell"><span class="desktop-display-skeleton-block desktop-display-skeleton-headline"></span></div>
-                        <div class="desktop-display-grid-skeleton-cell"><span class="desktop-display-skeleton-block desktop-display-skeleton-headline"></span></div>
-                    </div>
-
-                    @for($i = 0; $i < 5; $i++)
-                        <div class="desktop-display-grid-skeleton-row">
-                            <div class="desktop-display-grid-skeleton-cell desktop-display-grid-skeleton-display">
-                                <span class="desktop-display-skeleton-block desktop-display-skeleton-title"></span>
-                                <span class="desktop-display-skeleton-block desktop-display-skeleton-meta"></span>
-                            </div>
-                            <div class="desktop-display-grid-skeleton-cell desktop-display-grid-skeleton-issue">
-                                <span class="desktop-display-skeleton-block desktop-display-skeleton-issue-title"></span>
-                                <span class="desktop-display-skeleton-block desktop-display-skeleton-issue-main"></span>
-                                <span class="desktop-display-skeleton-block desktop-display-skeleton-issue-note"></span>
-                            </div>
-                            <div class="desktop-display-grid-skeleton-cell desktop-display-grid-skeleton-hours">
-                                <div>
-                                    <span class="desktop-display-skeleton-block desktop-display-skeleton-hours-main"></span>
-                                    <span class="desktop-display-skeleton-block desktop-display-skeleton-hours-note"></span>
-                                </div>
-                            </div>
-                            <div class="desktop-display-grid-skeleton-cell desktop-display-grid-skeleton-updated">
-                                <div>
-                                    <span class="desktop-display-skeleton-block desktop-display-skeleton-date"></span>
-                                    <span class="desktop-display-skeleton-block desktop-display-skeleton-time"></span>
-                                </div>
-                            </div>
-                            <div class="desktop-display-grid-skeleton-cell desktop-display-grid-skeleton-status">
-                                <span class="desktop-display-skeleton-block desktop-display-skeleton-pill"></span>
-                            </div>
-                            <div class="desktop-display-grid-skeleton-cell desktop-display-grid-skeleton-actions">
-                                <span class="desktop-display-skeleton-block desktop-display-skeleton-circle"></span>
-                            </div>
-                        </div>
-                    @endfor
-                </div>
+        <div class="display-table-footer">
+            <div class="text-[12px] font-semibold text-slate-500" id="display-table-summary"></div>
+            <div class="display-pager">
+                <button id="display-page-prev" type="button" class="display-page-btn">{{ __('Previous') }}</button>
+                <span id="display-page-label" class="text-[12px] font-semibold text-slate-500"></span>
+                <button id="display-page-next" type="button" class="display-page-btn">{{ __('Next') }}</button>
             </div>
         </div>
-    </div>
+    </section>
 </div>
 
 <div id="display-action-overlay" class="pointer-events-none fixed inset-0 z-[1200] hidden">
@@ -1556,6 +1964,13 @@
         selectedStatus: @json($initialDisplayStatus),
         sortKey: 'updated_at',
         sortOrder: 'desc',
+        displayRows: [],
+        displayPage: 1,
+        displayLimit: 10,
+        displayTotal: 0,
+        displayLoading: false,
+        displaySearch: '',
+        displaySearchTimer: null,
         facilitySearch: '',
         workgroupSearch: '',
         workstationSearch: '',
@@ -1563,17 +1978,13 @@
         actionTarget: null,
         deleteTarget: null,
         editTarget: null,
-        grid: null,
-        gridBatch: 0,
-        gridLoadingHideTimer: null,
-        gridLoadingStartedAt: 0,
     };
 
     const els = {};
 
     function init() {
         if (initialized) return;
-        if (!window.Perfectlum || !window.gridjs) {
+        if (!window.Perfectlum) {
             window.setTimeout(init, 50);
             return;
         }
@@ -1592,8 +2003,9 @@
         bindElements();
         bindEvents();
         renderFilters();
-        initGrid();
-        window.displaysPage = { toggleActionMenu };
+        updateDisplaySortIndicators();
+        loadDisplays();
+        window.displaysPage = { toggleActionMenu, openEditModal, openDeleteModal };
         window.openDisplayModal = function (displayId, options = {}) {
             window.dispatchEvent(new CustomEvent('open-hierarchy', {
                 detail: { type: 'display', id: displayId, ...options }
@@ -1631,9 +2043,14 @@
         ].filter(Boolean);
 
         els.resetFilters = document.getElementById('reset-display-filters');
-        els.gridShell = document.getElementById('displays-grid-shell');
-        els.gridLoading = document.getElementById('displays-grid-loading');
-        els.grid = document.getElementById('displays-grid');
+        els.tableSearch = document.getElementById('display-table-search');
+        els.tableMeta = document.getElementById('display-table-meta');
+        els.tableBody = document.getElementById('displays-table-body');
+        els.tableSummary = document.getElementById('display-table-summary');
+        els.pagePrev = document.getElementById('display-page-prev');
+        els.pageNext = document.getElementById('display-page-next');
+        els.pageLabel = document.getElementById('display-page-label');
+        els.sortButtons = Array.from(document.querySelectorAll('[data-display-sort]'));
 
         els.actionOverlay = document.getElementById('display-action-overlay');
         els.actionMenu = document.getElementById('display-action-menu');
@@ -1667,17 +2084,81 @@
         els.statusButtons.forEach((button) => {
             button.addEventListener('click', () => {
                 state.selectedStatus = button.dataset.status || '';
+                state.displayPage = 1;
                 renderStatusFilter();
-                reloadGrid();
+                loadDisplays();
             });
         });
         els.resetFilters?.addEventListener('click', resetFilters);
+
+        els.tableSearch?.addEventListener('input', (event) => {
+            const value = String(event.target.value || '').trim();
+            if (state.displaySearchTimer) {
+                window.clearTimeout(state.displaySearchTimer);
+            }
+            state.displaySearchTimer = window.setTimeout(() => {
+                state.displaySearch = value;
+                state.displayPage = 1;
+                loadDisplays();
+            }, 260);
+        });
+
+        els.sortButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                const key = button.dataset.displaySort;
+                if (!key) return;
+                if (state.sortKey === key) {
+                    state.sortOrder = state.sortOrder === 'asc' ? 'desc' : 'asc';
+                } else {
+                    state.sortKey = key;
+                    state.sortOrder = key === 'updated_at' ? 'desc' : 'asc';
+                }
+                state.displayPage = 1;
+                updateDisplaySortIndicators();
+                loadDisplays();
+            });
+        });
+
+        els.pagePrev?.addEventListener('click', () => {
+            if (state.displayPage <= 1 || state.displayLoading) return;
+            state.displayPage -= 1;
+            loadDisplays();
+        });
+        els.pageNext?.addEventListener('click', () => {
+            const totalPages = Math.max(1, Math.ceil(state.displayTotal / state.displayLimit));
+            if (state.displayPage >= totalPages || state.displayLoading) return;
+            state.displayPage += 1;
+            loadDisplays();
+        });
+
+        els.tableBody?.addEventListener('click', (event) => {
+            const actionButton = event.target.closest('[data-action="menu"]');
+            if (actionButton) {
+                toggleActionMenu(event, Number(actionButton.dataset.displayId || 0), decodeURIComponent(actionButton.dataset.displayName || ''), actionButton);
+                return;
+            }
+
+            const row = event.target.closest('tr[data-action="open-display-row"]');
+            if (!row) {
+                return;
+            }
+
+            if (event.target.closest('button, a, input, select, textarea, [role="button"]')) {
+                return;
+            }
+
+            const displayId = Number(row.dataset.displayId || 0);
+            if (displayId > 0) {
+                window.openDisplayModal(displayId);
+            }
+        });
 
         document.addEventListener('click', (event) => {
             if (state.activeDropdown === 'facility' && !els.facilityPanel.contains(event.target) && !els.facilityTrigger.contains(event.target)) closeDropdown();
             if (state.activeDropdown === 'workgroup' && !els.workgroupPanel.contains(event.target) && !els.workgroupTrigger.contains(event.target)) closeDropdown();
             if (state.activeDropdown === 'workstation' && !els.workstationPanel.contains(event.target) && !els.workstationTrigger.contains(event.target)) closeDropdown();
-            if (els.actionOverlay && !els.actionMenu.contains(event.target)) closeActionMenu();
+            const clickedToggle = event.target.closest('[data-action="menu"]');
+            if (!clickedToggle && els.actionMenu && !els.actionMenu.contains(event.target)) closeActionMenu();
         });
 
         els.actionOverlay?.addEventListener('click', closeActionMenu);
@@ -1747,20 +2228,18 @@
         els.statusButtons.forEach((button) => {
             const status = button.dataset.status || '';
             const active = status === (state.selectedStatus || '');
-
-            const activeClass = status === 'ok'
-                ? 'rounded-[0.9rem] bg-white px-3 text-sm font-semibold text-emerald-700 shadow-[0_10px_24px_-16px_rgba(16,185,129,0.5)] ring-1 ring-emerald-200 transition'
-                : (status === 'failed'
-                    ? 'rounded-[0.9rem] bg-white px-3 text-sm font-semibold text-rose-700 shadow-[0_10px_24px_-16px_rgba(244,63,94,0.45)] ring-1 ring-rose-200 transition'
-                    : 'rounded-[0.9rem] bg-white px-3 text-sm font-semibold text-sky-700 shadow-[0_10px_24px_-16px_rgba(14,165,233,0.45)] ring-1 ring-sky-200 transition');
-
-            const inactiveClass = status === 'ok'
-                ? 'rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition hover:bg-white/95 hover:text-emerald-700'
-                : (status === 'failed'
-                    ? 'rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition hover:bg-white/95 hover:text-rose-700'
-                    : 'rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition hover:bg-white/95 hover:text-sky-700');
-
-            button.className = active ? activeClass : inactiveClass;
+            button.className = 'display-status-pill';
+            if (active) {
+                if (status === 'ok') {
+                    button.classList.add('bg-emerald-50', 'text-emerald-700', 'shadow-[inset_0_0_0_1px_rgba(16,185,129,0.22)]');
+                } else if (status === 'failed') {
+                    button.classList.add('bg-rose-50', 'text-rose-700', 'shadow-[inset_0_0_0_1px_rgba(244,63,94,0.22)]');
+                } else {
+                    button.classList.add('bg-sky-50', 'text-sky-700', 'shadow-[inset_0_0_0_1px_rgba(14,165,233,0.18)]');
+                }
+                return;
+            }
+            button.classList.add('text-slate-600', 'hover:bg-slate-50', 'hover:text-slate-900');
         });
 
         window.lucide?.createIcons();
@@ -1788,38 +2267,12 @@
                 if (els.workstationSearch) els.workstationSearch.value = '';
                 closeDropdown();
                 renderFilters();
-                reloadGrid();
+                state.displayPage = 1;
+                loadDisplays();
             });
         });
     }
 
-    function primeGridLoading() {
-        if (!els.gridShell) return;
-        window.clearTimeout(state.gridLoadingHideTimer);
-        state.gridLoadingStartedAt = performance.now();
-        els.gridShell.classList.add('is-loading');
-        els.gridShell.setAttribute('aria-busy', 'true');
-    }
-
-    function clearGridLoading(batch) {
-        if (batch !== state.gridBatch || !els.gridShell) {
-            return;
-        }
-
-        const elapsed = performance.now() - (state.gridLoadingStartedAt || 0);
-        const minVisible = batch === 1 ? 220 : 140;
-        const delay = Math.max(0, minVisible - elapsed);
-
-        window.clearTimeout(state.gridLoadingHideTimer);
-        state.gridLoadingHideTimer = window.setTimeout(() => {
-            if (batch !== state.gridBatch || !els.gridShell) {
-                return;
-            }
-
-            els.gridShell.classList.remove('is-loading');
-            els.gridShell.setAttribute('aria-busy', 'false');
-        }, delay);
-    }
 
     function renderWorkgroupOptions() {
         const workgroups = getWorkgroupOptions();
@@ -1840,7 +2293,8 @@
                 if (els.workstationSearch) els.workstationSearch.value = '';
                 closeDropdown();
                 renderFilters();
-                reloadGrid();
+                state.displayPage = 1;
+                loadDisplays();
             });
         });
     }
@@ -1862,7 +2316,8 @@
                 if (els.workstationSearch) els.workstationSearch.value = '';
                 closeDropdown();
                 renderFilters();
-                reloadGrid();
+                state.displayPage = 1;
+                loadDisplays();
             });
         });
     }
@@ -1895,15 +2350,18 @@
         state.facilitySearch = '';
         state.workgroupSearch = '';
         state.workstationSearch = '';
+        state.displaySearch = '';
+        state.displayPage = 1;
         if (els.facilitySearch) els.facilitySearch.value = '';
         if (els.workgroupSearch) els.workgroupSearch.value = '';
         if (els.workstationSearch) els.workstationSearch.value = '';
+        if (els.tableSearch) els.tableSearch.value = '';
         closeDropdown();
         renderFilters();
-        reloadGrid();
+        loadDisplays();
     }
 
-    function buildGridUrl(extra = {}) {
+    function buildDisplaysUrl(extra = {}) {
         const url = new URL('/api/displays', window.location.origin);
         const params = {
             type: state.selectedStatus || '',
@@ -1912,6 +2370,9 @@
             workstation_id: state.selectedWorkstationId || '',
             sort: state.sortKey || 'updated_at',
             order: state.sortOrder || 'desc',
+            search: state.displaySearch || '',
+            page: state.displayPage,
+            limit: state.displayLimit,
             ...extra,
         };
 
@@ -1924,27 +2385,6 @@
         });
 
         return `${url.pathname}${url.search}`;
-    }
-
-    function resolveSortState(columns = []) {
-        const active = Array.isArray(columns)
-            ? columns.find((column) => column && typeof column.index === 'number' && [1, -1, 'asc', 'desc'].includes(column.direction))
-            : null;
-        if (!active) {
-            return { key: 'updated_at', order: 'desc' };
-        }
-
-        const key = ({
-            0: 'display_name',
-            2: 'display_hours',
-            3: 'updated_at',
-            4: 'status',
-        })[active.index] || 'updated_at';
-
-        return {
-            key,
-            order: active.direction === -1 || active.direction === 'desc' ? 'desc' : 'asc',
-        };
     }
 
     function extractErrorText(errors) {
@@ -1969,7 +2409,14 @@
             return '';
         }
 
-        return `<button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'${type}',id:${Number(id) || 0}}}))" class="desktop-display-meta-button">${Perfectlum.escapeHtml(label)}</button>`;
+        const badgeByType = {
+            facility: 'F',
+            workgroup: 'WG',
+            workstation: 'WS',
+        };
+        const badge = badgeByType[type] || '';
+
+        return `<button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'${type}',id:${Number(id) || 0}}}))" class="desktop-display-meta-button"><span class="desktop-display-meta-badge">${Perfectlum.escapeHtml(badge)}</span><span class="desktop-display-meta-label">${Perfectlum.escapeHtml(label)}</span></button>`;
     }
 
     function buildUniqueTextParts(parts = []) {
@@ -2118,16 +2565,12 @@
         const match = normalized.match(/^(.*)\s(\d{2}:\d{2})$/);
         const date = match ? match[1] : normalized;
         const time = match ? match[2] : '';
-
-        const label = payload.mode === 'created'
-            ? `<span class="desktop-display-updated-label">${Perfectlum.escapeHtml(text.added)}</span>`
-            : '';
+        const label = payload.mode === 'created' ? `${text.added} • ` : '';
+        const combined = `${label}${date || '-'}` + (time ? ` ${time}` : '');
 
         return `
             <div class="desktop-display-updated-block">
-                ${label}
-                <span class="desktop-display-updated-date">${Perfectlum.escapeHtml(date || '-')}</span>
-                ${time ? `<span class="desktop-display-updated-time">${Perfectlum.escapeHtml(time)}</span>` : ''}
+                <span class="desktop-display-updated-date">${Perfectlum.escapeHtml(combined)}</span>
             </div>
         `;
     }
@@ -2144,185 +2587,140 @@
         `;
     }
 
-    function mapRows(d) {
-        return d.data.map(r => [
-            {
-                id: r.id,
-                displayName: r.displayName,
-                wsName: r.wsName,
-                wsId: r.wsId,
-                wgName: r.wgName,
-                wgId: r.wgId,
-                facName: r.facName,
-                facId: r.facId,
-                status: r.status,
-                connected: r.connected,
-                location: r.location,
-                updatedAt: r.updatedAt,
-                errors: r.errors,
-            },
-            {
-                facName: r.facName,
-                status: r.status,
-                connected: r.connected,
-                location: r.location,
-                errors: r.errors,
-                attentionText: r.attentionText,
-                attentionMode: r.attentionMode,
-                latestFailedCheckText: r.latestFailedCheckText,
-                latestFailedHistoryName: r.latestFailedHistoryName,
-            },
-            {
-                latestHoursDuration: r.latestHoursDuration,
-                latestHoursFormatted: r.latestHoursFormatted,
-                latestHoursAt: r.latestHoursAt,
-                latestHoursSyncedAt: r.latestHoursSyncedAt,
-            },
-            {
-                updatedAt: r.updatedAt,
-                createdAt: r.createdAt,
-                mode: r.latestActivityMode || r.latestActivitySource || 'activity',
-            },
-            r.status,
-            { id: r.id, name: r.displayName },
-        ]);
-    }
-
-    function initGrid() {
-        if (!els.grid || state.grid) return;
-
-        const gridBatch = ++state.gridBatch;
-        primeGridLoading();
-
-        state.grid = Perfectlum.createGrid(els.grid, {
-            columns: [
-                {
-                    name: text.display,
-                    sort: {},
-                    formatter: (cell) => gridjs.html(renderDisplayOverviewCell(cell)),
-                },
-                {
-                    name: text.issue,
-                    sort: false,
-                    width: '240px',
-                    formatter: (cell) => gridjs.html(renderDisplayIssueCell(cell)),
-                },
-                {
-                    name: text.displayHours,
-                    width: '152px',
-                    sort: {},
-                    formatter: (cell) => gridjs.html(renderDisplayHoursCell(cell)),
-                },
-                {
-                    name: text.lastActivity,
-                    width: '146px',
-                    sort: {},
-                    formatter: (cell) => gridjs.html(renderUpdatedCell(cell)),
-                },
-                {
-                    name: text.status,
-                    width: '106px',
-                    sort: {},
-                    formatter: (cell) => gridjs.html(renderStatusCell(cell)),
-                },
-                {
-                    name: text.actions,
-                    sort: false,
-                    width: '96px',
-                    formatter: (c) => !canManageDisplays ? '' : gridjs.html(`
-                        <div class="desktop-display-actions-cell">
-                            <button
-                                type="button"
-                                onclick='window.displaysPage && window.displaysPage.toggleActionMenu(event, ${c.id}, ${JSON.stringify(c.name)})'
-                                class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700">
-                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-                            </button>
-                        </div>`),
-                },
-            ],
-            server: {
-                url: buildGridUrl(),
-                data: async (opts) => {
-                    try {
-                        const payload = await Perfectlum.request(opts.url);
-                        return {
-                            data: mapRows(payload),
-                            total: Number(payload?.total || 0),
-                        };
-                    } finally {
-                        clearGridLoading(gridBatch);
-                    }
-                },
-            },
-            pagination: {
-                enabled: true,
-                limit: 10,
-                server: {
-                    url: (_, pg, lim) => buildGridUrl({ page: pg + 1, limit: lim }),
-                },
-            },
-            search: {
-                enabled: true,
-                server: {
-                    url: (_, kw) => buildGridUrl({ search: kw }),
-                },
-            },
-            sort: {
-                multiColumn: false,
-                server: {
-                    url: (prevUrl, columns) => {
-                        const nextSort = resolveSortState(columns);
-                        state.sortKey = nextSort.key;
-                        state.sortOrder = nextSort.order;
-
-                        const prev = new URL(prevUrl, window.location.origin);
-                        const search = prev.searchParams.get('search') || '';
-                        const limit = prev.searchParams.get('limit') || '';
-
-                        return buildGridUrl({
-                            search,
-                            limit,
-                            page: 1,
-                        });
-                    },
-                },
-            },
-            language: {
-                search: { placeholder: text.searchDisplays },
-                pagination: {
-                    previous: text.previous,
-                    next: text.next,
-                    showing: text.showing,
-                    results: () => text.results,
-                },
-                loading: text.loading,
-                noRecordsFound: text.noMatchingRecordsFound,
-                error: text.unableToLoadData,
-            },
+    function updateDisplaySortIndicators() {
+        document.querySelectorAll('[data-display-sort]').forEach((button) => {
+            const key = button.getAttribute('data-display-sort');
+            button.classList.toggle('is-active', key === state.sortKey);
+        });
+        document.querySelectorAll('[data-display-sort-indicator]').forEach((node) => {
+            const key = node.getAttribute('data-display-sort-indicator');
+            if (key === state.sortKey) {
+                node.textContent = state.sortOrder === 'asc' ? '↑' : '↓';
+            } else {
+                node.textContent = '↕';
+            }
         });
     }
 
-    function reloadGrid() {
-        closeActionMenu();
-        state.grid = null;
-        if (!els.grid) {
-            initGrid();
+    function renderDisplayPager() {
+        const totalPages = Math.max(1, Math.ceil(state.displayTotal / state.displayLimit));
+        const current = Math.min(state.displayPage, totalPages);
+        if (els.pageLabel) {
+            els.pageLabel.textContent = `${text.page || 'Page'} ${current} / ${totalPages}`;
+        }
+        if (els.pagePrev) els.pagePrev.disabled = state.displayLoading || current <= 1;
+        if (els.pageNext) els.pageNext.disabled = state.displayLoading || current >= totalPages;
+
+        const from = state.displayTotal === 0 ? 0 : ((current - 1) * state.displayLimit) + 1;
+        const to = Math.min(state.displayTotal, current * state.displayLimit);
+        if (els.tableSummary) {
+            els.tableSummary.textContent = `${text.showing || 'Showing'} ${from}-${to} ${text.of || 'of'} ${state.displayTotal} ${text.results || 'results'}`;
+        }
+        if (els.tableMeta) {
+            const statusLabel = state.selectedStatus === 'ok' ? 'OK' : (state.selectedStatus === 'failed' ? 'Not OK' : 'All');
+            els.tableMeta.textContent = `${statusLabel} • ${state.displayTotal} ${text.results || 'results'}`;
+        }
+    }
+
+    function mapDisplayRows(rows) {
+        return rows.map((r) => ({
+            id: r.id,
+            displayName: r.displayName,
+            wsName: r.wsName,
+            wsId: r.wsId,
+            wgName: r.wgName,
+            wgId: r.wgId,
+            facName: r.facName,
+            facId: r.facId,
+            status: r.status,
+            connected: r.connected,
+            location: r.location,
+            updatedAt: r.updatedAt,
+            createdAt: r.createdAt,
+            latestActivityMode: r.latestActivityMode || r.latestActivitySource || 'activity',
+            errors: r.errors,
+            attentionText: r.attentionText,
+            attentionMode: r.attentionMode,
+            latestFailedCheckText: r.latestFailedCheckText,
+            latestFailedHistoryName: r.latestFailedHistoryName,
+            latestHoursDuration: r.latestHoursDuration,
+            latestHoursFormatted: r.latestHoursFormatted,
+            latestHoursAt: r.latestHoursAt,
+            latestHoursSyncedAt: r.latestHoursSyncedAt,
+        }));
+    }
+
+    function renderDisplayRows() {
+        if (!els.tableBody) return;
+        if (state.displayLoading) {
+            els.tableBody.innerHTML = `<tr><td colspan="6" class="display-empty">${Perfectlum.escapeHtml(text.loading || 'Loading...')}</td></tr>`;
             return;
         }
 
-        primeGridLoading();
-        Perfectlum.remountGrid('displays-grid', (freshGrid) => {
-            els.grid = freshGrid || document.getElementById('displays-grid');
-            state.grid = null;
-            initGrid();
-        });
+        if (!state.displayRows.length) {
+            els.tableBody.innerHTML = `<tr><td colspan="6" class="display-empty">${Perfectlum.escapeHtml(text.noMatchingRecordsFound || 'No matching records found')}</td></tr>`;
+            return;
+        }
+
+        els.tableBody.innerHTML = state.displayRows.map((item) => {
+            const encodedName = encodeURIComponent(String(item.displayName || '-'));
+            return `
+                <tr class="display-row-clickable" data-action="open-display-row" data-display-id="${Number(item.id || 0)}">
+                    <td>${renderDisplayOverviewCell(item)}</td>
+                    <td>${renderDisplayIssueCell(item)}</td>
+                    <td>${renderDisplayHoursCell(item)}</td>
+                    <td>${renderUpdatedCell({ updatedAt: item.updatedAt, createdAt: item.createdAt, mode: item.latestActivityMode })}</td>
+                    <td>${renderStatusCell(item.status)}</td>
+                    <td class="text-center">${!canManageDisplays ? '' : `<button type="button" data-action="menu" data-display-id="${Number(item.id || 0)}" data-display-name="${encodedName}" class="display-row-action mx-auto transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2"></circle><circle cx="12" cy="5" r="2"></circle><circle cx="12" cy="19" r="2"></circle></svg></button>`}</td>
+                </tr>
+            `;
+        }).join('');
     }
 
-    function toggleActionMenu(event, id, name) {
+    async function loadDisplays() {
+        closeActionMenu();
+        state.displayLoading = true;
+        renderDisplayPager();
+        renderDisplayRows();
+        let hasError = false;
+        try {
+            const payload = await Perfectlum.request(buildDisplaysUrl());
+            const incoming = Array.isArray(payload?.data) ? payload.data : [];
+            state.displayRows = mapDisplayRows(incoming);
+            state.displayTotal = Number(payload?.total || 0);
+            if (!Number.isFinite(state.displayTotal) || state.displayTotal < state.displayRows.length) {
+                state.displayTotal = state.displayRows.length;
+            }
+
+            const totalPages = Math.max(1, Math.ceil(state.displayTotal / state.displayLimit));
+            if (state.displayPage > totalPages) {
+                state.displayPage = totalPages;
+                return loadDisplays();
+            }
+        } catch (error) {
+            hasError = true;
+            state.displayRows = [];
+            state.displayTotal = 0;
+            if (els.tableBody) {
+                els.tableBody.innerHTML = `<tr><td colspan="6" class="display-empty text-rose-600">${Perfectlum.escapeHtml(error.message || text.unableToLoadData)}</td></tr>`;
+            }
+        } finally {
+            state.displayLoading = false;
+            if (!hasError) {
+                renderDisplayRows();
+            }
+            renderDisplayPager();
+            window.lucide?.createIcons();
+        }
+    }
+
+    function toggleActionMenu(event, id, name, triggerEl) {
         if (!canManageDisplays) return;
         event.preventDefault();
         event.stopPropagation();
-        const rect = event.currentTarget.getBoundingClientRect();
+        const anchor = triggerEl instanceof Element ? triggerEl : (event.currentTarget instanceof Element ? event.currentTarget : event.target.closest('[data-action="menu"]'));
+        if (!anchor) return;
+        const rect = anchor.getBoundingClientRect();
         const nextOpen = !(state.actionTarget && state.actionTarget.id === id && !els.actionMenu.classList.contains('hidden'));
         state.actionTarget = nextOpen ? { id, name } : null;
         if (!nextOpen) {
@@ -2451,7 +2849,7 @@
             const payload = await Perfectlum.postForm(`/api/display-modal/${state.editTarget.id}/save`, formData);
             if (!payload.success) throw new Error(payload.message || text.unableToUpdateDisplay);
             closeEditModal();
-            reloadGrid();
+            loadDisplays();
         } catch (error) {
             els.editError.textContent = error.message || text.unableToUpdateDisplay;
             els.editError.classList.remove('hidden');
@@ -2488,7 +2886,7 @@
             const payload = await Perfectlum.postForm('/delete-display', formData);
             if (!payload.success) throw new Error(payload.msg || text.unableToDeleteDisplay);
             closeDeleteModal();
-            reloadGrid();
+            loadDisplays();
         } catch (error) {
             window.alert(error.message || text.unableToDeleteDisplay);
             els.deleteConfirm.disabled = false;

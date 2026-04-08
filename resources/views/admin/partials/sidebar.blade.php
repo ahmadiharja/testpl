@@ -19,10 +19,13 @@
         $sidebarRole === 'super' ? ['name' => 'Site Settings', 'icon' => 'settings-2'] : null,
         $canManageDesktop ? ['name' => 'Application Settings', 'icon' => 'sliders-horizontal'] : null,
         $canManageDesktop ? ['name' => 'Alert Settings', 'icon' => 'bell-ring'] : null,
+        $sidebarRole === 'super' ? ['name' => 'Client Monitor', 'icon' => 'terminal'] : null,
     ]));
 @endphp
 
-<aside class="h-screen shrink-0 overflow-hidden border-r transition-all duration-500"
+<aside id="desktop-sidebar-shell"
+       data-desktop-shell-signature="{{ $desktopShellSignature ?? '' }}"
+       class="h-screen shrink-0 overflow-hidden border-r transition-all duration-500"
        :class="[sidebarCollapsed ? 'w-[92px]' : 'w-[300px]', theme === 'perfectlum' ? 'border-slate-200 bg-white/95' : 'border-white/5 bg-[#0A0A0B]/95']">
     <div class="flex h-full flex-col px-4 pb-6 pt-6">
         <div class="mb-8 flex items-center justify-between gap-3" :class="sidebarCollapsed ? 'px-1 justify-center' : 'px-3'">
@@ -75,7 +78,7 @@
                             class="group flex w-full items-center rounded-2xl transition-all duration-200"
                             :class="[
                                 sidebarCollapsed ? 'mx-auto h-14 w-14 justify-center' : 'gap-3 px-4 py-3.5',
-                                ['Site Settings', 'Application Settings', 'Alert Settings'].includes(activeMenu)
+                                ['Site Settings', 'Application Settings', 'Alert Settings', 'Client Monitor'].includes(activeMenu)
                                     ? (theme === 'perfectlum' ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' : 'bg-sky-500 text-white shadow-[0_0_30px_-8px_rgba(14,165,233,0.6)]')
                                     : (theme === 'perfectlum' ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-900' : 'text-white/45 hover:bg-white/5 hover:text-white')
                             ]"
@@ -91,6 +94,7 @@
                                 'Site Settings' => 'site-settings',
                                 'Application Settings' => 'global-settings',
                                 'Alert Settings' => 'alert-settings',
+                                'Client Monitor' => 'client-monitor',
                                 default => 'site-settings',
                             }) }}"
                                class="flex items-center gap-3 rounded-2xl px-4 py-3 text-[13px] font-medium transition-all duration-200"

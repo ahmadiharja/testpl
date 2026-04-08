@@ -4,6 +4,16 @@
     'multiple' => true,
     'treeData' => [],
     'optionCatalog' => [],
+    'showHeaderIcon' => true,
+    'eyebrow' => null,
+    'scopeBannerTitle' => null,
+    'scopeBannerDescription' => null,
+    'browserTitle' => null,
+    'browserDescription' => null,
+    'selectionTitle' => null,
+    'selectionDescription' => null,
+    'rulesTitle' => null,
+    'rulesItems' => null,
 ])
 
 @php
@@ -45,6 +55,22 @@
     ];
 @endphp
 
+@php
+    $editorEyebrow = $eyebrow ?? __('Application Settings');
+    $editorScopeBannerTitle = $scopeBannerTitle ?? __('Bulk editing resolves to workstation preferences under the selected targets.');
+    $editorScopeBannerDescription = $scopeBannerDescription ?? __('Choose a target type, check one or more items, review the affected workstation count, then open Bulk Configure.');
+    $editorBrowserTitle = $browserTitle ?? __('Choose bulk edit targets');
+    $editorBrowserDescription = $browserDescription ?? __('Only the selected target level will show checkboxes.');
+    $editorSelectionTitle = $selectionTitle ?? __('Prepare the bulk configuration set');
+    $editorSelectionDescription = $selectionDescription ?? __('Selected targets turn into workstation sets at save time. The configuration form opens only when you are ready.');
+    $editorRulesTitle = $rulesTitle ?? __('Rules');
+    $editorRulesItems = $rulesItems ?? [
+        __('Facility and Workgroup targets expose Application and Display Calibration only.'),
+        __('Workstation targets also expose Quality Assurance, Location, and Move to Workgroup.'),
+        __('Move to Workgroup stays disabled when selected workstations belong to different facilities.'),
+    ];
+@endphp
+
 <section class="py-3">
     <style>
         #settings-browser-panel summary {
@@ -69,16 +95,18 @@
     </style>
 
     <div class="mb-3 flex items-center gap-3 rounded-[1.15rem] border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-sky-100 bg-sky-50 text-sky-500 shadow-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                <rect x="4" y="4" width="6" height="6" rx="1"></rect>
-                <rect x="14" y="4" width="6" height="6" rx="1"></rect>
-                <rect x="4" y="14" width="6" height="6" rx="1"></rect>
-                <rect x="14" y="14" width="6" height="6" rx="1"></rect>
-            </svg>
-        </span>
+        @if($showHeaderIcon)
+            <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-sky-100 bg-sky-50 text-sky-500 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <rect x="4" y="4" width="6" height="6" rx="1"></rect>
+                    <rect x="14" y="4" width="6" height="6" rx="1"></rect>
+                    <rect x="4" y="14" width="6" height="6" rx="1"></rect>
+                    <rect x="14" y="14" width="6" height="6" rx="1"></rect>
+                </svg>
+            </span>
+        @endif
         <div class="min-w-0">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Application Settings') }}</p>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ $editorEyebrow }}</p>
             <h1 class="mt-0.5 text-[1.85rem] font-bold tracking-tight text-slate-900">{{ $title }}</h1>
             <p class="mt-0.5 text-sm text-slate-500">{{ $description }}</p>
         </div>
@@ -86,8 +114,8 @@
 
     <div id="settings-scope-banner" class="mb-3 flex items-start justify-between gap-3 rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-2.5 text-xs text-slate-600 shadow-sm">
         <div class="min-w-0">
-            <p class="font-semibold text-slate-700">{{ __('Bulk editing resolves to workstation preferences under the selected targets.') }}</p>
-            <p class="mt-0.5 text-slate-500">{{ __('Choose a target type, check one or more items, review the affected workstation count, then open Bulk Configure.') }}</p>
+            <p class="font-semibold text-slate-700">{{ $editorScopeBannerTitle }}</p>
+            <p class="mt-0.5 text-slate-500">{{ $editorScopeBannerDescription }}</p>
         </div>
         <button id="settings-banner-close" type="button" class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition hover:border-slate-300 hover:text-slate-700" aria-label="{{ __('Dismiss help banner') }}">
             <span class="text-base leading-none">&times;</span>
@@ -99,8 +127,8 @@
             <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
                     <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">{{ __('Target Browser') }}</p>
-                    <h2 class="mt-1 text-[1.15rem] font-bold tracking-tight text-slate-900">{{ __('Choose bulk edit targets') }}</h2>
-                    <p class="mt-1 text-sm leading-6 text-slate-500">{{ __('Only the selected target level will show checkboxes.') }}</p>
+                    <h2 class="mt-1 text-[1.15rem] font-bold tracking-tight text-slate-900">{{ $editorBrowserTitle }}</h2>
+                    <p class="mt-1 text-sm leading-6 text-slate-500">{{ $editorBrowserDescription }}</p>
                 </div>
                 <span id="settings-browser-count" class="inline-flex min-w-[5.5rem] items-center justify-center text-center rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold leading-tight text-slate-500">0 targets</span>
             </div>
@@ -137,8 +165,8 @@
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div class="min-w-0">
                     <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">{{ __('Bulk selection') }}</p>
-                    <h2 class="mt-1 text-[1.2rem] font-bold tracking-tight text-slate-900">{{ __('Prepare the bulk configuration set') }}</h2>
-                    <p class="mt-1 text-sm leading-6 text-slate-500">{{ __('Selected targets turn into workstation sets at save time. The configuration form opens only when you are ready.') }}</p>
+                    <h2 class="mt-1 text-[1.2rem] font-bold tracking-tight text-slate-900">{{ $editorSelectionTitle }}</h2>
+                    <p class="mt-1 text-sm leading-6 text-slate-500">{{ $editorSelectionDescription }}</p>
                     </div>
                     <button id="settings-clear-selection" type="button" class="hidden rounded-full border border-sky-200 bg-white px-3.5 py-2 text-xs font-semibold text-sky-700 transition hover:bg-sky-50">{{ __('Clear all') }}</button>
                 </div>
@@ -175,11 +203,11 @@
             </div>
 
             <div class="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">{{ __('Rules') }}</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-500">{{ $editorRulesTitle }}</p>
                 <ul class="mt-2 space-y-1.5 text-sm leading-6 text-slate-500">
-                    <li>{{ __('Facility and Workgroup targets expose Application and Display Calibration only.') }}</li>
-                    <li>{{ __('Workstation targets also expose Quality Assurance, Location, and Move to Workgroup.') }}</li>
-                    <li>{{ __('Move to Workgroup stays disabled when selected workstations belong to different facilities.') }}</li>
+                    @foreach($editorRulesItems as $editorRulesItem)
+                        <li>{{ $editorRulesItem }}</li>
+                    @endforeach
                 </ul>
             </div>
         </div>
@@ -322,6 +350,8 @@
     </div>
 </section>
 
+@once
+@push('scripts')
 <script>
 (() => {
 const config = {
@@ -850,7 +880,13 @@ const renderBrowser = () => {
     }
 
     container.innerHTML = html;
-    setText('settings-browser-count', `${selectableCount} ${targetTypeMeta[state.targetType].label.toLowerCase()}${selectableCount === 1 ? '' : 's'}`);
+    const compactMobileCount = document.body?.dataset.surface === 'mobile';
+    setText(
+        'settings-browser-count',
+        compactMobileCount
+            ? `${selectableCount} items`
+            : `${selectableCount} ${targetTypeMeta[state.targetType].label.toLowerCase()}${selectableCount === 1 ? '' : 's'}`
+    );
     setText('settings-browser-meta', '');
 };
 
@@ -1159,13 +1195,19 @@ const initEvents = () => {
         byId('UsedClassificationForLastScheduling').value = byId('UsedClassification').value;
     });
 
-    document.addEventListener('click', (event) => {
+    const onDocumentClick = (event) => {
         searchableSelects.forEach((instance, id) => {
             if (!instance.wrapper.contains(event.target)) {
                 instance.panel.classList.add('hidden');
             }
         });
-    });
+    };
+
+    document.addEventListener('click', onDocumentClick);
+
+    return () => {
+        document.removeEventListener('click', onDocumentClick);
+    };
 };
 
 const setText = (id, value) => { const el = byId(id); if (el) el.textContent = value; };
@@ -1177,15 +1219,26 @@ const boot = () => {
     renderSelectionSummary();
     resetForms();
     initSearchableSelects();
-    initEvents();
+    return initEvents();
+};
+
+const launch = () => {
+    if (window.Perfectlum?.mountMobilePage && document.body?.dataset.surface === 'mobile') {
+        window.Perfectlum.mountMobilePage('workstation-settings-editor', boot);
+        return;
+    }
+
+    boot();
 };
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot, { once: true });
+    document.addEventListener('DOMContentLoaded', launch, { once: true });
 } else {
-    boot();
+    launch();
 }
 })();
 </script>
+@endpush
+@endonce
 
 

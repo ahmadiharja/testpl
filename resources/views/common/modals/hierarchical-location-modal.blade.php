@@ -337,7 +337,7 @@
                                                                 <p class="text-[11px] font-extrabold uppercase tracking-[0.22em] text-slate-400">{{ __('Registered Workstations') }}</p>
                                                                 <h3 class="mt-3 text-[2rem] leading-[1.05] font-black tracking-tight text-slate-900">{{ __('All workstations in this workgroup') }}</h3>
                                                             </div>
-                                                            <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500" x-text="`${workgroupDetail.workstations.length} workstations`"></span>
+                                                            <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500" x-text="`${workgroupDetail.summary.workstationCount || 0} workstations`"></span>
                                                         </div>
                                                         <div class="mt-6 overflow-hidden rounded-[1.5rem] border border-slate-200">
                                                             <table class="min-w-full divide-y divide-slate-200">
@@ -350,7 +350,7 @@
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody class="divide-y divide-slate-100 bg-white">
-                                                                    <template x-for="item in workgroupDetail.workstations" :key="`wg-workstation-${item.id}`">
+                                                                    <template x-for="item in (workgroupDetail.workstations || [])" :key="`wg-workstation-${item.id}`">
                                                                         <tr class="transition hover:bg-sky-50/50">
                                                                             <td class="px-5 py-4">
                                                                                 <button type="button" class="text-left text-sm font-bold text-sky-600 transition hover:text-sky-700 hover:underline" @click="pushView('workstation', item.id)" x-text="item.name"></button>
@@ -367,6 +367,16 @@
                                                                     </template>
                                                                 </tbody>
                                                             </table>
+                                                        </div>
+                                                        <div class="mt-4 flex items-center justify-center" x-show="workgroupWorkstationsMeta.hasMore">
+                                                            <button
+                                                                type="button"
+                                                                class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                                                :disabled="workgroupWorkstationsLoadingMore"
+                                                                @click="loadMoreWorkgroupWorkstations()">
+                                                                <i data-lucide="chevrons-down" class="h-4 w-4"></i>
+                                                                <span x-text="workgroupWorkstationsLoadingMore ? @js(__('Loading...')) : @js(__('Load more workstations'))"></span>
+                                                            </button>
                                                         </div>
                                                     </div>
 
@@ -2287,6 +2297,13 @@
             workgroupSettingsEditing: false,
             savingWorkgroupSettings: false,
             workgroupSettingsConfirmOpen: false,
+            workgroupWorkstationsMeta: {
+                page: 1,
+                limit: 24,
+                total: 0,
+                hasMore: false,
+            },
+            workgroupWorkstationsLoadingMore: false,
             workgroupOptionSearch: {
                 facilities: '',
             },
@@ -2489,6 +2506,8 @@
                     this.activeWorkgroupTab = 'overview';
                     this.workgroupSettingsEditing = false;
                     this.workgroupSettingsConfirmOpen = false;
+                    this.workgroupWorkstationsMeta = { page: 1, limit: 24, total: 0, hasMore: false };
+                    this.workgroupWorkstationsLoadingMore = false;
                     this.displayStructureMapOpen = false;
                     this.workgroupStructureMapOpen = false;
                     this.workstationStructureMapOpen = false;
@@ -2526,7 +2545,6 @@
                     this.workstationStructureMapOpen = false;
                 }
 
-                setTimeout(() => lucide.createIcons(), 50);
             },
 
             async loadFacilityDetail(id) {
@@ -2601,25 +2619,115 @@
                 }
             },
 
-            async loadWorkgroupDetail(id) {
-                this.workgroupLoading = true;
-                this.workgroupError = '';
+            async loadWorkgroupDetail(id, options = {}) {
+                const includeStructure = options.includeStructure === true;
+                const merge = options.merge === true;
+                const silent = options.silent === true;
+                const appendWorkstations = options.appendWorkstations === true;
+                const wsPage = Number(options.wsPage || 1) || 1;
+                const wsLimit = Number(options.wsLimit || this.workgroupWorkstationsMeta.limit || 24) || 24;
+
+                if (!silent) {
+                    this.workgroupLoading = true;
+                    this.workgroupError = '';
+                }
 
                 try {
-                    const response = await Perfectlum.request(`/api/workgroup-modal/${id}`);
-                    this.workgroupDetail = response;
+                    const params = new URLSearchParams();
+                    params.set('ws_page', String(wsPage));
+                    params.set('ws_limit', String(wsLimit));
+                    if (includeStructure) {
+                        params.set('include_structure', '1');
+                    }
+
+                    const response = await Perfectlum.request(`/api/workgroup-modal/${id}?${params.toString()}`);
+                    const nextDetail = (merge && this.workgroupDetail)
+                        ? {
+                            ...this.workgroupDetail,
+                            ...response,
+                            structure: response.structure || this.workgroupDetail.structure,
+                        }
+                        : response;
+
+                    if (appendWorkstations && this.workgroupDetail) {
+                        const existing = Array.isArray(this.workgroupDetail.workstations) ? this.workgroupDetail.workstations : [];
+                        const incoming = Array.isArray(response.workstations) ? response.workstations : [];
+                        const seen = new Set(existing.map((item) => String(item.id)));
+                        nextDetail.workstations = [...existing];
+                        incoming.forEach((item) => {
+                            const key = String(item.id);
+                            if (!seen.has(key)) {
+                                seen.add(key);
+                                nextDetail.workstations.push(item);
+                            }
+                        });
+                    }
+
+                    this.workgroupDetail = nextDetail;
+                    this.workgroupWorkstationsMeta = response.workstationsMeta || this.workgroupWorkstationsMeta;
                     this.workgroupSettingsForm = {
-                        name: response.settings?.name || '',
-                        address: response.settings?.address || '',
-                        phone: response.settings?.phone || '',
-                        facility_id: response.settings?.facility_id || '',
+                        name: this.workgroupDetail.settings?.name || '',
+                        address: this.workgroupDetail.settings?.address || '',
+                        phone: this.workgroupDetail.settings?.phone || '',
+                        facility_id: this.workgroupDetail.settings?.facility_id || '',
                     };
                 } catch (error) {
-                    this.workgroupDetail = null;
-                    this.workgroupError = error.message || 'Workgroup detail could not be loaded.';
+                    if (!merge) {
+                        this.workgroupDetail = null;
+                    }
+                    if (!silent) {
+                        this.workgroupError = error.message || 'Workgroup detail could not be loaded.';
+                    } else {
+                        notify('failed', error.message || 'Workgroup structure could not be loaded.');
+                    }
                 } finally {
-                    this.workgroupLoading = false;
-                    this.$nextTick(() => lucide.createIcons());
+                    if (!silent) {
+                        this.workgroupLoading = false;
+                    }
+                    if (!appendWorkstations) {
+                        this.$nextTick(() => lucide.createIcons());
+                    }
+                }
+            },
+
+            async ensureWorkgroupStructureLoaded() {
+                const structureWorkgroups = this.workgroupDetail?.structure?.workgroups;
+                if (Array.isArray(structureWorkgroups) && structureWorkgroups.length > 0) {
+                    return true;
+                }
+
+                if (!this.current?.id) {
+                    return false;
+                }
+
+                await this.loadWorkgroupDetail(this.current.id, {
+                    includeStructure: true,
+                    merge: true,
+                    silent: true,
+                    appendWorkstations: true,
+                    wsPage: Number(this.workgroupWorkstationsMeta.page || 1),
+                    wsLimit: Number(this.workgroupWorkstationsMeta.limit || 24),
+                });
+
+                return Array.isArray(this.workgroupDetail?.structure?.workgroups) && this.workgroupDetail.structure.workgroups.length > 0;
+            },
+
+            async loadMoreWorkgroupWorkstations() {
+                if (this.workgroupWorkstationsLoadingMore || !this.workgroupWorkstationsMeta?.hasMore || !this.current?.id) {
+                    return;
+                }
+
+                this.workgroupWorkstationsLoadingMore = true;
+                try {
+                    await this.loadWorkgroupDetail(this.current.id, {
+                        silent: true,
+                        merge: true,
+                        appendWorkstations: true,
+                        wsPage: Number(this.workgroupWorkstationsMeta.page || 1) + 1,
+                        wsLimit: Number(this.workgroupWorkstationsMeta.limit || 24),
+                    });
+                } finally {
+                    this.workgroupWorkstationsLoadingMore = false;
                 }
             },
 
@@ -3380,6 +3488,9 @@
                 this.structureMapFilter = 'all';
                 this.structureMapExpandedWorkstationId = null;
                 this.structureMapExpandedWorkgroupId = null;
+
+                await this.ensureWorkgroupStructureLoaded();
+
                 this.$nextTick(async () => {
                     await this.renderStructureMapGraph();
                     lucide.createIcons();
@@ -4455,6 +4566,8 @@
                     this.workgroupSettingsEditing = false;
                     this.savingWorkgroupSettings = false;
                     this.workgroupSettingsConfirmOpen = false;
+                    this.workgroupWorkstationsMeta = { page: 1, limit: 24, total: 0, hasMore: false };
+                    this.workgroupWorkstationsLoadingMore = false;
                     this.workgroupOptionSearch = { facilities: '' };
                     this.workgroupSettingsForm = { name: '', address: '', phone: '', facility_id: '' };
                     this.workstationDetail = null;

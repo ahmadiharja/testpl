@@ -4,6 +4,416 @@
     $canManageDisplayCalibration = in_array(($role ?? session('role')), ['super', 'admin'], true);
 @endphp
 
+<style>
+    .calibration-directory-shell {
+        border-radius: 2rem;
+        border: 1px solid #d5e0ec;
+        background: linear-gradient(180deg, #f7fbff 0%, #ffffff 100%);
+        box-shadow: 0 26px 64px -46px rgba(15, 23, 42, 0.34);
+    }
+    .calibration-create-shell {
+        border-radius: 1.5rem;
+        border: 1px solid #dce8f4;
+        background: linear-gradient(180deg, #f9fcff 0%, #ffffff 100%);
+        box-shadow: 0 14px 38px -28px rgba(15, 23, 42, 0.22);
+    }
+    .calibration-jobs-shell {
+        border-radius: 2rem;
+        border: 1px solid #d5e0ec;
+        background: linear-gradient(180deg, #f7fbff 0%, #ffffff 100%);
+        box-shadow: 0 26px 64px -46px rgba(15, 23, 42, 0.34);
+        overflow: hidden;
+    }
+    .calibration-jobs-head {
+        padding: 18px 18px 12px;
+    }
+    .calibration-table-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 18px;
+        border-top: 1px solid #e3ecf5;
+        border-bottom: 1px solid #e3ecf5;
+        background: #f8fbff;
+    }
+    .calibration-table-search {
+        width: min(440px, 100%);
+        height: 42px;
+        border-radius: 999px;
+        border: 1px solid #c9d8e8;
+        padding: 0 16px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #12263a;
+        background: #fff;
+    }
+    .calibration-table-search:focus {
+        outline: none;
+        border-color: #1d9bf0;
+        box-shadow: 0 0 0 3px rgba(29, 155, 240, 0.16);
+    }
+    .calibration-table-wrap {
+        overflow-x: auto;
+        background: #fff;
+    }
+    .calibration-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 1180px;
+        table-layout: fixed;
+    }
+    .calibration-table th:nth-child(1),
+    .calibration-table td:nth-child(1) {
+        width: 40%;
+    }
+    .calibration-table th:nth-child(2),
+    .calibration-table td:nth-child(2) {
+        width: 14%;
+        text-align: center;
+    }
+    .calibration-table th:nth-child(3),
+    .calibration-table td:nth-child(3) {
+        width: 14%;
+        text-align: center;
+    }
+    .calibration-table th:nth-child(4),
+    .calibration-table td:nth-child(4) {
+        width: 12%;
+        text-align: center;
+    }
+    .calibration-table th:nth-child(5),
+    .calibration-table td:nth-child(5) {
+        width: 12%;
+        text-align: center;
+    }
+    .calibration-table th:nth-child(6),
+    .calibration-table td:nth-child(6) {
+        width: 8%;
+        text-align: center;
+    }
+    .calibration-table th {
+        padding: 13px 16px;
+        text-align: left;
+        border-bottom: 1px solid #d8e4f0;
+        background: #e9f1fa;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        color: #4d647d;
+        white-space: nowrap;
+    }
+    .calibration-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #edf2f8;
+        font-size: 14px;
+        color: #334155;
+        vertical-align: middle;
+        background: #fff;
+    }
+    .calibration-table tbody tr:hover td {
+        background: #f7fbff;
+    }
+    .calibration-table-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 16px 14px;
+        border-top: 1px solid #dbe7f3;
+        background: #f7fbff;
+    }
+    .calibration-pager {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .calibration-page-btn {
+        height: 32px;
+        min-width: 32px;
+        border-radius: 999px;
+        border: 1px solid #c7d6e7;
+        background: #ffffff;
+        color: #2c4158;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 0 12px;
+        transition: all .18s ease;
+    }
+    .calibration-page-btn:hover:not(:disabled) {
+        border-color: #1d9bf0;
+        color: #0f5f9f;
+        background: #f0f8ff;
+    }
+    .calibration-page-btn:disabled {
+        opacity: .45;
+        cursor: not-allowed;
+    }
+    .calibration-empty {
+        padding: 24px 16px;
+        text-align: center;
+        color: #5f7388;
+        font-size: 14px;
+        border-bottom: 1px solid #edf2f8;
+    }
+    #tasks-grid .gridjs-head {
+        display: none !important;
+    }
+    #tasks-grid .gridjs-wrapper,
+    #tasks-grid .gridjs-table,
+    #tasks-grid .gridjs-thead,
+    #tasks-grid .gridjs-tbody {
+        border: 0 !important;
+        box-shadow: none !important;
+        background: transparent !important;
+    }
+    #tasks-grid .gridjs-table {
+        width: 100% !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+    }
+    #tasks-grid .gridjs-th {
+        padding: 13px 16px !important;
+        text-align: left !important;
+        border-bottom: 1px solid #d8e4f0 !important;
+        background: #e9f1fa !important;
+        font-size: 11px !important;
+        font-weight: 800 !important;
+        letter-spacing: .18em !important;
+        text-transform: uppercase !important;
+        color: #4d647d !important;
+        white-space: nowrap !important;
+    }
+    #tasks-grid [data-calibration-sort],
+    .calibration-table [data-calibration-sort],
+    .display-sort-btn {
+        border: 0;
+        background: transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #5a7087;
+        font: inherit;
+        letter-spacing: inherit;
+        text-transform: inherit;
+        cursor: pointer;
+        border-radius: 999px;
+        padding: 2px 8px;
+        margin-left: -8px;
+        transition: all .18s ease;
+    }
+    #tasks-grid [data-calibration-sort]:hover,
+    .calibration-table [data-calibration-sort]:hover,
+    .display-sort-btn:hover {
+        background: #f2f7fd;
+        color: #2f4d6a;
+    }
+    #tasks-grid [data-calibration-sort].is-active,
+    .calibration-table [data-calibration-sort].is-active,
+    .display-sort-btn.is-active {
+        background: #e2edf9;
+        color: #24486b;
+    }
+    #tasks-grid [data-calibration-sort-indicator],
+    .calibration-table [data-calibration-sort-indicator],
+    .display-sort-indicator {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        background: #d4e3f4;
+        color: #2f5477;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: 0;
+        transition: all .18s ease;
+    }
+    #tasks-grid [data-calibration-sort].is-active [data-calibration-sort-indicator],
+    .calibration-table [data-calibration-sort].is-active [data-calibration-sort-indicator],
+    .display-sort-btn.is-active .display-sort-indicator {
+        background: #2f6fae;
+        color: #ffffff;
+    }
+    #tasks-grid .gridjs-th:last-child,
+    #tasks-grid .gridjs-td:last-child {
+        text-align: center !important;
+    }
+    #tasks-grid .gridjs-td {
+        padding: 12px 16px !important;
+        border-bottom: 1px solid #edf2f8 !important;
+        font-size: 14px !important;
+        color: #334155 !important;
+        vertical-align: middle !important;
+        background: #fff !important;
+    }
+    .calibration-display-cell {
+        max-width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .calibration-display-title {
+        display: block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.2;
+        color: #0f172a;
+    }
+    .calibration-display-meta {
+        margin-top: 0.28rem;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.2rem 0.36rem;
+        min-width: 0;
+        font-size: 11px;
+        color: #94a3b8;
+    }
+    .calibration-display-meta-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        font: inherit;
+        font-weight: 600;
+        color: #64748b;
+        transition: color 160ms ease;
+        min-width: 0;
+        cursor: pointer;
+    }
+    .calibration-display-meta-button:hover,
+    .calibration-display-meta-button:focus-visible {
+        color: #0284c7;
+        outline: none;
+    }
+    .calibration-display-meta-badge {
+        width: 0;
+        height: 18px;
+        border-radius: 999px;
+        background: #1d9bf0;
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0;
+        line-height: 1;
+        opacity: 0;
+        transform: translateX(-6px);
+        overflow: hidden;
+        margin-right: 0;
+        transition: width 180ms ease, opacity 180ms ease, transform 180ms ease, margin-right 180ms ease;
+        flex: 0 0 auto;
+    }
+    .calibration-display-meta-button:hover .calibration-display-meta-badge,
+    .calibration-display-meta-button:focus-visible .calibration-display-meta-badge {
+        width: 18px;
+        opacity: 1;
+        transform: translateX(0);
+        margin-right: 6px;
+    }
+    .calibration-display-meta-label {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .calibration-display-separator {
+        color: #cbd5e1;
+        font-weight: 700;
+    }
+    .calibration-cell-center {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100%;
+        text-align: center;
+    }
+    .calibration-date-text {
+        font-size: 13px;
+        font-weight: 600;
+        color: #0f172a;
+        white-space: nowrap;
+    }
+    .calibration-date-text.is-overdue {
+        color: #e11d48;
+    }
+    .calibration-created-text {
+        font-size: 13px;
+        font-weight: 600;
+        color: #0f172a;
+        white-space: nowrap;
+    }
+    .calibration-created-text.is-muted {
+        color: #94a3b8;
+        font-weight: 500;
+    }
+    #tasks-grid .gridjs-tr:hover .gridjs-td {
+        background: #f7fbff !important;
+    }
+    #tasks-grid .gridjs-footer {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 10px !important;
+        padding: 12px 16px 14px !important;
+        border-top: 1px solid #dbe7f3 !important;
+        background: #f7fbff !important;
+    }
+    #tasks-grid .gridjs-pagination .gridjs-pages button {
+        height: 32px !important;
+        min-width: 32px !important;
+        border-radius: 999px !important;
+        border: 1px solid #c7d6e7 !important;
+        background: #ffffff !important;
+        color: #2c4158 !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        padding: 0 12px !important;
+    }
+    #tasks-grid .gridjs-pagination .gridjs-pages button:hover:not(:disabled) {
+        border-color: #1d9bf0 !important;
+        color: #0f5f9f !important;
+        background: #f0f8ff !important;
+    }
+    #tasks-grid .gridjs-pagination .gridjs-pages button.gridjs-currentPage {
+        border-color: #1d9bf0 !important;
+        background: #e7f4ff !important;
+        color: #0f5f9f !important;
+    }
+    #tasks-grid .gridjs-pagination .gridjs-pages button:disabled {
+        opacity: .45 !important;
+        cursor: not-allowed !important;
+    }
+    #tasks-grid .gridjs-pagination .gridjs-summary {
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        color: #64748b !important;
+    }
+    @media (max-width: 960px) {
+        .calibration-table-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .calibration-table-search {
+            width: 100%;
+        }
+    }
+</style>
+
 {{-- ===================== DISPLAY CALIBRATION PAGE ===================== --}}
 <div class="space-y-6 pb-8 font-inter theme-lum">
 
@@ -16,21 +426,21 @@
                 <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{{ __('Admin Workspace') }}</p>
                 <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">{{ __('Calibrate Display') }}</h1>
                 <p class="max-w-3xl text-sm text-slate-500">
-                    {{ __('Run immediate calibration work for a selected scope, then verify the newest calibration jobs without switching over to the full scheduler.') }}
+                    {{ __('Create calibration tasks by scope and monitor recent jobs in one place.') }}
                 </p>
             </div>
         </div>
     </section>
 
-    <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+    <section class="calibration-directory-shell p-6">
 
     @if($canManageDisplayCalibration)
     {{-- ── NEW CALIBRATION TASK FORM ── --}}
-    <div class="mb-6 rounded-[1.75rem] border border-slate-200 bg-slate-50/70 p-5 shadow-[0_12px_34px_rgba(15,23,42,0.05)]">
+    <div class="calibration-create-shell mb-6 p-5">
     <div class="mb-4">
         <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{{ __('Create Calibration') }}</p>
         <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">{{ __('Run calibration by hierarchy') }}</h2>
-        <p class="mt-1 text-sm text-slate-500">{{ __('Pick a facility, workgroup, workstation, and one or more displays to create a new calibration task.') }}</p>
+        <p class="mt-1 text-sm text-slate-500">{{ __('Select scope, choose displays, then start calibration.') }}</p>
     </div>
     <form method="post" action="" class="w-full" id="display-calibration-quick-form">
         {{csrf_field()}}
@@ -139,23 +549,44 @@
     </div>
     @endif
 
-    <div class="mb-4 flex items-center justify-between gap-4">
-        <div class="space-y-2">
-            <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{{ __('Calibration Tasks') }}</p>
-            <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">{{ __('Recent calibration jobs') }}</h2>
-            <p class="mt-1 max-w-3xl text-sm text-slate-500">{{ __('This table only lists calibration jobs. Use Scheduler when you need the broader list of QA and mixed schedules.') }}</p>
+    <div class="calibration-jobs-shell">
+        <div class="calibration-jobs-head">
+            <div class="space-y-2">
+                <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{{ __('Calibration Tasks') }}</p>
+                <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">{{ __('Recent calibration jobs') }}</h2>
+                <p class="mt-1 max-w-3xl text-sm text-slate-500">{{ __('Latest calibration tasks only.') }}</p>
+            </div>
         </div>
 
-        <div class="relative w-full max-w-[320px]">
-            <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-            <input type="text" id="gridjs-custom-search" placeholder="{{ __('Search calibration jobs...') }}" 
-                   class="w-full h-[42px] pl-10 pr-4 rounded-full text-[13px] outline-none border border-gray-200 bg-white text-gray-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 shadow-sm transition-all placeholder-gray-400">
+        <div class="calibration-table-toolbar">
+            <input type="text" id="gridjs-custom-search" placeholder="{{ __('Search calibration jobs...') }}" class="calibration-table-search transition-all placeholder-gray-400">
+            <div id="calibration-table-meta" class="text-[12px] font-semibold text-slate-500"></div>
         </div>
-    </div>
 
-    {{-- Tasks Table Wrapper --}}
-    <div class="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_16px_44px_rgba(15,23,42,0.06)]">
-        <div id="tasks-grid"></div>
+        {{-- Tasks Table Wrapper --}}
+        <div class="calibration-table-wrap">
+            <table class="calibration-table">
+                <thead>
+                    <tr>
+                        <th><button type="button" data-calibration-sort="display_name"><span>{{ __('Display') }}</span><span data-calibration-sort-indicator="display_name">↕</span></button></th>
+                        <th><button type="button" data-calibration-sort="task_name"><span>{{ __('Task Type') }}</span><span data-calibration-sort-indicator="task_name">↕</span></button></th>
+                        <th><button type="button" data-calibration-sort="schedule_name"><span>{{ __('Schedule Type') }}</span><span data-calibration-sort-indicator="schedule_name">↕</span></button></th>
+                        <th><button type="button" data-calibration-sort="due_at"><span>{{ __('Due Date') }}</span><span data-calibration-sort-indicator="due_at">↕</span></button></th>
+                        <th><button type="button" data-calibration-sort="created_at"><span>{{ __('Created') }}</span><span data-calibration-sort-indicator="created_at">↓</span></button></th>
+                        <th class="text-center">{{ __('Actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody id="calibration-tasks-body"></tbody>
+            </table>
+            <div class="calibration-table-footer">
+                <div id="calibration-table-summary" class="text-[12px] font-semibold text-slate-500"></div>
+                <div class="calibration-pager">
+                    <button id="calibration-page-prev" type="button" class="calibration-page-btn">{{ __('Previous') }}</button>
+                    <span id="calibration-page-label" class="text-[12px] font-semibold text-slate-500"></span>
+                    <button id="calibration-page-next" type="button" class="calibration-page-btn">{{ __('Next') }}</button>
+                </div>
+            </div>
+        </div>
     </div>
 
 </section>
@@ -167,7 +598,7 @@
         <div class="pointer-events-auto relative w-full max-w-4xl overflow-hidden rounded-[1.75rem] border border-slate-200 bg-[#F8FAFC] shadow-[0_24px_80px_rgba(15,23,42,0.24)]">
             <div class="relative overflow-hidden bg-gradient-to-r from-[#1175FF] to-[#0A62F0] px-8 py-7 text-white">
                 <div class="absolute inset-0 opacity-[0.18]" style="background-image: radial-gradient(rgba(255,255,255,1) 1.4px, transparent 1.4px); background-size: 16px 16px;"></div>
-                <button type="button" id="calibration-job-close" data-calibration-job-dismiss="1" class="absolute right-6 top-6 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/10 text-white transition hover:bg-black/20">
+                <button type="button" id="calibration-job-close" data-calibration-job-dismiss="1" class="absolute right-6 top-6 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/10 text-white transition hover:bg-black/20">
                     <i data-lucide="x" class="h-5 w-5"></i>
                 </button>
                 <div class="relative z-10 flex items-start gap-4">
@@ -249,7 +680,7 @@
                     </div>
                     <div class="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm">
                         <p class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">{{ __('Notes') }}</p>
-                        <p class="mt-4 text-sm leading-6 text-slate-600">{{ __('This detail reflects the calibration schedule that was created or queued. Use the display detail modal for live device health and history, and use Scheduler when you need to edit the broader QA scheduling matrix.') }}</p>
+                        <p class="mt-4 text-sm leading-6 text-slate-600">{{ __('Shows the saved schedule details for this calibration task.') }}</p>
                     </div>
                 </div>
             </div>
@@ -337,6 +768,7 @@
     ];
 @endphp
 <script>
+    (function () {
     const calibrationText = @json($calibrationText);
     const calibrateHierarchyState = {
         facilitySearch: '',
@@ -347,6 +779,49 @@
     };
     const canManageCalibrationTasks = @json($canManageDisplayCalibration);
     const calibrationTaskRows = new Map();
+    const calibrationGridState = {
+        sortKey: 'created_at',
+        sortOrder: 'desc',
+    };
+    const calibrationTableState = {
+        page: 1,
+        limit: 10,
+        total: 0,
+        loading: false,
+        search: '',
+        searchTimer: null,
+    };
+
+    function calibrationTasksUrl(keyword = '', page = null, limit = null) {
+        const url = new URL('{{ url("api/calibration-tasks") }}', window.location.origin);
+        if (keyword) {
+            url.searchParams.set('search', keyword);
+        }
+        url.searchParams.set('sort', calibrationGridState.sortKey);
+        url.searchParams.set('order', calibrationGridState.sortOrder);
+        if (page !== null && page !== undefined) {
+            url.searchParams.set('page', String(page));
+        }
+        if (limit !== null && limit !== undefined) {
+            url.searchParams.set('limit', String(limit));
+        }
+        return `${url.pathname}${url.search}`;
+    }
+
+    function updateCalibrationSortIndicators() {
+        document.querySelectorAll('[data-calibration-sort]').forEach((button) => {
+            const key = button.getAttribute('data-calibration-sort');
+            button.classList.toggle('is-active', key === calibrationGridState.sortKey);
+        });
+        document.querySelectorAll('[data-calibration-sort-indicator]').forEach((node) => {
+            const key = node.getAttribute('data-calibration-sort-indicator');
+            if (key === calibrationGridState.sortKey) {
+                node.textContent = calibrationGridState.sortOrder === 'asc' ? '↑' : '↓';
+            } else {
+                node.textContent = '↕';
+            }
+        });
+    }
 
     function openHierarchyEntity(type, id) {
         const numericId = Number(id) || 0;
@@ -358,6 +833,10 @@
         const item = calibrationTaskRows.get(String(taskId));
         const modal = document.getElementById('calibration-job-modal');
         if (!item || !modal) return;
+
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
 
         document.getElementById('calibration-job-title').textContent = item.displayName || calibrationText.display;
         document.getElementById('calibration-job-subtitle').textContent = `${item.taskName || '-'} • ${item.scheduleName || '-'}`;
@@ -425,7 +904,7 @@
         }
 
         return `
-            <div class="relative flex justify-end">
+            <div class="relative flex justify-center">
                 <button type="button"
                         data-calibration-task-toggle="${taskId}"
                         class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700">
@@ -683,7 +1162,8 @@
         });
     }
 
-    // Grid.js implementation
+    // Legacy Grid.js implementation (disabled after custom table migration)
+    if (false) {
     document.addEventListener("DOMContentLoaded", function () {
         initCalibrateSearchableDropdowns();
         const quickCalibrationForm = document.getElementById('display-calibration-quick-form');
@@ -732,16 +1212,17 @@
         window.grid = Perfectlum.createGrid('tasks-grid', {
             columns: [
                 {
-                    name: calibrationText.display,
+                    name: gridjs.html(`<button type="button" data-calibration-sort="display_name"><span>${Perfectlum.escapeHtml(calibrationText.display)}</span><span data-calibration-sort-indicator="display_name">↕</span></button>`),
+                    width: '40%',
                     formatter: (cell, row) => gridjs.html(`
-                        <div data-calibration-row-trigger="${Perfectlum.escapeHtml(row.cells[9].data)}" class="space-y-2 cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50">
-                            <button type="button" onclick="event.stopPropagation(); openHierarchyEntity('display', ${Number(row.cells[10].data) || 0})" class="block text-left text-sm font-bold text-slate-900 transition hover:text-sky-600 hover:underline">${Perfectlum.escapeHtml(cell)}</button>
-                            <div class="flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
-                                <button type="button" onclick="event.stopPropagation(); openHierarchyEntity('workstation', ${Number(row.cells[11].data) || 0})" class="font-semibold transition hover:text-emerald-600 hover:underline">${Perfectlum.escapeHtml(row.cells[1].data)}</button>
-                                <span>•</span>
-                                <button type="button" onclick="event.stopPropagation(); openHierarchyEntity('workgroup', ${Number(row.cells[12].data) || 0})" class="font-semibold transition hover:text-violet-600 hover:underline">${Perfectlum.escapeHtml(row.cells[2].data)}</button>
-                                <span>•</span>
-                                <button type="button" onclick="event.stopPropagation(); openHierarchyEntity('facility', ${Number(row.cells[13].data) || 0})" class="font-semibold transition hover:text-amber-600 hover:underline">${Perfectlum.escapeHtml(row.cells[3].data)}</button>
+                        <div data-calibration-row-trigger="${Perfectlum.escapeHtml(row.cells[9].data)}" class="calibration-display-cell cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50">
+                            <button type="button" onclick="event.stopPropagation(); openHierarchyEntity('display', ${Number(row.cells[10].data) || 0})" class="calibration-display-title text-left transition hover:text-sky-600 hover:underline">${Perfectlum.escapeHtml(cell)}</button>
+                            <div class="calibration-display-meta">
+                                <button type="button" onclick="event.stopPropagation(); openHierarchyEntity('workstation', ${Number(row.cells[11].data) || 0})" class="meta-link transition hover:text-emerald-600 hover:underline">${Perfectlum.escapeHtml(row.cells[1].data)}</button>
+                                <span class="shrink-0">•</span>
+                                <button type="button" onclick="event.stopPropagation(); openHierarchyEntity('workgroup', ${Number(row.cells[12].data) || 0})" class="meta-link transition hover:text-violet-600 hover:underline">${Perfectlum.escapeHtml(row.cells[2].data)}</button>
+                                <span class="shrink-0">•</span>
+                                <button type="button" onclick="event.stopPropagation(); openHierarchyEntity('facility', ${Number(row.cells[13].data) || 0})" class="meta-link transition hover:text-amber-600 hover:underline">${Perfectlum.escapeHtml(row.cells[3].data)}</button>
                             </div>
                         </div>
                     `)
@@ -750,46 +1231,35 @@
                 { name: calibrationText.workgroup, hidden: true },
                 { name: calibrationText.facility, hidden: true },
                 {
-                    name: calibrationText.taskType,
+                    name: gridjs.html(`<button type="button" data-calibration-sort="task_name"><span>${Perfectlum.escapeHtml(calibrationText.taskType)}</span><span data-calibration-sort-indicator="task_name">↕</span></button>`),
+                    width: '14%',
                     formatter: (cell, row) => gridjs.html(`<div data-calibration-row-trigger="${Perfectlum.escapeHtml(row.cells[9].data)}" class="cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">${Perfectlum.escapeHtml(cell)}</span></div>`)
                 },
                 {
-                    name: calibrationText.scheduleType,
+                    name: gridjs.html(`<button type="button" data-calibration-sort="schedule_name"><span>${Perfectlum.escapeHtml(calibrationText.scheduleType)}</span><span data-calibration-sort-indicator="schedule_name">↕</span></button>`),
+                    width: '14%',
                     formatter: (cell, row) => gridjs.html(`<div data-calibration-row-trigger="${Perfectlum.escapeHtml(row.cells[9].data)}" class="cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">${Perfectlum.escapeHtml(cell)}</span></div>`)
                 },
                 {
-                    name: calibrationText.dueDate,
+                    name: gridjs.html(`<button type="button" data-calibration-sort="due_at"><span>${Perfectlum.escapeHtml(calibrationText.dueDate)}</span><span data-calibration-sort-indicator="due_at">↕</span></button>`),
+                    width: '12%',
                     formatter: (cell, row) => {
                         const value = String(cell || '-');
-                        const [date = '-', time = ''] = value.split(' ');
-                        return gridjs.html(`
-                            <div data-calibration-row-trigger="${Perfectlum.escapeHtml(row.cells[9].data)}" class="cursor-pointer rounded-2xl px-1 py-1 leading-tight transition hover:bg-slate-50">
-                                <div class="text-sm font-semibold text-slate-900">${Perfectlum.escapeHtml(date)}</div>
-                                <div class="mt-1 text-xs text-slate-500">${Perfectlum.escapeHtml(time)}</div>
-                            </div>
-                        `);
+                        return gridjs.html(`<div data-calibration-row-trigger="${Perfectlum.escapeHtml(row.cells[9].data)}" class="cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="text-sm font-semibold text-slate-900 whitespace-nowrap">${Perfectlum.escapeHtml(value)}</span></div>`);
                     }
                 },
                 {
-                    name: calibrationText.created,
+                    name: gridjs.html(`<button type="button" data-calibration-sort="created_at"><span>${Perfectlum.escapeHtml(calibrationText.created)}</span><span data-calibration-sort-indicator="created_at">↓</span></button>`),
+                    width: '12%',
                     formatter: (cell, row) => {
                         const value = String(cell || 'Not recorded');
-                        if (value === 'Not recorded') {
-                            return gridjs.html(`<div data-calibration-row-trigger="${Perfectlum.escapeHtml(row.cells[9].data)}" class="cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="text-sm text-slate-400">Not recorded</span></div>`);
-                        }
-
-                        const [date = '-', time = ''] = value.split(' ');
-                        return gridjs.html(`
-                            <div data-calibration-row-trigger="${Perfectlum.escapeHtml(row.cells[9].data)}" class="cursor-pointer rounded-2xl px-1 py-1 leading-tight transition hover:bg-slate-50">
-                                <div class="text-sm font-semibold text-slate-900">${Perfectlum.escapeHtml(date)}</div>
-                                <div class="mt-1 text-xs text-slate-500">${Perfectlum.escapeHtml(time)}</div>
-                            </div>
-                        `);
+                        const textClass = value === 'Not recorded' ? 'text-sm text-slate-400 whitespace-nowrap' : 'text-sm font-semibold text-slate-900 whitespace-nowrap';
+                        return gridjs.html(`<div data-calibration-row-trigger="${Perfectlum.escapeHtml(row.cells[9].data)}" class="cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="${textClass}">${Perfectlum.escapeHtml(value)}</span></div>`);
                     }
                 },
                 {
                     name: calibrationText.actions,
-                    width: '112px',
+                    width: '92px',
                     sort: false,
                     formatter: (_, row) => gridjs.html(renderCalibrationTaskActions(row.cells[9].data))
                 },
@@ -815,9 +1285,10 @@
                 }
             ],
             server: {
-                url: '{{ url("api/calibration-tasks") }}' + (searchInput.value ? `?search=${encodeURIComponent(searchInput.value)}` : ''),
+                url: calibrationTasksUrl(searchInput.value || ''),
                 then: data => {
                     setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 50);
+                    setTimeout(updateCalibrationSortIndicators, 0);
                     
                     if (data && data.data) {
                         calibrationTaskRows.clear();
@@ -853,11 +1324,9 @@
                 limit: 10,
                 server: {
                     url: (prev, page, limit) => {
-                        let base = prev.split('?')[0];
-                        let params = new URLSearchParams(prev.split('?')[1] || '');
-                        params.set('page', page + 1);
-                        params.set('limit', limit);
-                        return `${base}?${params.toString()}`;
+                        const params = new URLSearchParams(prev.split('?')[1] || '');
+                        const keyword = params.get('search') || (searchInput.value || '');
+                        return calibrationTasksUrl(keyword, page + 1, limit);
                     }
                 }
             },
@@ -888,6 +1357,30 @@
         // Hide default gridjs search completely since we are using custom one 
         const defaultSearch = document.querySelector('.gridjs-search');
         if(defaultSearch) defaultSearch.style.display = 'none';
+        updateCalibrationSortIndicators();
+
+        document.addEventListener('click', function (event) {
+            const sortButton = event.target.closest('[data-calibration-sort]');
+            if (!sortButton) return;
+            event.preventDefault();
+
+            const key = sortButton.getAttribute('data-calibration-sort');
+            if (!key) return;
+            if (calibrationGridState.sortKey === key) {
+                calibrationGridState.sortOrder = calibrationGridState.sortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                calibrationGridState.sortKey = key;
+                calibrationGridState.sortOrder = (key === 'due_at' || key === 'created_at') ? 'desc' : 'asc';
+            }
+            updateCalibrationSortIndicators();
+            window.grid.updateConfig({
+                server: {
+                    url: calibrationTasksUrl(searchInput.value || ''),
+                    then: window.grid.config.server.then,
+                    handle: window.grid.config.server.handle
+                }
+            }).forceRender();
+        });
 
         // Connect custom search input to Grid.js
         let searchTimeout;
@@ -906,7 +1399,7 @@
                 // Re-fetch data
                 window.grid.updateConfig({
                     server: {
-                        url: '{{ url("api/calibration-tasks") }}' + (keyword ? `?search=${encodeURIComponent(keyword)}` : ''),
+                        url: calibrationTasksUrl(keyword),
                         then: window.grid.config.server.then,
                         handle: window.grid.config.server.handle
                     }
@@ -914,6 +1407,316 @@
             }, 500);
         });
     });
+    }
+
+    function renderCalibrationDisplayCell(item) {
+        return `
+            <div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="calibration-display-cell cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50">
+                <button type="button" onclick="event.stopPropagation(); openHierarchyEntity('display', ${Number(item.displayId) || 0})" class="calibration-display-title text-left transition hover:text-sky-600 hover:underline">${Perfectlum.escapeHtml(item.displayName || '-')}</button>
+                <div class="calibration-display-meta">
+                    <button type="button" onclick="event.stopPropagation(); openHierarchyEntity('workstation', ${Number(item.workstationId) || 0})" class="meta-link transition hover:text-emerald-600 hover:underline">${Perfectlum.escapeHtml(item.wsName || '-')}</button>
+                    <span class="shrink-0">•</span>
+                    <button type="button" onclick="event.stopPropagation(); openHierarchyEntity('workgroup', ${Number(item.workgroupId) || 0})" class="meta-link transition hover:text-violet-600 hover:underline">${Perfectlum.escapeHtml(item.wgName || '-')}</button>
+                    <span class="shrink-0">•</span>
+                    <button type="button" onclick="event.stopPropagation(); openHierarchyEntity('facility', ${Number(item.facilityId) || 0})" class="meta-link transition hover:text-amber-600 hover:underline">${Perfectlum.escapeHtml(item.facName || '-')}</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderCalibrationPager() {
+        const totalPages = Math.max(1, Math.ceil(calibrationTableState.total / calibrationTableState.limit));
+        const currentPage = Math.min(calibrationTableState.page, totalPages);
+        const from = calibrationTableState.total === 0 ? 0 : ((currentPage - 1) * calibrationTableState.limit) + 1;
+        const to = Math.min(calibrationTableState.total, currentPage * calibrationTableState.limit);
+
+        const summary = document.getElementById('calibration-table-summary');
+        const meta = document.getElementById('calibration-table-meta');
+        const pageLabel = document.getElementById('calibration-page-label');
+        const prevBtn = document.getElementById('calibration-page-prev');
+        const nextBtn = document.getElementById('calibration-page-next');
+
+        if (summary) {
+            summary.textContent = `${calibrationText.showing} ${from}-${to} of ${calibrationTableState.total} ${calibrationText.results}`;
+        }
+        if (meta) {
+            meta.textContent = `All • ${calibrationTableState.total} ${calibrationText.results}`;
+        }
+        if (pageLabel) {
+            pageLabel.textContent = `Page ${currentPage} / ${totalPages}`;
+        }
+        if (prevBtn) prevBtn.disabled = calibrationTableState.loading || currentPage <= 1;
+        if (nextBtn) nextBtn.disabled = calibrationTableState.loading || currentPage >= totalPages;
+    }
+
+    function renderCalibrationRows() {
+        const body = document.getElementById('calibration-tasks-body');
+        if (!body) return;
+
+        if (calibrationTableState.loading) {
+            body.innerHTML = `<tr><td colspan="6" class="calibration-empty">${Perfectlum.escapeHtml(calibrationText.loading)}</td></tr>`;
+            return;
+        }
+
+        const items = Array.from(calibrationTaskRows.values());
+        if (!items.length) {
+            body.innerHTML = `<tr><td colspan="6" class="calibration-empty">${Perfectlum.escapeHtml(calibrationText.noMatchingRecordsFound)}</td></tr>`;
+            return;
+        }
+
+        body.innerHTML = items.map((item) => {
+            const createdValue = String(item.createdAt || calibrationText.notRecorded);
+            const createdClass = createdValue === calibrationText.notRecorded
+                ? 'text-sm text-slate-400 whitespace-nowrap'
+                : 'text-sm font-semibold text-slate-900 whitespace-nowrap';
+
+            return `
+                <tr>
+                    <td>${renderCalibrationDisplayCell(item)}</td>
+                    <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">${Perfectlum.escapeHtml(item.taskName || '-')}</span></div></td>
+                    <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">${Perfectlum.escapeHtml(item.scheduleName || '-')}</span></div></td>
+                    <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="text-sm font-semibold text-slate-900 whitespace-nowrap">${Perfectlum.escapeHtml(item.dueAt || '-')}</span></div></td>
+                    <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="${createdClass}">${Perfectlum.escapeHtml(createdValue)}</span></div></td>
+                    <td>${renderCalibrationTaskActions(item.id)}</td>
+                </tr>
+            `;
+        }).join('');
+
+        window.lucide?.createIcons();
+    }
+
+    function renderCalibrationMetaButton(type, id, label, badge) {
+        const safeLabel = String(label || '').trim();
+        const numericId = Number(id) || 0;
+        if (!numericId || !safeLabel || safeLabel === '-') {
+            return '';
+        }
+
+        return `
+            <button type="button" onclick="event.stopPropagation(); openHierarchyEntity('${Perfectlum.escapeHtml(type)}', ${numericId})" class="calibration-display-meta-button">
+                <span class="calibration-display-meta-badge">${Perfectlum.escapeHtml(badge)}</span>
+                <span class="calibration-display-meta-label">${Perfectlum.escapeHtml(safeLabel)}</span>
+            </button>
+        `;
+    }
+
+    function renderCalibrationDisplayCell(item) {
+        const workstation = renderCalibrationMetaButton('workstation', item.workstationId, item.wsName, 'WS');
+        const workgroup = renderCalibrationMetaButton('workgroup', item.workgroupId, item.wgName, 'WG');
+        const facility = renderCalibrationMetaButton('facility', item.facilityId, item.facName, 'F');
+        const meta = [workstation, workgroup, facility]
+            .filter(Boolean)
+            .join('<span class="calibration-display-separator">•</span>');
+
+        return `
+            <div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="calibration-display-cell cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50">
+                <button type="button" onclick="event.stopPropagation(); openHierarchyEntity('display', ${Number(item.displayId) || 0})" class="calibration-display-title text-left transition hover:text-sky-600 hover:underline">${Perfectlum.escapeHtml(item.displayName || '-')}</button>
+                <div class="calibration-display-meta">${meta}</div>
+            </div>
+        `;
+    }
+
+    function renderCalibrationRows() {
+        const body = document.getElementById('calibration-tasks-body');
+        if (!body) return;
+
+        if (calibrationTableState.loading) {
+            body.innerHTML = `<tr><td colspan="6" class="calibration-empty">${Perfectlum.escapeHtml(calibrationText.loading)}</td></tr>`;
+            return;
+        }
+
+        const items = Array.from(calibrationTaskRows.values());
+        if (!items.length) {
+            body.innerHTML = `<tr><td colspan="6" class="calibration-empty">${Perfectlum.escapeHtml(calibrationText.noMatchingRecordsFound)}</td></tr>`;
+            return;
+        }
+
+        body.innerHTML = items.map((item) => {
+            const createdValue = String(item.createdAt || calibrationText.notRecorded);
+            const createdMuted = createdValue === calibrationText.notRecorded || createdValue === 'Not recorded';
+            const dueValue = String(item.dueAt || '-');
+            const dueOverdue = item.dueColor === 'danger';
+
+            return `
+                <tr>
+                    <td>${renderCalibrationDisplayCell(item)}</td>
+                    <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="calibration-cell-center cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">${Perfectlum.escapeHtml(item.taskName || '-')}</span></div></td>
+                    <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="calibration-cell-center cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">${Perfectlum.escapeHtml(item.scheduleName || '-')}</span></div></td>
+                    <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="calibration-cell-center cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="calibration-date-text ${dueOverdue ? 'is-overdue' : ''}">${Perfectlum.escapeHtml(dueValue)}</span></div></td>
+                    <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="calibration-cell-center cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="calibration-created-text ${createdMuted ? 'is-muted' : ''}">${Perfectlum.escapeHtml(createdValue)}</span></div></td>
+                    <td>${renderCalibrationTaskActions(item.id)}</td>
+                </tr>
+            `;
+        }).join('');
+
+        window.lucide?.createIcons();
+    }
+
+    async function loadCalibrationTasks() {
+        calibrationTableState.loading = true;
+        renderCalibrationPager();
+        renderCalibrationRows();
+        let hasError = false;
+
+        try {
+            const payload = await Perfectlum.request(
+                calibrationTasksUrl(calibrationTableState.search, calibrationTableState.page, calibrationTableState.limit)
+            );
+            const rows = Array.isArray(payload?.data) ? payload.data : [];
+            calibrationTaskRows.clear();
+            rows.forEach((item) => calibrationTaskRows.set(String(item.id), item));
+            calibrationTableState.total = Number(payload?.total || rows.length || 0);
+
+            const totalPages = Math.max(1, Math.ceil(calibrationTableState.total / calibrationTableState.limit));
+            if (calibrationTableState.page > totalPages) {
+                calibrationTableState.page = totalPages;
+                return loadCalibrationTasks();
+            }
+        } catch (error) {
+            hasError = true;
+            calibrationTaskRows.clear();
+            calibrationTableState.total = 0;
+            const body = document.getElementById('calibration-tasks-body');
+            if (body) {
+                body.innerHTML = `<tr><td colspan="6" class="calibration-empty text-rose-600">${Perfectlum.escapeHtml(error.message || calibrationText.unableToLoadData)}</td></tr>`;
+            }
+        } finally {
+            calibrationTableState.loading = false;
+            if (!hasError) {
+                renderCalibrationRows();
+            }
+            renderCalibrationPager();
+        }
+    }
+
+    function initCalibrationPage() {
+        const body = document.getElementById('calibration-tasks-body');
+        if (!body || body.dataset.calibrationInitialized === '1') {
+            return;
+        }
+        body.dataset.calibrationInitialized = '1';
+
+        const calibrationJobModal = document.getElementById('calibration-job-modal');
+        if (calibrationJobModal && calibrationJobModal.dataset.dismissBound !== '1') {
+            calibrationJobModal.dataset.dismissBound = '1';
+            calibrationJobModal.querySelectorAll('[data-calibration-job-dismiss="1"]').forEach((node) => {
+                node.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    closeCalibrationJobModal();
+                });
+            });
+        }
+
+        initCalibrateSearchableDropdowns();
+        const quickCalibrationForm = document.getElementById('display-calibration-quick-form');
+        const searchInput = document.getElementById('gridjs-custom-search');
+        const customSearchParams = new URLSearchParams(window.location.search);
+        const initialKeyword = customSearchParams.get('keywords') || '';
+        if (searchInput) {
+            searchInput.value = initialKeyword;
+        }
+        calibrationTableState.search = initialKeyword;
+
+        quickCalibrationForm?.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            if (typeof window.openTaskEditorWithPayload !== 'function') {
+                return;
+            }
+
+            const facilityId = document.getElementById('calibrate-facility-native')?.value || '';
+            const workgroupId = document.getElementById('workgroups_field')?.value || '';
+            const workstationId = document.getElementById('workstations_field')?.value || '';
+            const checkedDisplays = Array.from(document.querySelectorAll('#calibrate-displays-options input[name="displays[]"]:checked:not([data-select-all="1"])'))
+                .map((input) => String(input.value || '').trim())
+                .filter(Boolean);
+
+            if (!facilityId) {
+                window.notify?.('failed', 'Please select a facility first.');
+                return;
+            }
+
+            window.openTaskEditorWithPayload({
+                id: 0,
+                tasktype: 'cal',
+                quick_calibration: '1',
+                lock_tasktype: '1',
+                facility2: facilityId,
+                workgroup2: workgroupId,
+                workstation2: workstationId,
+                displays: checkedDisplays
+            }, {
+                title: 'Calibrate Display',
+                subtitle: checkedDisplays.length
+                    ? `Set the schedule window for ${checkedDisplays.length} selected display${checkedDisplays.length > 1 ? 's' : ''}.`
+                    : 'Set the schedule window for the current hierarchy scope before creating the calibration task.',
+            });
+        });
+
+        document.querySelectorAll('[data-calibration-sort]').forEach((button) => {
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                const key = button.getAttribute('data-calibration-sort');
+                if (!key) return;
+                if (calibrationGridState.sortKey === key) {
+                    calibrationGridState.sortOrder = calibrationGridState.sortOrder === 'asc' ? 'desc' : 'asc';
+                } else {
+                    calibrationGridState.sortKey = key;
+                    calibrationGridState.sortOrder = (key === 'due_at' || key === 'created_at') ? 'desc' : 'asc';
+                }
+                calibrationTableState.page = 1;
+                updateCalibrationSortIndicators();
+                loadCalibrationTasks();
+            });
+        });
+
+        let searchTimeout;
+        searchInput?.addEventListener('input', function (e) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const keyword = String(e.target.value || '').trim();
+                const url = new URL(window.location);
+                if (keyword) {
+                    url.searchParams.set('keywords', keyword);
+                } else {
+                    url.searchParams.delete('keywords');
+                }
+                window.history.replaceState({}, '', url);
+                calibrationTableState.search = keyword;
+                calibrationTableState.page = 1;
+                loadCalibrationTasks();
+            }, 400);
+        });
+
+        document.getElementById('calibration-page-prev')?.addEventListener('click', () => {
+            if (calibrationTableState.page <= 1 || calibrationTableState.loading) return;
+            calibrationTableState.page -= 1;
+            loadCalibrationTasks();
+        });
+
+        document.getElementById('calibration-page-next')?.addEventListener('click', () => {
+            const totalPages = Math.max(1, Math.ceil(calibrationTableState.total / calibrationTableState.limit));
+            if (calibrationTableState.page >= totalPages || calibrationTableState.loading) return;
+            calibrationTableState.page += 1;
+            loadCalibrationTasks();
+        });
+
+        updateCalibrationSortIndicators();
+        loadCalibrationTasks();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initCalibrationPage, { once: true });
+    } else {
+        initCalibrationPage();
+    }
+
+    window.calibrationPageCleanup = function () {
+        closeCalibrationTaskMenu();
+        closeCalibrationJobModal();
+    };
+    window.calibrationPageMount = initCalibrationPage;
 
     // Delete task function logic
     function confirmDelete(id) {
@@ -931,7 +1734,7 @@
                 if (!data.success) {
                     notify('failed', data.msg || calibrationText.deletionFailed);
                 } else {
-                    window.grid.forceRender();
+                    loadCalibrationTasks();
                     notify('success', data.msg || calibrationText.taskDeletedSuccessfully);
                 }
             });
@@ -989,9 +1792,7 @@
     });
 
     window.addEventListener('task-saved', () => {
-        if (window.grid && typeof window.grid.forceRender === 'function') {
-            window.grid.forceRender();
-        }
+        loadCalibrationTasks();
     });
 
     document.addEventListener('click', (event) => {
@@ -1000,6 +1801,13 @@
             closeCalibrationJobModal();
         }
     });
+
+    window.fetch_workgroups = fetch_workgroups;
+    window.fetch_workstations = fetch_workstations;
+    window.fetch_displays_checklist = fetch_displays_checklist;
+    window.openHierarchyEntity = openHierarchyEntity;
+    window.confirmDelete = confirmDelete;
+    })();
 </script>
 
 @include('tasks.schedule_task_modal')

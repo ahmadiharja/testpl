@@ -3,6 +3,14 @@
     $bodyThemeClass = $currentPlatform === 'perfectlum' 
         ? 'bg-[#F9FAFB] text-gray-900 theme-lum' 
         : 'bg-[#0A0A0C] text-[#E2E1E6] theme-chroma';
+    $desktopShellUser = auth()->user();
+    $desktopShellSignature = implode('|', array_filter([
+        $desktopShellUser?->id,
+        session('role'),
+        app()->getLocale(),
+        $currentPlatform,
+        $desktopShellUser?->fullname ?: $desktopShellUser?->name,
+    ], static fn ($value) => filled($value)));
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -21,16 +29,17 @@
     <style>[x-cloak] { display: none !important; }</style>
 </head>
 
-<body x-cloak x-data="adminApp()" 
+<body x-data="adminApp()" 
       @resize.window="isMobile = window.innerWidth < 1024; if(isMobile) sidebarCollapsed = true"
+      data-desktop-shell-signature="{{ $desktopShellSignature }}"
       class="h-screen w-screen overflow-hidden flex transition-colors duration-500 font-sans {{ $bodyThemeClass }}"
       :class="theme === 'perfectlum' ? 'bg-[#F9FAFB] text-gray-900 theme-lum' : 'bg-[#0A0A0C] text-[#E2E1E6] theme-chroma'">
 
     @include('admin.partials.sidebar')
 
-    <main class="flex-1 flex flex-col h-full overflow-hidden transition-colors duration-500 relative">
+    <main id="desktop-page-stage" class="flex-1 flex flex-col h-full overflow-hidden transition-colors duration-500 relative">
         @include('admin.partials.header')
 
         {{-- SCROLL AREA FOR PAGE CONTENT --}}
-        <div class="flex-1 overflow-y-auto px-6 lg:px-12 pb-16 pt-8">
-            <div class="max-w-[1600px] mx-auto w-full h-full">
+        <div id="desktop-scroll-area" class="flex-1 overflow-y-auto px-6 lg:px-12 pb-16 pt-8">
+            <div id="desktop-main-content" class="max-w-[1600px] mx-auto w-full h-full">

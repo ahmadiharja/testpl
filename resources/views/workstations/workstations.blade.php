@@ -28,10 +28,18 @@
         'previous' => __('Previous'),
         'next' => __('Next'),
         'showing' => __('Showing'),
+        'of' => __('of'),
+        'page' => __('Page'),
         'results' => __('results'),
         'loading' => __('Loading...'),
         'noMatchingRecordsFound' => __('No matching records found'),
         'unableToLoadData' => __('Unable to load data'),
+        'displaysNeedAttentionTitle' => __('Displays needing attention'),
+        'loadingAttentionDisplays' => __('Loading displays needing attention...'),
+        'noDisplaysNeedAttention' => __('No displays currently need attention in this workstation.'),
+        'unableToLoadAttentionDisplays' => __('Unable to load displays needing attention.'),
+        'openDisplay' => __('Open Display'),
+        'loadingMore' => __('Loading more...'),
         'saveChanges' => __('Save Changes'),
         'saving' => __('Saving...'),
         'updateWorkstationDetails' => __('Update workstation details'),
@@ -86,6 +94,362 @@
     ];
 @endphp
 
+<style>
+    .workstation-directory-shell {
+        border-radius: 2rem;
+        border: 1px solid #d5e0ec;
+        background: linear-gradient(180deg, #f7fbff 0%, #ffffff 100%);
+        box-shadow: 0 26px 64px -46px rgba(15, 23, 42, 0.34);
+        overflow: hidden;
+    }
+    .workstation-table-controlbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 18px;
+        border-bottom: 1px solid #e3ecf5;
+        background: linear-gradient(180deg, #f4f9ff 0%, #ffffff 100%);
+    }
+    .workstation-controls-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+    .workstation-filter-picker {
+        position: relative;
+        min-width: 240px;
+    }
+    .workstation-filter-trigger {
+        width: 100%;
+        height: 36px;
+        border-radius: 999px;
+        border: 1px solid #d3dfec;
+        background: #ffffff;
+        color: #4b6078;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 0 12px;
+    }
+    .workstation-filter-panel {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        right: 0;
+        z-index: 40;
+        border-radius: 16px;
+        border: 1px solid #d3dfec;
+        background: #ffffff;
+        box-shadow: 0 24px 50px -26px rgba(15, 23, 42, 0.32);
+        padding: 10px;
+    }
+    .workstation-filter-search {
+        width: 100%;
+        height: 34px;
+        border-radius: 10px;
+        border: 1px solid #d7e3ef;
+        padding: 0 10px;
+        font-size: 12px;
+        color: #334155;
+    }
+    .workstation-filter-search:focus {
+        outline: none;
+        border-color: #1d9bf0;
+        box-shadow: 0 0 0 3px rgba(29, 155, 240, 0.14);
+    }
+    .workstation-status-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px;
+        border-radius: 999px;
+        border: 1px solid #d3dfec;
+        background: #f3f8fe;
+    }
+    .workstation-status-pill {
+        height: 36px;
+        border-radius: 999px;
+        padding: 0 14px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #4c6077;
+        transition: all .18s ease;
+    }
+    .workstation-status-pill:hover {
+        color: #243b53;
+        background: #eff6fd;
+    }
+    .workstation-reset-btn {
+        height: 36px;
+        border-radius: 999px;
+        border: 1px solid #d3dfec;
+        background: #fff;
+        color: #4b6078;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 0 14px;
+        transition: all .18s ease;
+    }
+    .workstation-reset-btn:hover {
+        border-color: #9ec6ea;
+        color: #1f4f80;
+        background: #f3f9ff;
+    }
+    .workstation-table-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 18px;
+        border-bottom: 1px solid #e3ecf5;
+        background: #f8fbff;
+    }
+    .workstation-table-search {
+        width: min(440px, 100%);
+        height: 42px;
+        border-radius: 999px;
+        border: 1px solid #c9d8e8;
+        padding: 0 16px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #12263a;
+        background: #fff;
+    }
+    .workstation-table-search:focus {
+        outline: none;
+        border-color: #1d9bf0;
+        box-shadow: 0 0 0 3px rgba(29, 155, 240, 0.16);
+    }
+    .workstation-table-wrap {
+        overflow-x: auto;
+        background: #fff;
+    }
+    .workstation-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 1080px;
+        table-layout: fixed;
+    }
+    .workstation-table th {
+        padding: 13px 16px;
+        text-align: left;
+        border-bottom: 1px solid #d8e4f0;
+        background: #e9f1fa;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        color: #4d647d;
+        white-space: nowrap;
+    }
+    .workstation-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #edf2f8;
+        font-size: 14px;
+        color: #334155;
+        vertical-align: middle;
+        background: #fff;
+    }
+    .workstation-table td:nth-child(2),
+    .workstation-table td:nth-child(3) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .workstation-table th:nth-child(4),
+    .workstation-table th:nth-child(5),
+    .workstation-table th:nth-child(6),
+    .workstation-table th:nth-child(7),
+    .workstation-table td:nth-child(4),
+    .workstation-table td:nth-child(5),
+    .workstation-table td:nth-child(6),
+    .workstation-table td:nth-child(7) {
+        text-align: center;
+    }
+    .workstation-table th:nth-child(4),
+    .workstation-table td:nth-child(4) {
+        padding-right: 20px;
+    }
+    .workstation-table th:nth-child(5),
+    .workstation-table td:nth-child(5) {
+        padding-left: 20px;
+    }
+    .workstation-row-clickable {
+        cursor: pointer;
+    }
+    .workstation-scope-cell {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        max-width: 100%;
+    }
+    .workstation-scope-badge {
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        background: #1d9bf0;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0;
+        line-height: 1;
+        flex-shrink: 0;
+    }
+    .workstation-scope-link {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .workstation-table tbody tr:hover td {
+        background: #f7fbff;
+    }
+    .workstation-sort-btn {
+        border: 0;
+        background: transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #5a7087;
+        font: inherit;
+        letter-spacing: inherit;
+        text-transform: inherit;
+        cursor: pointer;
+        border-radius: 999px;
+        padding: 2px 8px;
+        margin-left: -8px;
+        transition: all .18s ease;
+    }
+    .workstation-sort-btn:hover {
+        background: #f2f7fd;
+        color: #2f4d6a;
+    }
+    .workstation-sort-btn.is-active {
+        background: #e2edf9;
+        color: #24486b;
+    }
+    .workstation-sort-indicator {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        background: #d4e3f4;
+        color: #2f5477;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: 0;
+        transition: all .18s ease;
+    }
+    .workstation-sort-btn.is-active .workstation-sort-indicator {
+        background: #2f6fae;
+        color: #ffffff;
+    }
+    .workstation-table-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 16px 14px;
+        border-top: 1px solid #dbe7f3;
+        background: #f7fbff;
+    }
+    .workstation-pager {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .workstation-page-btn {
+        height: 32px;
+        min-width: 32px;
+        border-radius: 999px;
+        border: 1px solid #c7d6e7;
+        background: #ffffff;
+        color: #2c4158;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 0 12px;
+        transition: all .18s ease;
+    }
+    .workstation-page-btn:hover:not(:disabled) {
+        border-color: #1d9bf0;
+        color: #0f5f9f;
+        background: #f0f8ff;
+    }
+    .workstation-page-btn:disabled {
+        opacity: .45;
+        cursor: not-allowed;
+    }
+    .workstation-row-action {
+        width: 36px;
+        height: 36px;
+        border-radius: 9999px;
+        border: 1px solid #d6dee8;
+        background: #fff;
+        color: #64748b;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .workstation-empty {
+        padding: 24px 16px;
+        text-align: center;
+        color: #5f7388;
+        font-size: 14px;
+        border-bottom: 1px solid #edf2f8;
+    }
+    @media (max-width: 1240px) {
+        .workstation-table-controlbar {
+            flex-wrap: wrap;
+            align-items: stretch;
+        }
+        .workstation-controls-left {
+            flex-wrap: wrap;
+            width: 100%;
+        }
+        .workstation-filter-picker {
+            min-width: 100%;
+        }
+        .workstation-status-group {
+            width: 100%;
+            justify-content: space-between;
+        }
+        .workstation-status-pill {
+            flex: 1 1 0;
+            padding: 0 10px;
+        }
+        .workstation-reset-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+    @media (max-width: 768px) {
+        .workstation-table-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .workstation-table-search {
+            width: 100%;
+        }
+        .workstation-table-footer {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .workstation-pager {
+            justify-content: flex-end;
+        }
+    }
+</style>
+
 <div class="flex flex-col gap-6 pb-8">
     <x-page-header title="{{ __('All Workstations') }}" description="{{ __('Manage physical hardware clusters connecting your remote displays.') }}" icon="monitor-speaker">
         <x-slot name="actions">
@@ -95,86 +459,47 @@
         </x-slot>
     </x-page-header>
 
-    <section class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_-32px_rgba(15,23,42,0.18)]">
-        <div class="grid gap-4 lg:grid-cols-[minmax(0,240px)_minmax(0,240px)_minmax(0,280px)_1fr]">
-            <div class="space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Facility') }}</label>
-                <div class="relative">
-                    <button
-                        id="facility-filter-trigger"
-                        type="button"
-                        class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
+    <section class="workstation-directory-shell mb-10">
+        <div class="workstation-table-controlbar">
+            <div class="workstation-controls-left">
+                <div class="workstation-filter-picker">
+                    <button id="facility-filter-trigger" type="button" class="workstation-filter-trigger inline-flex items-center justify-between gap-2">
                         <span id="facility-filter-label" class="truncate">{{ __('All facilities') }}</span>
                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                     </button>
-
-                    <div
-                        id="facility-filter-panel"
-                        class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                        <input
-                            id="facility-filter-search"
-                            type="text"
-                            placeholder="{{ __('Search facilities...') }}"
-                            class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                        <p id="facility-filter-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
+                    <div id="facility-filter-panel" class="workstation-filter-panel hidden">
+                        <input id="facility-filter-search" type="text" placeholder="{{ __('Search facilities...') }}" class="workstation-filter-search">
+                        <p id="facility-filter-hint" class="mb-2 mt-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="facility-filter-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                     </div>
                 </div>
-            </div>
 
-            <div class="space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Workgroup') }}</label>
-                <div class="relative">
-                    <button
-                        id="workgroup-filter-trigger"
-                        type="button"
-                        class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
+                <div class="workstation-filter-picker">
+                    <button id="workgroup-filter-trigger" type="button" class="workstation-filter-trigger inline-flex items-center justify-between gap-2">
                         <span id="workgroup-filter-label" class="truncate">{{ __('All workgroups') }}</span>
                         <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                     </button>
-
-                    <div
-                        id="workgroup-filter-panel"
-                        class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                        <input
-                            id="workgroup-filter-search"
-                            type="text"
-                            placeholder="{{ __('Search workgroups...') }}"
-                            class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                        <p id="workgroup-filter-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
+                    <div id="workgroup-filter-panel" class="workstation-filter-panel hidden">
+                        <input id="workgroup-filter-search" type="text" placeholder="{{ __('Search workgroups...') }}" class="workstation-filter-search">
+                        <p id="workgroup-filter-hint" class="mb-2 mt-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="workgroup-filter-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
                     </div>
                 </div>
-            </div>
 
-            <div class="space-y-2">
-                <label class="block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Status') }}</label>
-                <div class="grid h-12 grid-cols-3 rounded-2xl border border-slate-200 bg-white p-1">
-                    <button
-                        id="workstation-status-all"
-                        type="button"
-                        data-status=""
-                        class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
+                <div class="workstation-status-group">
+                    <button id="workstation-status-all" type="button" data-status="" class="workstation-status-pill">
                         <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <i data-lucide="layers-3" class="h-4 w-4"></i>
                             <span>{{ __('All') }}</span>
                         </span>
                     </button>
-                    <button
-                        id="workstation-status-ok"
-                        type="button"
-                        data-status="ok"
-                        class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
+                    <button id="workstation-status-ok" type="button" data-status="ok" class="workstation-status-pill">
                         <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <i data-lucide="badge-check" class="h-4 w-4"></i>
                             <span>{{ __('OK') }}</span>
                         </span>
                     </button>
-                    <button
-                        id="workstation-status-failed"
-                        type="button"
-                        data-status="failed"
-                        class="rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition">
+                    <button id="workstation-status-failed" type="button" data-status="failed" class="workstation-status-pill">
                         <span class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
                             <i data-lucide="triangle-alert" class="h-4 w-4"></i>
                             <span>{{ __('Not OK') }}</span>
@@ -183,19 +508,52 @@
                 </div>
             </div>
 
-            <div class="flex items-end justify-end">
-                <button
-                    id="reset-workstation-filters"
-                    type="button"
-                    class="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900">
-                    <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
-                    {{ __('Reset Filters') }}
-                </button>
+            <button id="reset-workstation-filters" type="button" class="workstation-reset-btn inline-flex items-center gap-2">
+                <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
+                {{ __('Reset Filters') }}
+            </button>
+        </div>
+
+        <div class="workstation-table-toolbar">
+            <input id="workstation-table-search" type="text" class="workstation-table-search" placeholder="{{ __('Search workstations...') }}">
+            <div class="text-[12px] font-semibold text-slate-500" id="workstation-table-meta"></div>
+        </div>
+
+        <div class="workstation-table-wrap">
+            <table class="workstation-table">
+                <colgroup>
+                    <col style="width: 24%">
+                    <col style="width: 17%">
+                    <col style="width: 17%">
+                    <col style="width: 11%">
+                    <col style="width: 10%">
+                    <col style="width: 13%">
+                    <col style="width: 8%">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th><button type="button" data-workstation-sort="name" class="workstation-sort-btn"><span>{{ __('Name') }}</span><span class="workstation-sort-indicator" data-workstation-sort-indicator="name">↕</span></button></th>
+                        <th><button type="button" data-workstation-sort="wgName" class="workstation-sort-btn"><span>{{ __('Workgroup') }}</span><span class="workstation-sort-indicator" data-workstation-sort-indicator="wgName">↕</span></button></th>
+                        <th><button type="button" data-workstation-sort="facName" class="workstation-sort-btn"><span>{{ __('Facility') }}</span><span class="workstation-sort-indicator" data-workstation-sort-indicator="facName">↕</span></button></th>
+                        <th><button type="button" data-workstation-sort="sleepTime" class="workstation-sort-btn"><span>{{ __('Sleep Time') }}</span><span class="workstation-sort-indicator" data-workstation-sort-indicator="sleepTime">↕</span></button></th>
+                        <th><button type="button" data-workstation-sort="displaysCount" class="workstation-sort-btn"><span>{{ __('Displays') }}</span><span class="workstation-sort-indicator" data-workstation-sort-indicator="displaysCount">↕</span></button></th>
+                        <th><button type="button" data-workstation-sort="lastConnected" class="workstation-sort-btn"><span>{{ __('Last Connected') }}</span><span class="workstation-sort-indicator" data-workstation-sort-indicator="lastConnected">↕</span></button></th>
+                        <th class="text-center">{{ __('Actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody id="workstations-table-body"></tbody>
+            </table>
+        </div>
+
+        <div class="workstation-table-footer">
+            <div class="text-[12px] font-semibold text-slate-500" id="workstation-table-summary"></div>
+            <div class="workstation-pager">
+                <button id="workstation-page-prev" type="button" class="workstation-page-btn">{{ __('Previous') }}</button>
+                <span id="workstation-page-label" class="text-[12px] font-semibold text-slate-500"></span>
+                <button id="workstation-page-next" type="button" class="workstation-page-btn">{{ __('Next') }}</button>
             </div>
         </div>
     </section>
-
-    <x-data-table id="workstations-grid" class="mb-10 workstation-table-shell" />
 </div>
 
 <div id="workstation-action-overlay" class="pointer-events-none fixed inset-0 z-[1200] hidden">
@@ -292,6 +650,56 @@
     </div>
 </div>
 
+<div id="workstation-attention-modal" class="fixed inset-0 z-[1300] hidden items-center justify-center bg-slate-950/40 p-6">
+    <div class="flex max-h-[88vh] w-full max-w-6xl flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]">
+        <div class="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+            <div>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-rose-400">{{ __('Needs Attention') }}</p>
+                <h3 id="workstation-attention-title" class="mt-2 text-2xl font-semibold text-slate-900">{{ __('Displays needing attention') }}</h3>
+                <p id="workstation-attention-subtitle" class="mt-2 text-sm text-slate-500"></p>
+            </div>
+            <button id="workstation-attention-close" type="button" class="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700">
+                <i data-lucide="x" class="h-5 w-5"></i>
+            </button>
+        </div>
+
+        <div class="min-h-0 flex-1 px-6 py-6">
+            <div id="workstation-attention-loading" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+                {{ __('Loading displays needing attention...') }}
+            </div>
+            <div id="workstation-attention-error" class="hidden rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700"></div>
+            <div id="workstation-attention-empty" class="hidden rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-700">{{ __('No displays currently need attention in this workstation.') }}</div>
+
+            <div id="workstation-attention-list-wrap" class="hidden h-[56vh] overflow-y-auto rounded-2xl border border-slate-200 overscroll-contain">
+                <table class="min-w-full table-fixed">
+                    <thead class="sticky top-0 z-10 bg-slate-100 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                        <tr>
+                            <th class="px-4 py-3 text-left">
+                                <button type="button" data-attention-sort="displayName" class="inline-flex items-center gap-1 transition hover:text-slate-700">
+                                    <span>{{ __('Display') }}</span><span data-attention-sort-indicator="displayName">↕</span>
+                                </button>
+                            </th>
+                            <th class="px-4 py-3 text-left">
+                                <button type="button" data-attention-sort="updatedAt" class="inline-flex items-center gap-1 transition hover:text-slate-700">
+                                    <span>{{ __('Last Sync') }}</span><span data-attention-sort-indicator="updatedAt">↓</span>
+                                </button>
+                            </th>
+                            <th class="px-4 py-3 text-left">
+                                <button type="button" data-attention-sort="attentionText" class="inline-flex items-center gap-1 transition hover:text-slate-700">
+                                    <span>{{ __('Detail') }}</span><span data-attention-sort-indicator="attentionText">↕</span>
+                                </button>
+                            </th>
+                            <th class="px-4 py-3 text-right">{{ __('Actions') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody id="workstation-attention-list" class="divide-y divide-slate-100 bg-white"></tbody>
+                </table>
+                <div id="workstation-attention-more" class="hidden border-t border-slate-200 bg-slate-50 px-4 py-2 text-center text-[12px] font-medium text-slate-500">{{ __('Loading more...') }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script id="workstation-filters-data" type="application/json">@json($filters)</script>
 <script>
 (function () {
@@ -309,7 +717,23 @@
         activeDropdown: null,
         actionTarget: null,
         deleteTarget: null,
-        grid: null,
+        workstationRows: [],
+        workstationPage: 1,
+        workstationLimit: 10,
+        workstationTotal: 0,
+        workstationLoading: false,
+        workstationSearch: '',
+        workstationSearchTimer: null,
+        workstationSortKey: 'name',
+        workstationSortDir: 'asc',
+        attentionTarget: null,
+        attentionPage: 1,
+        attentionHasMore: false,
+        attentionLoadingMore: false,
+        attentionLimit: 9,
+        attentionRows: [],
+        attentionSortKey: 'updatedAt',
+        attentionSortDir: 'desc',
         edit: {
             id: null,
             meta: null,
@@ -324,7 +748,7 @@
 
     function init() {
         if (initialized) return;
-        if (!window.Perfectlum || !window.gridjs) {
+        if (!window.Perfectlum) {
             window.setTimeout(init, 50);
             return;
         }
@@ -343,9 +767,13 @@
         bindElements();
         bindEvents();
         renderFilters();
-        initGrid();
+        updateWorkstationSortIndicators();
+        updateAttentionSortIndicators();
+        loadWorkstations();
         window.workstationsPage = {
             toggleActionMenu,
+            openEditModal,
+            openDeleteModal,
             openQuickEdit: openQuickEditAction,
             openQuickDelete: openQuickDeleteAction,
         };
@@ -373,7 +801,14 @@
         ].filter(Boolean);
 
         els.resetFilters = document.getElementById('reset-workstation-filters');
-        els.grid = document.getElementById('workstations-grid');
+        els.tableSearch = document.getElementById('workstation-table-search');
+        els.tableMeta = document.getElementById('workstation-table-meta');
+        els.tableBody = document.getElementById('workstations-table-body');
+        els.tableSummary = document.getElementById('workstation-table-summary');
+        els.pagePrev = document.getElementById('workstation-page-prev');
+        els.pageNext = document.getElementById('workstation-page-next');
+        els.pageLabel = document.getElementById('workstation-page-label');
+        els.sortButtons = Array.from(document.querySelectorAll('[data-workstation-sort]'));
 
         els.actionOverlay = document.getElementById('workstation-action-overlay');
         els.actionMenu = document.getElementById('workstation-action-menu');
@@ -396,6 +831,18 @@
         els.deleteName = document.getElementById('workstation-delete-name');
         els.deleteCancel = document.getElementById('workstation-delete-cancel');
         els.deleteConfirm = document.getElementById('workstation-delete-confirm');
+
+        els.attentionModal = document.getElementById('workstation-attention-modal');
+        els.attentionClose = document.getElementById('workstation-attention-close');
+        els.attentionTitle = document.getElementById('workstation-attention-title');
+        els.attentionSubtitle = document.getElementById('workstation-attention-subtitle');
+        els.attentionLoading = document.getElementById('workstation-attention-loading');
+        els.attentionError = document.getElementById('workstation-attention-error');
+        els.attentionEmpty = document.getElementById('workstation-attention-empty');
+        els.attentionListWrap = document.getElementById('workstation-attention-list-wrap');
+        els.attentionList = document.getElementById('workstation-attention-list');
+        els.attentionMore = document.getElementById('workstation-attention-more');
+        els.attentionSortButtons = Array.from(document.querySelectorAll('[data-attention-sort]'));
     }
 
     function bindEvents() {
@@ -412,11 +859,94 @@
         els.statusButtons.forEach((button) => {
             button.addEventListener('click', () => {
                 state.selectedStatus = button.dataset.status || '';
+                state.workstationPage = 1;
                 renderStatusFilter();
-                reloadGrid();
+                loadWorkstations();
             });
         });
         els.resetFilters?.addEventListener('click', resetFilters);
+
+        els.tableSearch?.addEventListener('input', (event) => {
+            const value = String(event.target.value || '').trim();
+            if (state.workstationSearchTimer) {
+                window.clearTimeout(state.workstationSearchTimer);
+            }
+            state.workstationSearchTimer = window.setTimeout(() => {
+                state.workstationSearch = value;
+                state.workstationPage = 1;
+                loadWorkstations();
+            }, 260);
+        });
+
+        els.sortButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                const key = button.dataset.workstationSort;
+                if (!key) return;
+                if (state.workstationSortKey === key) {
+                    state.workstationSortDir = state.workstationSortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    state.workstationSortKey = key;
+                    state.workstationSortDir = key === 'lastConnected' ? 'desc' : 'asc';
+                }
+                updateWorkstationSortIndicators();
+                state.workstationPage = 1;
+                loadWorkstations();
+            });
+        });
+
+        els.pagePrev?.addEventListener('click', () => {
+            if (state.workstationPage <= 1 || state.workstationLoading) return;
+            state.workstationPage -= 1;
+            loadWorkstations();
+        });
+
+        els.pageNext?.addEventListener('click', () => {
+            const totalPages = Math.max(1, Math.ceil(state.workstationTotal / state.workstationLimit));
+            if (state.workstationPage >= totalPages || state.workstationLoading) return;
+            state.workstationPage += 1;
+            loadWorkstations();
+        });
+
+        els.tableBody?.addEventListener('click', (event) => {
+            const attentionButton = event.target.closest('[data-action="attention"]');
+            if (attentionButton) {
+                const id = Number(attentionButton.dataset.workstationId || 0);
+                const name = decodeURIComponent(attentionButton.dataset.workstationName || '');
+                const failedCount = Number(attentionButton.dataset.failedCount || 0);
+                openAttentionModal(id, name, failedCount);
+                return;
+            }
+
+            const openButton = event.target.closest('[data-action="open-hierarchy"]');
+            if (openButton) {
+                const type = String(openButton.dataset.hierarchyType || '');
+                const id = Number(openButton.dataset.hierarchyId || 0);
+                if (type && id) {
+                    window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type, id } }));
+                }
+                return;
+            }
+
+            const actionButton = event.target.closest('[data-action="menu"]');
+            if (actionButton) {
+                toggleActionMenu(event, Number(actionButton.dataset.workstationId || 0), decodeURIComponent(actionButton.dataset.workstationName || ''), actionButton);
+                return;
+            }
+
+            const row = event.target.closest('tr[data-action="open-workstation-row"]');
+            if (!row) {
+                return;
+            }
+
+            if (event.target.closest('button, a, input, select, textarea, [role="button"]')) {
+                return;
+            }
+
+            const id = Number(row.dataset.workstationId || 0);
+            if (id > 0) {
+                window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'workstation', id } }));
+            }
+        });
 
         document.addEventListener('click', (event) => {
             if (state.activeDropdown === 'facility' && !els.facilityPanel.contains(event.target) && !els.facilityTrigger.contains(event.target)) {
@@ -425,7 +955,8 @@
             if (state.activeDropdown === 'workgroup' && !els.workgroupPanel.contains(event.target) && !els.workgroupTrigger.contains(event.target)) {
                 closeDropdown();
             }
-            if (els.actionOverlay && !els.actionMenu.contains(event.target)) {
+            const clickedToggle = event.target.closest('[data-action="menu"]');
+            if (!clickedToggle && els.actionMenu && !els.actionMenu.contains(event.target)) {
                 closeActionMenu();
             }
         });
@@ -449,6 +980,26 @@
             if (event.target === els.deleteModal) {
                 closeDeleteModal();
             }
+        });
+
+        els.attentionClose?.addEventListener('click', closeAttentionModal);
+        els.attentionModal?.addEventListener('click', (event) => {
+            if (event.target === els.attentionModal) closeAttentionModal();
+        });
+        els.attentionListWrap?.addEventListener('scroll', maybeLoadMoreAttentionRows);
+        els.attentionSortButtons?.forEach((button) => {
+            button.addEventListener('click', () => {
+                const key = button.dataset.attentionSort;
+                if (!key) return;
+                if (state.attentionSortKey === key) {
+                    state.attentionSortDir = state.attentionSortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    state.attentionSortKey = key;
+                    state.attentionSortDir = key === 'updatedAt' ? 'desc' : 'asc';
+                }
+                updateAttentionSortIndicators();
+                renderAttentionRows(state.attentionRows);
+            });
         });
     }
 
@@ -497,20 +1048,18 @@
         els.statusButtons.forEach((button) => {
             const status = button.dataset.status || '';
             const active = status === (state.selectedStatus || '');
-
-            const activeClass = status === 'ok'
-                ? 'rounded-[0.9rem] bg-white px-3 text-sm font-semibold text-emerald-700 shadow-[0_10px_24px_-16px_rgba(16,185,129,0.5)] ring-1 ring-emerald-200 transition'
-                : (status === 'failed'
-                    ? 'rounded-[0.9rem] bg-white px-3 text-sm font-semibold text-rose-700 shadow-[0_10px_24px_-16px_rgba(244,63,94,0.45)] ring-1 ring-rose-200 transition'
-                    : 'rounded-[0.9rem] bg-white px-3 text-sm font-semibold text-sky-700 shadow-[0_10px_24px_-16px_rgba(14,165,233,0.45)] ring-1 ring-sky-200 transition');
-
-            const inactiveClass = status === 'ok'
-                ? 'rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition hover:bg-white/95 hover:text-emerald-700'
-                : (status === 'failed'
-                    ? 'rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition hover:bg-white/95 hover:text-rose-700'
-                    : 'rounded-[0.9rem] px-3 text-sm font-semibold text-slate-600 transition hover:bg-white/95 hover:text-sky-700');
-
-            button.className = active ? activeClass : inactiveClass;
+            button.className = 'workstation-status-pill';
+            if (active) {
+                if (status === 'ok') {
+                    button.classList.add('bg-emerald-50', 'text-emerald-700', 'shadow-[inset_0_0_0_1px_rgba(16,185,129,0.22)]');
+                } else if (status === 'failed') {
+                    button.classList.add('bg-rose-50', 'text-rose-700', 'shadow-[inset_0_0_0_1px_rgba(244,63,94,0.22)]');
+                } else {
+                    button.classList.add('bg-sky-50', 'text-sky-700', 'shadow-[inset_0_0_0_1px_rgba(14,165,233,0.18)]');
+                }
+                return;
+            }
+            button.classList.add('text-slate-600', 'hover:bg-slate-50', 'hover:text-slate-900');
         });
 
         window.lucide?.createIcons();
@@ -549,7 +1098,8 @@
                 }
                 closeDropdown();
                 renderFilters();
-                reloadGrid();
+                state.workstationPage = 1;
+                loadWorkstations();
             });
         });
     }
@@ -583,7 +1133,8 @@
                 }
                 closeDropdown();
                 renderFilters();
-                reloadGrid();
+                state.workstationPage = 1;
+                loadWorkstations();
             });
         });
     }
@@ -617,18 +1168,26 @@
         state.selectedStatus = state.defaultStatus || '';
         state.facilitySearch = '';
         state.workgroupSearch = '';
+        state.workstationSearch = '';
+        state.workstationPage = 1;
         if (els.facilitySearch) els.facilitySearch.value = '';
         if (els.workgroupSearch) els.workgroupSearch.value = '';
+        if (els.tableSearch) els.tableSearch.value = '';
         closeDropdown();
         renderFilters();
-        reloadGrid();
+        loadWorkstations();
     }
 
-    function buildGridUrl(extra = {}) {
+    function buildWorkstationsUrl(extra = {}) {
         return Perfectlum.buildServerUrl('/api/workstations', {
             facility_id: state.selectedFacilityId || '',
             workgroup_id: state.selectedWorkgroupId || '',
             type: state.selectedStatus || '',
+            search: state.workstationSearch || '',
+            page: state.workstationPage,
+            limit: state.workstationLimit,
+            sort: state.workstationSortKey || 'name',
+            order: state.workstationSortDir || 'asc',
             ...extra,
         });
     }
@@ -653,126 +1212,135 @@
         return true;
     }
 
-    function initGrid() {
-        if (!els.grid) return;
-        if (state.grid) return;
-
-        state.grid = Perfectlum.createGrid(els.grid, {
-            columns: [
-                {
-                    name: text.name,
-                    formatter: (c) => gridjs.html(`
-                        <div class="flex items-center gap-2.5">
-                            <span class="inline-flex h-2.5 w-2.5 shrink-0 rounded-full ${Number(c.failedDisplaysCount || 0) > 0 ? 'bg-rose-500 shadow-[0_0_0_4px_rgba(244,63,94,0.12)]' : (Number(c.okDisplaysCount || 0) > 0 ? 'bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]' : 'bg-slate-300 shadow-[0_0_0_4px_rgba(148,163,184,0.12)]')}"></span>
-                            <div class="min-w-0">
-                                <button
-                                    type="button"
-                                    onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'workstation',id:${c.id}}}))"
-                                    class="cursor-pointer font-medium text-sky-600 transition hover:text-sky-700 hover:underline">
-                                    ${Perfectlum.escapeHtml(c.name)}
-                                </button>
-                                ${Number(c.failedDisplaysCount || 0) > 0
-                                    ? `<p class="mt-1 text-[11px] font-medium text-rose-600">${Perfectlum.escapeHtml(String(c.failedDisplaysCount))} ${Perfectlum.escapeHtml(Number(c.failedDisplaysCount) === 1 ? text.display : text.displays)} ${Perfectlum.escapeHtml(text.needAttention)}</p>`
-                                    : ''}
-                            </div>
-                        </div>
-                    `),
-                },
-                {
-                    name: text.workgroup,
-                    formatter: (c) => !c.wgName || c.wgName === '-'
-                        ? '-'
-                        : gridjs.html(`<button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'workgroup',id:${c.wgId}}}))" class="cursor-pointer text-gray-600 transition hover:text-sky-500 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c.wgName)}</button>`),
-                },
-                {
-                    name: text.facility,
-                    formatter: (c) => !c.facName || c.facName === '-'
-                        ? '-'
-                        : gridjs.html(`<button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'facility',id:${c.facId}}}))" class="cursor-pointer text-gray-600 transition hover:text-sky-500 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c.facName)}</button>`),
-                },
-                { name: text.sleepTime, formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
-                { name: text.displaysLabel, sort: false, formatter: (c) => gridjs.html(`<span class="font-semibold text-gray-700 group-[.theme-chroma]:text-gray-200">${Perfectlum.escapeHtml(c)}</span>`) },
-                { name: text.lastConnected, sort: false, formatter: (c) => gridjs.html(`<span class="text-gray-600 group-[.theme-chroma]:text-gray-300">${Perfectlum.escapeHtml(c)}</span>`) },
-                {
-                    name: text.actions,
-                    sort: false,
-                    width: '112px',
-                    formatter: (c) => !canManageWorkstations ? '' : gridjs.html(`
-                        <div class="flex justify-center">
-                            <button
-                                type="button"
-                                onclick='window.workstationsPage && window.workstationsPage.toggleActionMenu(event, ${c.id}, ${JSON.stringify(c.name)}, ${c.facId ?? "null"})'
-                                class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700">
-                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-                            </button>
-                        </div>`),
-                },
-            ],
-            server: {
-                url: buildGridUrl(),
-                then: d => (d.data || []).filter(workstationMatchesSelectedStatus).map(r => [
-                    { id: r.id, name: r.name, displayHealth: r.displayHealth, okDisplaysCount: r.okDisplaysCount, failedDisplaysCount: r.failedDisplaysCount, displaysCount: r.displaysCount },
-                    { wgId: r.wgId, wgName: r.wgName },
-                    { facId: r.facId, facName: r.facName },
-                    r.sleepTime,
-                    r.displaysCount,
-                    r.lastConnected,
-                    { id: r.id, name: r.name, facId: r.facId },
-                ]),
-                total: d => d.total,
-            },
-            pagination: {
-                enabled: true,
-                limit: 10,
-                server: {
-                    url: (_, pg, lim) => buildGridUrl({ page: pg + 1, limit: lim }),
-                },
-            },
-            search: {
-                enabled: true,
-                server: {
-                    url: (_, kw) => buildGridUrl({ search: kw }),
-                },
-            },
-            sort: { multiColumn: false },
-            language: {
-                search: { placeholder: text.searchWorkstations },
-                pagination: {
-                    previous: text.previous,
-                    next: text.next,
-                    showing: text.showing,
-                    results: () => text.results,
-                },
-                loading: text.loading,
-                noRecordsFound: text.noMatchingRecordsFound,
-                error: text.unableToLoadData,
-            },
+    function updateWorkstationSortIndicators() {
+        document.querySelectorAll('[data-workstation-sort]').forEach((button) => {
+            const key = button.getAttribute('data-workstation-sort');
+            button.classList.toggle('is-active', key === state.workstationSortKey);
+        });
+        document.querySelectorAll('[data-workstation-sort-indicator]').forEach((node) => {
+            const key = node.getAttribute('data-workstation-sort-indicator');
+            if (key === state.workstationSortKey) {
+                node.textContent = state.workstationSortDir === 'asc' ? '↑' : '↓';
+            } else {
+                node.textContent = '↕';
+            }
         });
     }
 
-    function reloadGrid() {
-        closeActionMenu();
-        state.grid = null;
-        if (!els.grid) {
-            initGrid();
+    function renderWorkstationPager() {
+        const totalPages = Math.max(1, Math.ceil(state.workstationTotal / state.workstationLimit));
+        const current = Math.min(state.workstationPage, totalPages);
+        if (els.pageLabel) {
+            els.pageLabel.textContent = `${text.page || 'Page'} ${current} / ${totalPages}`;
+        }
+        if (els.pagePrev) els.pagePrev.disabled = state.workstationLoading || current <= 1;
+        if (els.pageNext) els.pageNext.disabled = state.workstationLoading || current >= totalPages;
+
+        const from = state.workstationTotal === 0 ? 0 : ((current - 1) * state.workstationLimit) + 1;
+        const to = Math.min(state.workstationTotal, current * state.workstationLimit);
+        if (els.tableSummary) {
+            els.tableSummary.textContent = `${text.showing || 'Showing'} ${from}-${to} ${text.of || 'of'} ${state.workstationTotal} ${text.results || 'results'}`;
+        }
+        if (els.tableMeta) {
+            const statusLabel = state.selectedStatus === 'ok' ? 'OK' : (state.selectedStatus === 'failed' ? 'Not OK' : 'All');
+            els.tableMeta.textContent = `${statusLabel} • ${state.workstationTotal} ${text.results || 'results'}`;
+        }
+    }
+
+    function rowStatusDotClass(item) {
+        if (Number(item.failedDisplaysCount || 0) > 0) return 'bg-rose-500 shadow-[0_0_0_4px_rgba(244,63,94,0.14)]';
+        if (Number(item.okDisplaysCount || 0) > 0) return 'bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.14)]';
+        return 'bg-slate-300 shadow-[0_0_0_4px_rgba(148,163,184,0.14)]';
+    }
+
+    function renderWorkstationRows() {
+        if (!els.tableBody) return;
+        if (state.workstationLoading) {
+            els.tableBody.innerHTML = `<tr><td colspan="7" class="workstation-empty">${Perfectlum.escapeHtml(text.loading || 'Loading...')}</td></tr>`;
             return;
         }
 
-        Perfectlum.remountGrid('workstations-grid', (freshGrid) => {
-            els.grid = freshGrid || document.getElementById('workstations-grid');
-            state.grid = null;
-            initGrid();
-        });
+        const rows = state.workstationRows;
+        if (!rows.length) {
+            els.tableBody.innerHTML = `<tr><td colspan="7" class="workstation-empty">${Perfectlum.escapeHtml(text.noMatchingRecordsFound || 'No matching records found')}</td></tr>`;
+            return;
+        }
+
+        els.tableBody.innerHTML = rows.map((item) => {
+            const failedCount = Number(item.failedDisplaysCount || 0);
+            const name = String(item.name || '-');
+            const encodedName = encodeURIComponent(name);
+            const wgName = String(item.wgName || '-');
+            const facName = String(item.facName || '-');
+            return `
+                <tr class="workstation-row-clickable" data-action="open-workstation-row" data-workstation-id="${Number(item.id || 0)}">
+                    <td>
+                        <div class="flex items-center gap-2.5">
+                            <span class="inline-flex h-2.5 w-2.5 shrink-0 rounded-full ${rowStatusDotClass(item)}"></span>
+                            <div class="min-w-0">
+                                <button type="button" data-action="open-hierarchy" data-hierarchy-type="workstation" data-hierarchy-id="${Number(item.id || 0)}" class="cursor-pointer font-semibold text-sky-600 transition hover:text-sky-700 hover:underline">${Perfectlum.escapeHtml(name)}</button>
+                                ${failedCount > 0 ? `<button type="button" data-action="attention" data-workstation-id="${Number(item.id || 0)}" data-workstation-name="${encodedName}" data-failed-count="${failedCount}" class="mt-1 block text-[11px] font-semibold text-rose-600 underline decoration-rose-300 decoration-dashed underline-offset-2 transition hover:text-rose-700">${Perfectlum.escapeHtml(String(failedCount))} ${Perfectlum.escapeHtml(failedCount === 1 ? text.display : text.displays)} ${Perfectlum.escapeHtml(text.needAttention)}</button>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td>${!item.wgId || wgName === '-' ? '-' : `<span class="workstation-scope-cell"><span class="workstation-scope-badge">WG</span><button type="button" data-action="open-hierarchy" data-hierarchy-type="workgroup" data-hierarchy-id="${Number(item.wgId || 0)}" class="workstation-scope-link cursor-pointer text-slate-600 transition hover:text-sky-600 hover:underline">${Perfectlum.escapeHtml(wgName)}</button></span>`}</td>
+                    <td>${!item.facId || facName === '-' ? '-' : `<span class="workstation-scope-cell"><span class="workstation-scope-badge">F</span><button type="button" data-action="open-hierarchy" data-hierarchy-type="facility" data-hierarchy-id="${Number(item.facId || 0)}" class="workstation-scope-link cursor-pointer text-slate-600 transition hover:text-sky-600 hover:underline">${Perfectlum.escapeHtml(facName)}</button></span>`}</td>
+                    <td>${Perfectlum.escapeHtml(String(item.sleepTime || '-'))}</td>
+                    <td><span class="font-semibold text-slate-700">${Perfectlum.escapeHtml(String(item.displaysCount ?? 0))}</span></td>
+                    <td>${Perfectlum.escapeHtml(String(item.lastConnected || '-'))}</td>
+                    <td class="text-center">${!canManageWorkstations ? '' : `<button type="button" data-action="menu" data-workstation-id="${Number(item.id || 0)}" data-workstation-name="${encodedName}" class="workstation-row-action mx-auto transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2"></circle><circle cx="12" cy="5" r="2"></circle><circle cx="12" cy="19" r="2"></circle></svg></button>`}</td>
+                </tr>
+            `;
+        }).join('');
     }
 
-    function toggleActionMenu(event, id, name, facilityId) {
+    async function loadWorkstations() {
+        closeActionMenu();
+        state.workstationLoading = true;
+        renderWorkstationPager();
+        renderWorkstationRows();
+        let hasError = false;
+        try {
+            const payload = await Perfectlum.request(buildWorkstationsUrl());
+            const incoming = Array.isArray(payload?.data) ? payload.data : [];
+            state.workstationRows = incoming.filter(workstationMatchesSelectedStatus);
+            state.workstationTotal = Number(payload?.total || 0);
+            if (!Number.isFinite(state.workstationTotal) || state.workstationTotal < state.workstationRows.length) {
+                state.workstationTotal = state.workstationRows.length;
+            }
+
+            const totalPages = Math.max(1, Math.ceil(state.workstationTotal / state.workstationLimit));
+            if (state.workstationPage > totalPages) {
+                state.workstationPage = totalPages;
+                return loadWorkstations();
+            }
+        } catch (error) {
+            hasError = true;
+            state.workstationRows = [];
+            state.workstationTotal = 0;
+            if (els.tableBody) {
+                els.tableBody.innerHTML = `<tr><td colspan="7" class="workstation-empty text-rose-600">${Perfectlum.escapeHtml(error.message || text.unableToLoadData)}</td></tr>`;
+            }
+        } finally {
+            state.workstationLoading = false;
+            if (!hasError) {
+                renderWorkstationRows();
+            }
+            renderWorkstationPager();
+            window.lucide?.createIcons();
+        }
+    }
+
+    function toggleActionMenu(event, id, name, triggerEl) {
         if (!canManageWorkstations) return;
         event.preventDefault();
         event.stopPropagation();
 
-        const rect = event.currentTarget.getBoundingClientRect();
+        const anchor = triggerEl instanceof Element ? triggerEl : (event.currentTarget instanceof Element ? event.currentTarget : event.target.closest('[data-action="menu"]'));
+        if (!anchor) return;
+        const rect = anchor.getBoundingClientRect();
         const nextOpen = !(state.actionTarget && state.actionTarget.id === id && !els.actionMenu.classList.contains('hidden'));
-        state.actionTarget = nextOpen ? { id, name, facilityId } : null;
+        state.actionTarget = nextOpen ? { id, name } : null;
 
         if (!nextOpen) {
             closeActionMenu();
@@ -805,6 +1373,159 @@
         event?.stopPropagation?.();
         if (!state.actionTarget?.id) return;
         openDeleteModal(state.actionTarget.id, state.actionTarget.name);
+    }
+
+    function attentionLastSyncToEpoch(value) {
+        if (!value || value === '-') return 0;
+        const dt = Date.parse(String(value).replace(/(\d{2}) (\w{3}) (\d{4}) (\d{2}):(\d{2})/, '$1 $2 $3 $4:$5 UTC'));
+        return Number.isNaN(dt) ? 0 : dt;
+    }
+
+    function compareAttentionRows(a, b) {
+        const key = state.attentionSortKey;
+        const dir = state.attentionSortDir === 'desc' ? -1 : 1;
+        if (key === 'updatedAt') {
+            return (attentionLastSyncToEpoch(a.updatedAt) - attentionLastSyncToEpoch(b.updatedAt)) * dir;
+        }
+        const av = String(a[key] ?? '').toLowerCase();
+        const bv = String(b[key] ?? '').toLowerCase();
+        if (av === bv) return 0;
+        return av > bv ? dir : -dir;
+    }
+
+    function updateAttentionSortIndicators() {
+        document.querySelectorAll('[data-attention-sort-indicator]').forEach((node) => {
+            const key = node.getAttribute('data-attention-sort-indicator');
+            if (key === state.attentionSortKey) {
+                node.textContent = state.attentionSortDir === 'asc' ? '↑' : '↓';
+            } else {
+                node.textContent = '↕';
+            }
+        });
+    }
+
+    function renderAttentionRows(rows) {
+        if (!els.attentionList) return;
+        const sortedRows = [...rows].sort(compareAttentionRows);
+        els.attentionList.innerHTML = sortedRows.map((item) => `
+            <tr>
+                <td class="px-4 py-3 text-[13px] font-semibold text-slate-700">${Perfectlum.escapeHtml(item.displayName || '-')}</td>
+                <td class="px-4 py-3 text-[12px] text-slate-500">${Perfectlum.escapeHtml(item.updatedAt || '-')}</td>
+                <td class="px-4 py-3 text-[12px] text-rose-600">${Perfectlum.escapeHtml(item.attentionText || 'No alert detail')}</td>
+                <td class="px-4 py-3 text-right">
+                    <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'display',id:${Number(item.id || 0)}}}))" class="inline-flex h-9 items-center rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-600 transition hover:border-sky-400 hover:text-sky-700">${Perfectlum.escapeHtml(text.openDisplay || 'Open Display')}</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function fetchAttentionRowsPage(page) {
+        const payload = await Perfectlum.request(Perfectlum.buildServerUrl('/api/displays', {
+            workstation_id: Number(state.attentionTarget.id),
+            type: 'failed',
+            sort: 'updated_at',
+            order: 'desc',
+            page,
+            limit: state.attentionLimit,
+        }));
+        return Array.isArray(payload?.data) ? payload.data : [];
+    }
+
+    function updateAttentionListWrapHeight() {
+        if (!els.attentionListWrap) return;
+        const maxFromViewport = Math.max(260, Math.min(window.innerHeight * 0.56, 560));
+        els.attentionListWrap.style.height = `${maxFromViewport}px`;
+    }
+
+    async function maybeLoadMoreAttentionRows() {
+        if (!state.attentionHasMore || state.attentionLoadingMore || !state.attentionTarget) return;
+        const node = els.attentionListWrap;
+        if (!node) return;
+        const nearBottom = node.scrollTop + node.clientHeight >= node.scrollHeight - 24;
+        if (!nearBottom) return;
+
+        state.attentionLoadingMore = true;
+        els.attentionMore.textContent = text.loadingMore;
+        els.attentionMore.classList.remove('hidden');
+        try {
+            const nextPage = state.attentionPage + 1;
+            const rows = await fetchAttentionRowsPage(nextPage);
+            if (rows.length) {
+                state.attentionRows = state.attentionRows.concat(rows);
+                renderAttentionRows(state.attentionRows);
+                state.attentionPage = nextPage;
+            }
+            state.attentionHasMore = rows.length === state.attentionLimit;
+        } catch (error) {
+            state.attentionHasMore = false;
+        } finally {
+            state.attentionLoadingMore = false;
+            if (!state.attentionHasMore) {
+                els.attentionMore.classList.add('hidden');
+            }
+        }
+    }
+
+    async function openAttentionModal(workstationId, workstationName, failedCount) {
+        if (!workstationId) return;
+        state.attentionTarget = { id: Number(workstationId), name: workstationName || '' };
+        state.attentionPage = 1;
+        state.attentionHasMore = false;
+        state.attentionLoadingMore = false;
+        state.attentionRows = [];
+        els.attentionTitle.textContent = text.displaysNeedAttentionTitle;
+        const suffix = failedCount ? ` • ${failedCount} ${failedCount === 1 ? text.display : text.displays}` : '';
+        els.attentionSubtitle.textContent = `${workstationName || '-'}${suffix}`;
+
+        els.attentionLoading.classList.remove('hidden');
+        els.attentionError.classList.add('hidden');
+        els.attentionEmpty.classList.add('hidden');
+        els.attentionListWrap.classList.add('hidden');
+        els.attentionMore.classList.add('hidden');
+        els.attentionList.innerHTML = '';
+        els.attentionModal.classList.remove('hidden');
+        els.attentionModal.classList.add('flex');
+        updateAttentionListWrapHeight();
+        if (els.attentionListWrap) els.attentionListWrap.scrollTop = 0;
+
+        try {
+            const rows = await fetchAttentionRowsPage(1);
+            if (!rows.length) {
+                els.attentionEmpty.classList.remove('hidden');
+                return;
+            }
+
+            state.attentionRows = rows;
+            renderAttentionRows(state.attentionRows);
+            state.attentionHasMore = rows.length === state.attentionLimit;
+            if (state.attentionHasMore) {
+                els.attentionMore.textContent = text.loadingMore;
+                els.attentionMore.classList.remove('hidden');
+            }
+            els.attentionListWrap.classList.remove('hidden');
+        } catch (error) {
+            els.attentionError.textContent = error.message || text.unableToLoadAttentionDisplays;
+            els.attentionError.classList.remove('hidden');
+        } finally {
+            els.attentionLoading.classList.add('hidden');
+        }
+    }
+
+    function closeAttentionModal() {
+        state.attentionTarget = null;
+        state.attentionPage = 1;
+        state.attentionHasMore = false;
+        state.attentionLoadingMore = false;
+        state.attentionRows = [];
+        els.attentionModal.classList.add('hidden');
+        els.attentionModal.classList.remove('flex');
+        els.attentionLoading.classList.add('hidden');
+        els.attentionError.classList.add('hidden');
+        els.attentionEmpty.classList.add('hidden');
+        els.attentionListWrap.classList.add('hidden');
+        els.attentionMore.classList.add('hidden');
+        els.attentionList.innerHTML = '';
+        if (els.attentionListWrap) els.attentionListWrap.scrollTop = 0;
     }
 
     function boolValue(value) {
@@ -1226,7 +1947,7 @@
         try {
             await Perfectlum.postForm(endpoint, formData);
             closeEditModal();
-            reloadGrid();
+            loadWorkstations();
         } catch (error) {
             els.editError.textContent = error.message || text.unableToSaveWorkstation;
             els.editError.classList.remove('hidden');
@@ -1288,7 +2009,7 @@
                 throw new Error(payload.msg || text.unableToDeleteWorkstation);
             }
             closeDeleteModal();
-            reloadGrid();
+            loadWorkstations();
         } catch (error) {
             window.alert(error.message || text.unableToDeleteWorkstation);
             els.deleteConfirm.disabled = false;

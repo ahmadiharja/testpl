@@ -15,6 +15,7 @@
         'Site Settings' => ($role ?? null) === 'super' ? __('Site Settings') : null,
         'Application Settings' => $canManageDesktop ? __('Application Settings') : null,
         'Alert Settings' => $canManageDesktop ? __('Alert Settings') : null,
+        'Client Monitor' => ($role ?? null) === 'super' ? __('Client Monitor') : null,
         'Users' => $canManageUsersDesktop ? __('Users') : null,
     ]);
 @endphp
@@ -72,6 +73,7 @@
                     'History & Reports': '{{ url("histories-reports") }}',
                     @if (($role ?? null) === 'super')
                     'Site Settings': '{{ url("site-settings") }}',
+                    'Client Monitor': '{{ url("client-monitor") }}',
                     @endif
                     @if ($canManageDesktop)
                     'Application Settings': '{{ url("global-settings") }}',
@@ -155,6 +157,10 @@
         });
     </script>
 
-    @stack('scripts')
+    <div id="desktop-page-runtime-scripts" class="hidden" aria-hidden="true">
+        <!-- desktop-page-scripts-start -->
+        @stack('scripts')
+        <!-- desktop-page-scripts-end -->
+    </div>
 </body>
 </html>

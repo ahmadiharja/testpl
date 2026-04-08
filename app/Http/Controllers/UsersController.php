@@ -3,14 +3,129 @@
 namespace App\Http\Controllers;
 
 use App\Models\Facility;
+use App\Models\Display;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\Workgroup;
+use App\Models\Workstation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class UsersController extends Controller
 {
+    protected function displayPreviewLabel(Display $display): string
+    {
+        $label = trim((string) ($display->treetext ?? ''));
+        if ($label !== '') {
+            return $label;
+        }
+
+        return 'Display #' . $display->id;
+    }
+
+    protected function userAccessFootprint(?User $item, string $role): array
+    {
+        if (!$item) {
+            return [
+                'scopeType' => 'facility',
+                'scopeLabel' => 'No assigned scope',
+                'counts' => [
+                    'facilities' => 0,
+                    'workgroups' => 0,
+                    'workstations' => 0,
+                    'displays' => 0,
+                ],
+                'previews' => [
+                    'facilities' => [],
+                    'workgroups' => [],
+                    'workstations' => [],
+                    'displays' => [],
+                ],
+            ];
+        }
+
+        if ($role === 'super') {
+            return [
+                'scopeType' => 'global',
+                'scopeLabel' => 'Global access across all facilities',
+                'counts' => [
+                    'facilities' => Facility::count(),
+                    'workgroups' => Workgroup::count(),
+                    'workstations' => Workstation::count(),
+                    'displays' => Display::count(),
+                ],
+                'previews' => [
+                    'facilities' => Facility::query()->orderBy('name')->limit(5)->pluck('name')->values()->all(),
+                    'workgroups' => Workgroup::query()->orderBy('name')->limit(5)->pluck('name')->values()->all(),
+                    'workstations' => Workstation::query()->orderBy('name')->limit(5)->pluck('name')->values()->all(),
+                    'displays' => Display::query()->orderBy('manufacturer')->orderBy('model')->limit(5)->get()->map(fn ($display) => $this->displayPreviewLabel($display))->values()->all(),
+                ],
+            ];
+        }
+
+        $facility = $item->facility;
+
+        if (!$facility) {
+            return [
+                'scopeType' => 'facility',
+                'scopeLabel' => 'No assigned facility',
+                'counts' => [
+                    'facilities' => 0,
+                    'workgroups' => 0,
+                    'workstations' => 0,
+                    'displays' => 0,
+                ],
+                'previews' => [
+                    'facilities' => [],
+                    'workgroups' => [],
+                    'workstations' => [],
+                    'displays' => [],
+                ],
+            ];
+        }
+
+        return [
+            'scopeType' => 'facility',
+            'scopeLabel' => 'Facility-bound access',
+            'counts' => [
+                'facilities' => 1,
+                'workgroups' => $facility->workgroups()->count(),
+                'workstations' => $facility->workstations()->count(),
+                'displays' => $facility->displays()->count(),
+            ],
+            'previews' => [
+                'facilities' => [$facility->name],
+                'workgroups' => $facility->workgroups()->orderBy('workgroups.name')->limit(5)->pluck('workgroups.name')->values()->all(),
+                'workstations' => $facility->workstations()->orderBy('workstations.name')->limit(5)->pluck('workstations.name')->values()->all(),
+                'displays' => $facility->displays()->orderBy('manufacturer')->orderBy('model')->limit(5)->get()->map(fn ($display) => $this->displayPreviewLabel($display))->values()->all(),
+            ],
+        ];
+    }
+
+    protected function userViewSummary(?User $item, string $role): array
+    {
+        $facility = $item?->facility;
+        $timezone = $item?->timezone ?: ($facility?->timezone ?: 'UTC');
+        $lastPasswordChanged = null;
+
+        if (!empty($item?->last_password_changed)) {
+            try {
+                $lastPasswordChanged = Carbon::parse($item->last_password_changed)->format('d M Y H:i');
+            } catch (\Throwable $e) {
+                $lastPasswordChanged = (string) $item->last_password_changed;
+            }
+        }
+
+        return [
+            'timezone' => $timezone,
+            'lastPasswordChanged' => $lastPasswordChanged,
+            'defaultWorkgroup' => trim((string) ($item?->workgroup_name ?? '')) ?: null,
+            'footprint' => $this->userAccessFootprint($item, $role),
+        ];
+    }
+
     protected function canManageUsers(?User $user): bool
     {
         return $user && $user->hasAnyRole(['super', 'admin']);
@@ -109,7 +224,7 @@ class UsersController extends Controller
 
         abort_unless($this->canManageUsers($currentUser), 403);
 
-        $item = $id ? User::findOrFail($id) : new User();
+        $item = $id ? User::with('facility')->findOrFail($id) : new User();
         $isSuper = $currentUser->hasRole('super');
 
         if ($id && !$isSuper && ((string) $item->facility_id !== (string) $currentUser->facility_id || $item->hasRole('super'))) {
@@ -143,6 +258,7 @@ class UsersController extends Controller
                 'roles' => $roles,
                 'facilities' => $facilities,
             ],
+            'view' => $item->id ? $this->userViewSummary($item, $role) : null,
         ]);
     }
 

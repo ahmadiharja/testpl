@@ -392,3 +392,84 @@
 .theme-chroma ::-webkit-scrollbar-thumb {
     @apply bg-white/10 hover:bg-white/20;
 }
+
+@supports (view-transition-name: perfectlum-shell) {
+    @view-transition {
+        navigation: auto;
+    }
+
+    body > aside {
+        view-transition-name: perfectlum-sidebar;
+        contain: layout;
+    }
+
+    body > main > header {
+        view-transition-name: perfectlum-topbar;
+        contain: layout;
+    }
+
+    body > main > div {
+        view-transition-name: perfectlum-workspace;
+        contain: layout;
+    }
+
+    ::view-transition-group(root),
+    ::view-transition-group(perfectlum-sidebar),
+    ::view-transition-group(perfectlum-topbar),
+    ::view-transition-group(perfectlum-workspace) {
+        animation-duration: 220ms;
+        animation-timing-function: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    ::view-transition-old(perfectlum-sidebar),
+    ::view-transition-new(perfectlum-sidebar),
+    ::view-transition-old(perfectlum-topbar),
+    ::view-transition-new(perfectlum-topbar) {
+        animation-duration: 120ms;
+        mix-blend-mode: normal;
+    }
+
+    ::view-transition-old(perfectlum-workspace) {
+        animation: perfectlum-workspace-out 160ms cubic-bezier(.4, 0, 1, 1) both;
+        mix-blend-mode: normal;
+    }
+
+    ::view-transition-new(perfectlum-workspace) {
+        animation: perfectlum-workspace-in 260ms cubic-bezier(.2, .8, .2, 1) both;
+        mix-blend-mode: normal;
+    }
+
+    @keyframes perfectlum-workspace-out {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+            filter: blur(0);
+        }
+        to {
+            opacity: .72;
+            transform: translateY(4px);
+            filter: blur(1px);
+        }
+    }
+
+    @keyframes perfectlum-workspace-in {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+            filter: blur(2px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+            filter: blur(0);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        ::view-transition-group(*),
+        ::view-transition-old(*),
+        ::view-transition-new(*) {
+            animation-duration: 1ms !important;
+        }
+    }
+}

@@ -248,8 +248,6 @@
     </div>
 </main>
 
-@include('common.navigations.footer')
-
 <script>
 function alertSettingsPage() {
     return {
@@ -430,3 +428,5 @@ function alertSettingsPage() {
     };
 }
 </script>
+
+@include('common.navigations.footer')

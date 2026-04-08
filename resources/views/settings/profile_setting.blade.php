@@ -215,8 +215,6 @@
     </section>
 </div>
 
-@include('common.navigations.footer')
-
 <script>
     function generate_password(length = 9) {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -256,3 +254,5 @@
         }
     }
 </script>
+
+@include('common.navigations.footer')

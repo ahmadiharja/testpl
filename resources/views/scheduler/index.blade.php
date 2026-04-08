@@ -35,7 +35,6 @@
     ];
 @endphp
 
-@push('head')
 <style>
     #tasks-grid .gridjs-th {
         vertical-align: middle !important;
@@ -102,15 +101,334 @@
         align-items: center;
     }
 
-    .scheduler-grid-shell,
-    .scheduler-grid-shell > div,
-    .scheduler-grid-shell .gridjs-container,
-    .scheduler-grid-shell .gridjs-wrapper,
-    .scheduler-grid-shell .gridjs-footer {
-        overflow: visible !important;
+    .scheduler-task-cell,
+    .scheduler-display-cell {
+        max-width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .scheduler-task-title,
+    .scheduler-display-title {
+        display: block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.2;
+        color: #0f172a;
+    }
+
+    .scheduler-task-title.is-overdue {
+        color: #dc2626;
+    }
+
+    .scheduler-task-meta {
+        margin-top: 0.18rem;
+        display: block;
+        min-width: 0;
+        font-size: 12px;
+        line-height: 1.55;
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .scheduler-display-meta {
+        margin-top: 0.2rem;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.2rem 0.36rem;
+        min-width: 0;
+        font-size: 11px;
+        color: #94a3b8;
+    }
+
+    .scheduler-display-meta-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        font: inherit;
+        font-weight: 600;
+        color: #64748b;
+        transition: color 160ms ease;
+        min-width: 0;
+        cursor: pointer;
+    }
+
+    .scheduler-display-meta-button:hover,
+    .scheduler-display-meta-button:focus-visible {
+        color: #0284c7;
+        outline: none;
+    }
+
+    .scheduler-display-meta-badge {
+        width: 0;
+        height: 18px;
+        border-radius: 999px;
+        background: #1d9bf0;
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        font-weight: 800;
+        line-height: 1;
+        opacity: 0;
+        transform: translateX(-6px);
+        overflow: hidden;
+        margin-right: 0;
+        transition: width 180ms ease, opacity 180ms ease, transform 180ms ease, margin-right 180ms ease;
+        flex: 0 0 auto;
+    }
+
+    .scheduler-display-meta-button:hover .scheduler-display-meta-badge,
+    .scheduler-display-meta-button:focus-visible .scheduler-display-meta-badge {
+        width: 18px;
+        opacity: 1;
+        transform: translateX(0);
+        margin-right: 6px;
+    }
+
+    .scheduler-display-meta-label {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .scheduler-display-separator {
+        color: #cbd5e1;
+        font-weight: 700;
+    }
+
+    .scheduler-table th:nth-child(3),
+    .scheduler-table td:nth-child(3),
+    .scheduler-table th:nth-child(6),
+    .scheduler-table td:nth-child(6),
+    .scheduler-table th:nth-child(7),
+    .scheduler-table td:nth-child(7) {
+        display: none;
+    }
+
+    .scheduler-create-shell {
+        border-radius: 1.5rem;
+        border: 1px solid #dce8f4;
+        background: linear-gradient(180deg, #f9fcff 0%, #ffffff 100%);
+        box-shadow: 0 14px 38px -28px rgba(15, 23, 42, 0.22);
+    }
+
+    .scheduler-jobs-shell {
+        border-radius: 2rem;
+        border: 1px solid #d5e0ec;
+        background: linear-gradient(180deg, #f7fbff 0%, #ffffff 100%);
+        box-shadow: 0 26px 64px -46px rgba(15, 23, 42, 0.34);
+        overflow: hidden;
+    }
+
+    .scheduler-jobs-head {
+        padding: 18px 18px 12px;
+    }
+
+    .scheduler-table-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 18px;
+        border-top: 1px solid #e3ecf5;
+        border-bottom: 1px solid #e3ecf5;
+        background: #f8fbff;
+    }
+
+    .scheduler-table-search {
+        width: min(440px, 100%);
+        height: 42px;
+        border-radius: 999px;
+        border: 1px solid #c9d8e8;
+        padding: 0 16px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #12263a;
+        background: #fff;
+    }
+
+    .scheduler-table-search:focus {
+        outline: none;
+        border-color: #1d9bf0;
+        box-shadow: 0 0 0 3px rgba(29, 155, 240, 0.16);
+    }
+
+    .scheduler-table-wrap {
+        overflow-x: auto;
+        background: #fff;
+    }
+
+    .scheduler-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 1160px;
+        table-layout: fixed;
+    }
+
+    .scheduler-table th {
+        padding: 13px 16px;
+        text-align: left;
+        border-bottom: 1px solid #d8e4f0;
+        background: #e9f1fa;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        color: #4d647d;
+        white-space: nowrap;
+    }
+
+    .scheduler-sort-btn {
+        border: 0;
+        background: transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #5a7087;
+        font: inherit;
+        letter-spacing: inherit;
+        text-transform: inherit;
+        cursor: pointer;
+        border-radius: 999px;
+        padding: 2px 8px;
+        margin-left: -8px;
+        transition: all .18s ease;
+    }
+
+    .scheduler-sort-btn:hover {
+        background: #f2f7fd;
+        color: #2f4d6a;
+    }
+
+    .scheduler-sort-btn.is-active {
+        background: #e2edf9;
+        color: #24486b;
+    }
+
+    .scheduler-sort-indicator {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        background: #d4e3f4;
+        color: #2f5477;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: 0;
+        transition: all .18s ease;
+    }
+
+    .scheduler-sort-btn.is-active .scheduler-sort-indicator {
+        background: #2f6fae;
+        color: #ffffff;
+    }
+
+    .scheduler-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #edf2f8;
+        font-size: 14px;
+        color: #334155;
+        vertical-align: middle;
+        background: #fff;
+    }
+
+    .scheduler-table tbody tr:hover td {
+        background: #f7fbff;
+    }
+
+    .scheduler-table th:nth-child(1),
+    .scheduler-table td:nth-child(1) { width: 30%; }
+    .scheduler-table th:nth-child(2),
+    .scheduler-table td:nth-child(2) { width: 38%; }
+    .scheduler-table th:nth-child(4),
+    .scheduler-table td:nth-child(4) { width: 12%; text-align: center; }
+    .scheduler-table th:nth-child(5),
+    .scheduler-table td:nth-child(5) { width: 12%; text-align: center; }
+    .scheduler-table th:nth-child(8),
+    .scheduler-table td:nth-child(8) { width: 8%; text-align: center; }
+
+    .scheduler-table-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 16px 14px;
+        border-top: 1px solid #dbe7f3;
+        background: #f7fbff;
+    }
+
+    .scheduler-pager {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .scheduler-page-btn {
+        height: 32px;
+        min-width: 32px;
+        border-radius: 999px;
+        border: 1px solid #c7d6e7;
+        background: #ffffff;
+        color: #2c4158;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 0 12px;
+        transition: all .18s ease;
+    }
+
+    .scheduler-page-btn:hover:not(:disabled) {
+        border-color: #1d9bf0;
+        color: #0f5f9f;
+        background: #f0f8ff;
+    }
+
+    .scheduler-page-btn:disabled {
+        opacity: .45;
+        cursor: not-allowed;
+    }
+
+    .scheduler-empty {
+        padding: 24px 16px;
+        text-align: center;
+        color: #5f7388;
+        font-size: 14px;
+        border-bottom: 1px solid #edf2f8;
+    }
+
+    @media (max-width: 768px) {
+        .scheduler-table-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .scheduler-table-search {
+            width: 100%;
+        }
+        .scheduler-table-footer {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .scheduler-pager {
+            justify-content: flex-end;
+        }
     }
 </style>
-@endpush
 
 <div class="space-y-6" x-data="schedulerPage()">
     <section class="rounded-[2rem] border border-slate-200 bg-white px-7 py-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
@@ -158,7 +476,7 @@
 
         <div x-show="activeTab === 'tasks'" x-cloak>
             @if($canManageSchedulerDesktop)
-            <div class="mb-6 rounded-[1.75rem] border border-slate-200 bg-slate-50/70 p-5 shadow-[0_12px_34px_rgba(15,23,42,0.05)]"
+            <div class="scheduler-create-shell mb-6 p-5"
                 x-data="{ openScheduleDisplays: false }">
                 <div class="mb-4">
                     <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{{ __('Create Schedule') }}</p>
@@ -276,16 +594,43 @@
             </div>
             @endif
 
-            <div class="mb-4 flex items-center justify-between gap-4">
-                <div>
-                    <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{{ __('Scheduled Tasks') }}</p>
-                    <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">{{ __('All calibration and QA schedules') }}</h2>
-                    <p class="mt-1 text-sm text-slate-500">{{ __('Nearest due schedules are shown first so upcoming work is easier to prioritize.') }}</p>
+            <div class="scheduler-jobs-shell">
+                <div class="scheduler-jobs-head">
+                    <div class="space-y-2">
+                        <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{{ __('Scheduled Tasks') }}</p>
+                        <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">{{ __('All calibration and QA schedules') }}</h2>
+                        <p class="mt-1 max-w-3xl text-sm text-slate-500">{{ __('Nearest due schedules are shown first so upcoming work is easier to prioritize.') }}</p>
+                    </div>
                 </div>
-            </div>
-
-            <div class="scheduler-grid-shell overflow-visible rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_16px_44px_rgba(15,23,42,0.06)]">
-                <x-data-table id="tasks-grid" class="overflow-visible" />
+                <div class="scheduler-table-toolbar">
+                    <input id="scheduler-table-search" type="text" class="scheduler-table-search transition-all placeholder-gray-400" placeholder="{{ __('Search scheduler tasks...') }}">
+                    <div id="scheduler-table-meta" class="text-[12px] font-semibold text-slate-500"></div>
+                </div>
+                <div class="scheduler-table-wrap">
+                    <table class="scheduler-table">
+                        <thead>
+                            <tr>
+                                <th><button type="button" data-scheduler-sort="task_name" class="scheduler-sort-btn"><span>{{ __('Task') }}</span><span class="scheduler-sort-indicator" data-scheduler-sort-indicator="task_name">↕</span></button></th>
+                                <th><button type="button" data-scheduler-sort="display_name" class="scheduler-sort-btn"><span>{{ __('Display') }}</span><span class="scheduler-sort-indicator" data-scheduler-sort-indicator="display_name">↕</span></button></th>
+                                <th><button type="button" data-scheduler-sort="schedule_name" class="scheduler-sort-btn"><span>{{ __('Schedule') }}</span><span class="scheduler-sort-indicator" data-scheduler-sort-indicator="schedule_name">↕</span></button></th>
+                                <th><button type="button" data-scheduler-sort="due_at" class="scheduler-sort-btn"><span>{{ __('Due Date') }}</span><span class="scheduler-sort-indicator" data-scheduler-sort-indicator="due_at">↕</span></button></th>
+                                <th><button type="button" data-scheduler-sort="created_at" class="scheduler-sort-btn"><span>{{ __('Created') }}</span><span class="scheduler-sort-indicator" data-scheduler-sort-indicator="created_at">↕</span></button></th>
+                                <th>{{ __('Status') }}</th>
+                                <th>{{ __('Enabled') }}</th>
+                                <th class="text-center">{{ __('Actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduler-tasks-body"></tbody>
+                    </table>
+                </div>
+                <div class="scheduler-table-footer">
+                    <div id="scheduler-table-summary" class="text-[12px] font-semibold text-slate-500"></div>
+                    <div class="scheduler-pager">
+                        <button id="scheduler-page-prev" type="button" class="scheduler-page-btn">{{ __('Previous') }}</button>
+                        <span id="scheduler-page-label" class="text-[12px] font-semibold text-slate-500"></span>
+                        <button id="scheduler-page-next" type="button" class="scheduler-page-btn">{{ __('Next') }}</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -371,6 +716,22 @@
             workstationSearch: '',
         };
         const canManageTasks = @json($canManageSchedulerDesktop);
+        const schedulerTableState = {
+            page: 1,
+            limit: 25,
+            total: 0,
+            loading: false,
+            fetching: false,
+            search: '',
+            searchTimer: null,
+            rows: [],
+            sortKey: '',
+            sortOrder: 'asc',
+            autoRefreshTimer: null,
+            autoRefreshIntervalVisibleMs: 15000,
+            autoRefreshIntervalHiddenMs: 45000,
+            autoRefreshTicks: 0,
+        };
 
         function updateScheduleDisplaysLabel() {
             const field = document.getElementById('schedule-displays-options');
@@ -683,10 +1044,281 @@
         }
 
         function reloadSchedulerGrid() {
-            Perfectlum.remountGrid('tasks-grid', init);
+            schedulerTableState.autoRefreshTicks = 0;
+            loadSchedulerTasks({ withoutTotal: false, silent: false });
+            queueSchedulerAutoRefresh();
+        }
+
+        function schedulerTasksUrl(options = {}) {
+            const withoutTotal = Boolean(options.withoutTotal);
+            const url = new URL('/api/tasks', window.location.origin);
+            if (schedulerTableState.sortKey) {
+                url.searchParams.set('sort', schedulerTableState.sortKey);
+                url.searchParams.set('order', schedulerTableState.sortOrder);
+            } else {
+                url.searchParams.set('sort_mode', 'due');
+            }
+            @if($selectedDisplayId)
+            url.searchParams.set('display_id', '{{ $selectedDisplayId }}');
+            @endif
+            url.searchParams.set('page', String(schedulerTableState.page));
+            url.searchParams.set('limit', String(schedulerTableState.limit));
+            if (schedulerTableState.search) {
+                url.searchParams.set('search', schedulerTableState.search);
+            }
+            if (withoutTotal) {
+                url.searchParams.set('without_total', '1');
+            }
+            return `${url.pathname}${url.search}`;
+        }
+
+        function renderSchedulerDisplayCell(row) {
+            return `
+                <div class="scheduler-cell-stack space-y-1.5">
+                    <button type="button" data-scheduler-open="display" data-scheduler-id="${Number(row.displayId) || 0}" class="block text-left font-semibold text-sky-600 hover:text-sky-700 hover:underline">${Perfectlum.escapeHtml(row.displayName || '-')}</button>
+                    <div class="text-xs text-slate-500">
+                        <button type="button" data-scheduler-open="workstation" data-scheduler-id="${Number(row.wsId) || 0}" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">${Perfectlum.escapeHtml(row.wsName || '-')}</button>
+                        <span class="mx-1.5">•</span>
+                        <button type="button" data-scheduler-open="workgroup" data-scheduler-id="${Number(row.wgId) || 0}" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">${Perfectlum.escapeHtml(row.wgName || '-')}</button>
+                        <span class="mx-1.5">•</span>
+                        <button type="button" data-scheduler-open="facility" data-scheduler-id="${Number(row.facId) || 0}" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">${Perfectlum.escapeHtml(row.facName || '-')}</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSchedulerRows() {
+            const body = document.getElementById('scheduler-tasks-body');
+            if (!body) return;
+
+            if (schedulerTableState.loading) {
+                body.innerHTML = `<tr><td colspan="8" class="scheduler-empty">Loading...</td></tr>`;
+                return;
+            }
+
+            if (!schedulerTableState.rows.length) {
+                body.innerHTML = `<tr><td colspan="8" class="scheduler-empty">No matching records found</td></tr>`;
+                return;
+            }
+
+            body.innerHTML = schedulerTableState.rows.map((row) => {
+                const dueCls = { danger: 'text-red-600 font-bold', warning: 'text-amber-600 font-semibold', success: 'text-emerald-600' }[row.dueColor] || 'text-slate-500';
+                const createdMuted = row.createdAt === 'Not recorded';
+                const createdCls = createdMuted ? 'text-slate-400 font-medium' : 'text-slate-600 font-semibold';
+                const statusCls = row.statusColor === 'success'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-red-50 text-red-700 border-red-200';
+                const enabledCls = row.enabledColor === 'success'
+                    ? 'bg-sky-50 text-sky-700 border-sky-200'
+                    : 'bg-slate-100 text-slate-600 border-slate-200';
+
+                return `
+                    <tr>
+                        <td><div class="scheduler-cell"><span class="text-sm font-semibold text-slate-900">${Perfectlum.escapeHtml(row.taskName || '-')}</span></div></td>
+                        <td>${renderSchedulerDisplayCell(row)}</td>
+                        <td><div class="scheduler-cell">${Perfectlum.badge(row.scheduleName || '-', 'warning')}</div></td>
+                        <td><div class="scheduler-cell"><span class="text-xs ${dueCls}">${Perfectlum.escapeHtml(row.dueAt || '-')}</span></div></td>
+                        <td><div class="scheduler-cell"><span class="text-xs ${createdCls}">${Perfectlum.escapeHtml(row.createdAt || 'Not recorded')}</span></div></td>
+                        <td><div class="scheduler-cell"><span class="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${statusCls}">${Perfectlum.escapeHtml(row.status || '-')}</span></div></td>
+                        <td><div class="scheduler-cell"><span class="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${enabledCls}">${Perfectlum.escapeHtml(row.enabledLabel || '-')}</span></div></td>
+                        <td>${renderSchedulerTaskActions(row)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            window.lucide?.createIcons();
+        }
+
+        function renderSchedulerMetaButton(type, id, label, badge) {
+            const safeLabel = String(label || '').trim();
+            const numericId = Number(id) || 0;
+            if (!numericId || !safeLabel || safeLabel === '-') {
+                return '';
+            }
+
+            return `
+                <button type="button" data-scheduler-open="${Perfectlum.escapeHtml(type)}" data-scheduler-id="${numericId}" class="scheduler-display-meta-button">
+                    <span class="scheduler-display-meta-badge">${Perfectlum.escapeHtml(badge)}</span>
+                    <span class="scheduler-display-meta-label">${Perfectlum.escapeHtml(safeLabel)}</span>
+                </button>
+            `;
+        }
+
+        function renderSchedulerDisplayCell(row) {
+            const facility = renderSchedulerMetaButton('facility', row.facId, row.facName, 'F');
+            const workgroup = renderSchedulerMetaButton('workgroup', row.wgId, row.wgName, 'WG');
+            const workstation = renderSchedulerMetaButton('workstation', row.wsId, row.wsName, 'WS');
+            const meta = [facility, workgroup, workstation]
+                .filter(Boolean)
+                .join('<span class="scheduler-display-separator">•</span>');
+
+            return `
+                <div class="scheduler-display-cell">
+                    <button type="button" data-scheduler-open="display" data-scheduler-id="${Number(row.displayId) || 0}" class="scheduler-display-title text-left transition hover:text-sky-600 hover:underline">${Perfectlum.escapeHtml(row.displayName || '-')}</button>
+                    <div class="scheduler-display-meta">${meta}</div>
+                </div>
+            `;
+        }
+
+        function renderSchedulerRows() {
+            const body = document.getElementById('scheduler-tasks-body');
+            if (!body) return;
+
+            if (schedulerTableState.loading) {
+                body.innerHTML = `<tr><td colspan="8" class="scheduler-empty">Loading...</td></tr>`;
+                return;
+            }
+
+            if (!schedulerTableState.rows.length) {
+                body.innerHTML = `<tr><td colspan="8" class="scheduler-empty">No matching records found</td></tr>`;
+                return;
+            }
+
+            body.innerHTML = schedulerTableState.rows.map((row) => {
+                const dueCls = { danger: 'text-red-600 font-bold', warning: 'text-amber-600 font-semibold', success: 'text-emerald-600' }[row.dueColor] || 'text-slate-500';
+                const createdMuted = row.createdAt === 'Not recorded';
+                const createdCls = createdMuted ? 'text-slate-400 font-medium' : 'text-slate-600 font-semibold';
+                const taskTitleCls = row.dueColor === 'danger' ? 'is-overdue' : '';
+                const taskMeta = [
+                    `Status : ${row.status || '-'}`,
+                    `Type : ${row.scheduleName || '-'}`,
+                    `${row.enabledLabel || '-'}`
+                ].join(' | ');
+
+                return `
+                    <tr>
+                        <td>
+                            <div class="scheduler-task-cell">
+                                <span class="scheduler-task-title ${taskTitleCls}">${Perfectlum.escapeHtml(row.taskName || '-')}</span>
+                                <div class="scheduler-task-meta">${Perfectlum.escapeHtml(taskMeta)}</div>
+                            </div>
+                        </td>
+                        <td>${renderSchedulerDisplayCell(row)}</td>
+                        <td class="hidden"></td>
+                        <td><div class="scheduler-cell justify-center"><span class="text-xs ${dueCls}">${Perfectlum.escapeHtml(row.dueAt || '-')}</span></div></td>
+                        <td><div class="scheduler-cell justify-center"><span class="text-xs ${createdCls}">${Perfectlum.escapeHtml(row.createdAt || 'Not recorded')}</span></div></td>
+                        <td class="hidden"></td>
+                        <td class="hidden"></td>
+                        <td>${renderSchedulerTaskActions(row)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            window.lucide?.createIcons();
+        }
+
+        function renderSchedulerPager() {
+            const totalPages = Math.max(1, Math.ceil(schedulerTableState.total / schedulerTableState.limit));
+            const currentPage = Math.min(schedulerTableState.page, totalPages);
+            const from = schedulerTableState.total === 0 ? 0 : ((currentPage - 1) * schedulerTableState.limit) + 1;
+            const to = Math.min(schedulerTableState.total, currentPage * schedulerTableState.limit);
+
+            const meta = document.getElementById('scheduler-table-meta');
+            const summary = document.getElementById('scheduler-table-summary');
+            const label = document.getElementById('scheduler-page-label');
+            const prev = document.getElementById('scheduler-page-prev');
+            const next = document.getElementById('scheduler-page-next');
+
+            if (meta) meta.textContent = `${schedulerTableState.total} results`;
+            if (summary) summary.textContent = `Showing ${from}-${to} of ${schedulerTableState.total} results`;
+            if (label) label.textContent = `Page ${currentPage} / ${totalPages}`;
+            if (prev) prev.disabled = schedulerTableState.loading || schedulerTableState.fetching || currentPage <= 1;
+            if (next) next.disabled = schedulerTableState.loading || schedulerTableState.fetching || currentPage >= totalPages;
+        }
+
+        function updateSchedulerSortIndicators() {
+            document.querySelectorAll('[data-scheduler-sort]').forEach((button) => {
+                const key = button.getAttribute('data-scheduler-sort');
+                button.classList.toggle('is-active', key === schedulerTableState.sortKey);
+            });
+            document.querySelectorAll('[data-scheduler-sort-indicator]').forEach((node) => {
+                const key = node.getAttribute('data-scheduler-sort-indicator');
+                if (key === schedulerTableState.sortKey) {
+                    node.textContent = schedulerTableState.sortOrder === 'asc' ? '↑' : '↓';
+                } else {
+                    node.textContent = '↕';
+                }
+            });
+        }
+
+        function queueSchedulerAutoRefresh() {
+            if (schedulerTableState.autoRefreshTimer) {
+                clearTimeout(schedulerTableState.autoRefreshTimer);
+                schedulerTableState.autoRefreshTimer = null;
+            }
+            const interval = document.visibilityState === 'visible'
+                ? schedulerTableState.autoRefreshIntervalVisibleMs
+                : schedulerTableState.autoRefreshIntervalHiddenMs;
+
+            schedulerTableState.autoRefreshTimer = window.setTimeout(async () => {
+                if (!document.body?.contains(document.getElementById('scheduler-tasks-body'))) return;
+                const shouldIncludeTotal = schedulerTableState.autoRefreshTicks % 4 === 0;
+                schedulerTableState.autoRefreshTicks += 1;
+                await loadSchedulerTasks({
+                    withoutTotal: !shouldIncludeTotal,
+                    silent: true,
+                });
+                queueSchedulerAutoRefresh();
+            }, interval);
+        }
+
+        window.schedulerPageCleanup = function () {
+            if (schedulerTableState.autoRefreshTimer) {
+                clearTimeout(schedulerTableState.autoRefreshTimer);
+                schedulerTableState.autoRefreshTimer = null;
+            }
+            schedulerTableState.fetching = false;
+            schedulerTableState.loading = false;
+        };
+
+        async function loadSchedulerTasks(options = {}) {
+            const withoutTotal = Boolean(options.withoutTotal);
+            const silent = Boolean(options.silent);
+            if (schedulerTableState.fetching) return;
+
+            schedulerTableState.fetching = true;
+            if (!silent) {
+                schedulerTableState.loading = true;
+                renderSchedulerPager();
+                renderSchedulerRows();
+            }
+
+            try {
+                const payload = await Perfectlum.request(schedulerTasksUrl({ withoutTotal }));
+                schedulerTableState.rows = Array.isArray(payload?.data) ? payload.data : [];
+                if (typeof payload?.total === 'number' && Number.isFinite(payload.total)) {
+                    schedulerTableState.total = Number(payload.total);
+                } else if (!withoutTotal) {
+                    schedulerTableState.total = Number(schedulerTableState.rows.length || 0);
+                }
+
+                const totalPages = Math.max(1, Math.ceil(schedulerTableState.total / schedulerTableState.limit));
+                if (schedulerTableState.page > totalPages) {
+                    schedulerTableState.page = totalPages;
+                    return loadSchedulerTasks({ withoutTotal: false, silent: false });
+                }
+            } catch (error) {
+                schedulerTableState.rows = [];
+                schedulerTableState.total = 0;
+                const body = document.getElementById('scheduler-tasks-body');
+                if (body) {
+                    body.innerHTML = `<tr><td colspan="8" class="scheduler-empty text-rose-600">${Perfectlum.escapeHtml(error.message || 'Unable to load data')}</td></tr>`;
+                }
+            } finally {
+                schedulerTableState.fetching = false;
+                schedulerTableState.loading = false;
+                renderSchedulerRows();
+                renderSchedulerPager();
+            }
         }
 
         function init() {
+            const body = document.getElementById('scheduler-tasks-body');
+            if (!body || body.dataset.schedulerInitialized === '1') {
+                return;
+            }
+            body.dataset.schedulerInitialized = '1';
+
             refreshScheduleFacilityOptions();
 
             document.getElementById('schedule-facility-trigger')?.addEventListener('click', () => {
@@ -727,6 +1359,67 @@
                 }
             });
 
+            const searchInput = document.getElementById('scheduler-table-search');
+            searchInput?.addEventListener('input', (event) => {
+                clearTimeout(schedulerTableState.searchTimer);
+                schedulerTableState.searchTimer = window.setTimeout(() => {
+                    schedulerTableState.search = String(event.target.value || '').trim();
+                    schedulerTableState.page = 1;
+                    schedulerTableState.autoRefreshTicks = 0;
+                    loadSchedulerTasks({ withoutTotal: false, silent: false });
+                    queueSchedulerAutoRefresh();
+                }, 350);
+            });
+
+            document.querySelectorAll('[data-scheduler-sort]').forEach((button) => {
+                button.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    const key = button.getAttribute('data-scheduler-sort');
+                    if (!key) return;
+                    if (schedulerTableState.sortKey === key) {
+                        schedulerTableState.sortOrder = schedulerTableState.sortOrder === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        schedulerTableState.sortKey = key;
+                        schedulerTableState.sortOrder = (key === 'due_at' || key === 'created_at') ? 'desc' : 'asc';
+                    }
+                    schedulerTableState.page = 1;
+                    updateSchedulerSortIndicators();
+                    schedulerTableState.autoRefreshTicks = 0;
+                    loadSchedulerTasks({ withoutTotal: false, silent: false });
+                    queueSchedulerAutoRefresh();
+                });
+            });
+
+            document.getElementById('scheduler-page-prev')?.addEventListener('click', () => {
+                if (schedulerTableState.page <= 1 || schedulerTableState.loading || schedulerTableState.fetching) return;
+                schedulerTableState.page -= 1;
+                schedulerTableState.autoRefreshTicks = 0;
+                loadSchedulerTasks({ withoutTotal: false, silent: false });
+                queueSchedulerAutoRefresh();
+            });
+
+            document.getElementById('scheduler-page-next')?.addEventListener('click', () => {
+                const totalPages = Math.max(1, Math.ceil(schedulerTableState.total / schedulerTableState.limit));
+                if (schedulerTableState.page >= totalPages || schedulerTableState.loading || schedulerTableState.fetching) return;
+                schedulerTableState.page += 1;
+                schedulerTableState.autoRefreshTicks = 0;
+                loadSchedulerTasks({ withoutTotal: false, silent: false });
+                queueSchedulerAutoRefresh();
+            });
+
+            updateSchedulerSortIndicators();
+            loadSchedulerTasks({ withoutTotal: false, silent: false });
+            queueSchedulerAutoRefresh();
+            document.addEventListener('visibilitychange', queueSchedulerAutoRefresh);
+            window.addEventListener('focus', queueSchedulerAutoRefresh);
+            window.addEventListener('beforeunload', () => {
+                if (schedulerTableState.autoRefreshTimer) {
+                    clearTimeout(schedulerTableState.autoRefreshTimer);
+                    schedulerTableState.autoRefreshTimer = null;
+                }
+            });
+
+            if (false) {
             var el = document.getElementById('tasks-grid');
             if (!el || el._gi) return;
             el._gi = true;
@@ -870,9 +1563,18 @@
                 },
                 language: { search: { placeholder: text.searchSchedulerTasks } }
             });
+            }
         }
 
         document.addEventListener('click', (event) => {
+            const openButton = event.target.closest('[data-scheduler-open]');
+            if (openButton) {
+                event.preventDefault();
+                event.stopPropagation();
+                openSchedulerHierarchy(openButton.dataset.schedulerOpen, openButton.dataset.schedulerId);
+                return;
+            }
+
             const toggle = event.target.closest('[data-scheduler-task-toggle]');
             if (toggle) {
                 event.preventDefault();
@@ -912,7 +1614,19 @@
             }
         });
 
-        window.addEventListener('task-saved', reloadSchedulerGrid);
+        if (window.__schedulerTaskSavedHandler) {
+            window.removeEventListener('task-saved', window.__schedulerTaskSavedHandler);
+        }
+        window.__schedulerTaskSavedHandler = reloadSchedulerGrid;
+        window.addEventListener('task-saved', window.__schedulerTaskSavedHandler);
+
+        window.schedulerPageMount = function () {
+            const body = document.getElementById('scheduler-tasks-body');
+            if (body) {
+                delete body.dataset.schedulerInitialized;
+            }
+            init();
+        };
 
         document.readyState === 'loading'
             ? document.addEventListener('DOMContentLoaded', init)

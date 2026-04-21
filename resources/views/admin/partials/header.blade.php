@@ -1,9 +1,16 @@
 @php
     $user = auth()->user();
     $displayName = $user?->fullname ?: $user?->name ?: __('User');
-    $nameParts = preg_split('/\s+/', trim($displayName)) ?: [];
+    $profileUsername = $user?->name ?: $displayName;
+    $profileRole = session('role', $user?->role ?: 'user');
+    $profileRoleLabel = match ($profileRole) {
+        'super' => __('super'),
+        'admin' => __('admin'),
+        default => __('operator'),
+    };
+    $nameParts = preg_split('/\s+/', trim($profileUsername)) ?: [];
     $firstInitial = strtoupper(substr($nameParts[0] ?? 'U', 0, 1));
-    $secondInitial = strtoupper(substr($nameParts[1] ?? ($user?->name ?: ''), 0, 1));
+    $secondInitial = strtoupper(substr($nameParts[1] ?? '', 0, 1));
     $avatarInitials = trim($firstInitial . $secondInitial) ?: 'U';
     $supportedLocales = config('app.supported_locales', []);
     $currentLocale = app()->getLocale();
@@ -83,7 +90,7 @@
     </div>
 
     <!-- Header Actions -->
-    <div class="flex items-center gap-5">
+    <div class="flex items-center gap-3 xl:gap-5">
         
         <!-- Search Bar (Premium Design) -->
         <div class="relative hidden md:flex" x-data="globalWorkspaceSearch()" x-init="init()" @click.outside="close()" @keydown.escape.window="close()">
@@ -101,7 +108,7 @@
                     @keydown.enter.prevent="confirmSelection()"
                     type="text"
                     placeholder="{{ __('Search facilities, workgroups, workstations, displays...') }}"
-                    class="w-80 h-11 pl-11 pr-12 rounded-2xl text-[13px] font-semibold border transition-all placeholder-white/20"
+                    class="w-64 xl:w-80 h-11 pl-11 pr-12 rounded-2xl text-[13px] font-semibold border transition-all placeholder-white/20"
                     :class="theme === 'perfectlum' ? 'bg-gray-50 border-gray-100 focus:bg-white focus:ring-4 focus:ring-gray-100 text-gray-900' : 'bg-white/[0.03] border-white/5 focus:bg-white/[0.07] focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/30 text-white'"
                 >
 
@@ -372,9 +379,9 @@
                     {{ $avatarInitials }}
                 </div>
 
-                <div class="hidden min-w-0 text-left lg:block">
-                    <p class="truncate text-[13px] font-semibold" :class="theme === 'perfectlum' ? 'text-slate-900' : 'text-white'">{{ $displayName }}</p>
-                    <p class="truncate text-[11px] font-medium text-slate-400">{{ $user?->email ?: __('Profile') }}</p>
+                <div class="hidden min-w-0 max-w-[9.5rem] text-left lg:block xl:max-w-[12rem]">
+                    <p class="truncate text-[13px] font-semibold" :class="theme === 'perfectlum' ? 'text-slate-900' : 'text-white'" title="{{ $profileUsername }}">{{ $profileUsername }}</p>
+                    <p class="truncate text-[11px] font-medium capitalize text-slate-400">{{ $profileRoleLabel }}</p>
                 </div>
 
                 <i data-lucide="chevron-down" class="hidden h-4 w-4 text-slate-400 lg:block"></i>
@@ -395,8 +402,8 @@
                         {{ $avatarInitials }}
                     </div>
                     <div class="min-w-0">
-                        <p class="truncate text-sm font-semibold text-slate-900">{{ $displayName }}</p>
-                        <p class="truncate text-xs text-slate-500">{{ $user?->email ?: __('No email configured') }}</p>
+                        <p class="truncate text-sm font-semibold text-slate-900" title="{{ $profileUsername }}">{{ $profileUsername }}</p>
+                        <p class="truncate text-xs capitalize text-slate-500">{{ $profileRoleLabel }}</p>
                     </div>
                 </div>
 

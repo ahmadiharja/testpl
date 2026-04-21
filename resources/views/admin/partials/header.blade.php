@@ -1,5 +1,5 @@
 @php
-    $user = auth()->user();
+    $user = auth()->user() ?: (session('id') ? \App\Models\User::find(session('id')) : null);
     $displayName = $user?->fullname ?: $user?->name ?: __('User');
     $profileUsername = $user?->name ?: $displayName;
     $profileRole = session('role', $user?->role ?: 'user');
@@ -381,7 +381,7 @@
 
                 <div class="hidden min-w-0 max-w-[9.5rem] text-left lg:block xl:max-w-[12rem]">
                     <p class="truncate text-[13px] font-semibold" :class="theme === 'perfectlum' ? 'text-slate-900' : 'text-white'" title="{{ $profileUsername }}">{{ $profileUsername }}</p>
-                    <p class="truncate text-[11px] font-medium capitalize text-slate-400">{{ $profileRoleLabel }}</p>
+                    <p class="truncate text-[11px] font-medium text-slate-400">{{ $profileRoleLabel }}</p>
                 </div>
 
                 <i data-lucide="chevron-down" class="hidden h-4 w-4 text-slate-400 lg:block"></i>
@@ -403,7 +403,7 @@
                     </div>
                     <div class="min-w-0">
                         <p class="truncate text-sm font-semibold text-slate-900" title="{{ $profileUsername }}">{{ $profileUsername }}</p>
-                        <p class="truncate text-xs capitalize text-slate-500">{{ $profileRoleLabel }}</p>
+                        <p class="truncate text-xs text-slate-500">{{ $profileRoleLabel }}</p>
                     </div>
                 </div>
 

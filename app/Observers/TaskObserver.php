@@ -101,6 +101,25 @@ class TaskObserver
         }
         while(!$this->check($startpoint) && $antifreeze<2000);
 
+        if (!$this->check($startpoint)) {
+            logger()->warning('TASK_OBSERVER_NEXTITERATION_EXHAUSTED', [
+                'task_id' => $this->model->id ?? null,
+                'type' => $this->model->type ?? null,
+                'schtype' => $this->model->schtype ?? null,
+                'startdate' => $this->model->startdate ?? null,
+                'starttime' => $this->model->starttime ?? null,
+                'lastrun' => $this->model->lastrun ?? null,
+                'daysofweek' => $this->model->daysofweek ?? null,
+                'dayofmonth' => $this->model->dayofmonth ?? null,
+                'weekofmonth' => $this->model->weekofmonth ?? null,
+                'monthes' => $this->model->monthes ?? null,
+                'everynweek' => $this->model->everynweek ?? null,
+                'everynday' => $this->model->everynday ?? null,
+            ]);
+
+            return false;
+        }
+
         $day = $this->startdate->day;
         if($this->model->schtype == ScheduleType::ANNUAL || $this->model->schtype == ScheduleType::SEMIANNUAL || $this->model->schtype == ScheduleType::QUARTERLY)
         {
@@ -108,6 +127,8 @@ class TaskObserver
                 while($this->curr->daysInMonth > $this->curr->day && $this->curr->day < $day)
                     $this->curr = $this->curr->addDays(1);
         }
+
+        return true;
     }
 
     private function movecurr($size) {
@@ -162,12 +183,15 @@ class TaskObserver
         do {
             $skipped = false;
             
-            $this->nextIteration($startpoint);
+            $foundNextRun = $this->nextIteration($startpoint);
+            if (!$foundNextRun) {
+                $this->curr = $this->zero_date->copy();
+                return;
+            }
 
             $nextPoint = $this->curr;
             
             $movedTask = false;
-            // TODO check exception
 
 
 

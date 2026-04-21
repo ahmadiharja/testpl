@@ -1,6 +1,6 @@
 @once
-    <div id="action-confirm-overlay" class="fixed inset-0 z-[9390] hidden bg-slate-950/45 backdrop-blur-sm"></div>
-    <div id="action-confirm-panel" class="fixed inset-0 z-[9400] hidden items-center justify-center p-4 sm:p-6">
+    <div id="action-confirm-overlay" class="fixed inset-0 hidden bg-slate-950/45 backdrop-blur-sm" style="z-index: 30040;"></div>
+    <div id="action-confirm-panel" class="fixed inset-0 hidden items-center justify-center p-4 sm:p-6" style="z-index: 30050;">
         <div class="w-full max-w-md rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_32px_80px_rgba(15,23,42,0.24)]">
             <div class="flex items-start gap-4">
                 <div id="action-confirm-icon" class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
@@ -34,6 +34,63 @@
             const cancelButton = document.getElementById('action-confirm-cancel');
             const icon = document.getElementById('action-confirm-icon');
 
+            if (overlay && overlay.parentElement !== document.body) {
+                document.body.appendChild(overlay);
+            }
+
+            if (panel && panel.parentElement !== document.body) {
+                document.body.appendChild(panel);
+            }
+
+            if (!window.PerfectlumModalLock) {
+                window.PerfectlumModalLock = {
+                    count: 0,
+                    previousHtmlOverflow: '',
+                    previousBodyOverflow: '',
+                    previousScrollAreaOverflowY: '',
+                    previousPageStageOverflow: '',
+                    lock() {
+                        this.count += 1;
+                        if (this.count > 1) {
+                            return;
+                        }
+
+                        const scrollArea = document.getElementById('desktop-scroll-area');
+                        const pageStage = document.getElementById('desktop-page-stage');
+                        this.previousHtmlOverflow = document.documentElement.style.overflow || '';
+                        this.previousBodyOverflow = document.body.style.overflow || '';
+                        this.previousScrollAreaOverflowY = scrollArea?.style.overflowY || '';
+                        this.previousPageStageOverflow = pageStage?.style.overflow || '';
+
+                        document.documentElement.style.overflow = 'hidden';
+                        document.body.style.overflow = 'hidden';
+                        if (scrollArea) {
+                            scrollArea.style.overflowY = 'hidden';
+                        }
+                        if (pageStage) {
+                            pageStage.style.overflow = 'hidden';
+                        }
+                    },
+                    unlock() {
+                        this.count = Math.max(0, this.count - 1);
+                        if (this.count !== 0) {
+                            return;
+                        }
+
+                        const scrollArea = document.getElementById('desktop-scroll-area');
+                        const pageStage = document.getElementById('desktop-page-stage');
+                        document.documentElement.style.overflow = this.previousHtmlOverflow;
+                        document.body.style.overflow = this.previousBodyOverflow;
+                        if (scrollArea) {
+                            scrollArea.style.overflowY = this.previousScrollAreaOverflowY;
+                        }
+                        if (pageStage) {
+                            pageStage.style.overflow = this.previousPageStageOverflow;
+                        }
+                    },
+                };
+            }
+
             const tones = {
                 sky: {
                     icon: 'bg-sky-50 text-sky-600',
@@ -55,7 +112,7 @@
                 panel.classList.add('hidden');
                 panel.classList.remove('flex');
                 overlay.classList.add('hidden');
-                document.body.classList.remove('overflow-hidden');
+                window.PerfectlumModalLock?.unlock();
 
                 if (resolver) {
                     resolver(result);
@@ -81,7 +138,7 @@
                     overlay.classList.remove('hidden');
                     panel.classList.remove('hidden');
                     panel.classList.add('flex');
-                    document.body.classList.add('overflow-hidden');
+                    window.PerfectlumModalLock?.lock();
 
                     return new Promise((resolve) => {
                         resolver = resolve;

@@ -2,10 +2,7 @@
 
 namespace App\Exports;
 
-use Illuminate\Contracts\View\View;
-use Maatwebsite\Excel\Concerns\FromView;
-
-class HistoriesReportsExport implements FromView
+class HistoriesReportsExport extends StyledReportExport
 {
     private $_data, $_from, $_to, $_site;
 
@@ -15,15 +12,26 @@ class HistoriesReportsExport implements FromView
         $this->_to = $to;
         $this->_site = $site;
     }
-    
-    public function view(): View
-    {
-        return view('reports.histories_reports_excel', [
-            'data' => $this->_data,
-            'from' => $this->_from,
-            'to' => $this->_to,
-            'site' => $this->_site
-        ]);
-    }
 
+    protected function report(): array
+    {
+        $rows = $this->collection($this->_data);
+
+        return [
+            'title' => 'History & Reports',
+            'subtitle' => 'Completed calibration and QA history exported from the current workspace scope.',
+            'generatedAt' => now()->format('d M Y H:i'),
+            'total' => $rows->count(),
+            'columns' => ['Task Name', 'Pattern', 'Display', 'Workstation', 'Workgroup', 'Performed Date/Time', 'Result'],
+            'rows' => $rows->map(fn($history) => [
+                $history->name ?? '-',
+                $history->regulation ?? '-',
+                $this->displayName($history->display),
+                optional(optional($history->display)->workstation)->name ?: '-',
+                optional(optional(optional($history->display)->workstation)->workgroup)->name ?: '-',
+                $this->formatHistoryTime($history),
+                $this->statusText($history->result_desc ?: '-'),
+            ])->values()->all(),
+        ];
+    }
 }

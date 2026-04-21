@@ -58,6 +58,8 @@
         'roleSummarySuper' => __('Full platform administration'),
         'roleSummaryAdmin' => __('Facility-level administration'),
         'roleSummaryDefault' => __('Scoped operational access'),
+        'showOperators' => __('Show operators'),
+        'operatorsHiddenByDefault' => __('Operators are hidden by default for superadmin.'),
         'optionCount' => __('options'),
         'noOptionsFound' => __('No options found'),
     ];
@@ -84,6 +86,31 @@
         box-shadow: 0 26px 64px -46px rgba(15, 23, 42, 0.34);
         overflow: hidden;
         padding: 14px 18px 16px;
+    }
+    .users-operator-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.625rem;
+        min-height: 3rem;
+        border-radius: 1rem;
+        border: 1px solid #dbe7f3;
+        background: #fff;
+        padding: 0 0.9rem;
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: #475569;
+        cursor: pointer;
+        transition: border-color .18s ease, color .18s ease, box-shadow .18s ease;
+    }
+    .users-operator-toggle:hover {
+        border-color: #bae6fd;
+        color: #0369a1;
+        box-shadow: 0 12px 28px -22px rgba(14, 165, 233, 0.55);
+    }
+    .users-operator-toggle input {
+        height: 1rem;
+        width: 1rem;
+        accent-color: #0ea5e9;
     }
     .users-table-toolbar {
         display: flex;
@@ -201,7 +228,6 @@
     }
     .user-view-shell {
         width: min(100%, 1120px);
-        height: min(920px, calc(100vh - 2rem));
         max-height: calc(100vh - 2rem);
         border-radius: 2rem;
         border: 1px solid #dce8f4;
@@ -449,6 +475,7 @@
     .user-view-body {
         flex: 1 1 auto;
         overflow-y: auto;
+        min-height: 0;
         overscroll-behavior: contain;
         -webkit-overflow-scrolling: touch;
         padding: 20px 24px;
@@ -469,7 +496,6 @@
             justify-content: flex-end;
         }
         .user-view-shell {
-            height: min(96vh, calc(100vh - 1rem));
             max-height: calc(100vh - 1rem);
             border-radius: 1.5rem;
         }
@@ -530,7 +556,15 @@
                 </div>
             </div>
 
-            <div class="flex items-end justify-end">
+            <div class="flex flex-wrap items-end justify-end gap-3">
+                @if(!empty($filters['canChooseFacility']))
+                    <label
+                        class="users-operator-toggle"
+                        title="{{ __('Operators are hidden by default for superadmin.') }}">
+                        <input id="users-include-operators" type="checkbox">
+                        <span>{{ __('Show operators') }}</span>
+                    </label>
+                @endif
                 <button
                     id="reset-user-filters"
                     type="button"
@@ -603,8 +637,8 @@
 
 <div id="user-view-modal" class="fixed inset-0 hidden" style="z-index:4000;">
     <div data-user-view-overlay class="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px] opacity-0 transition-opacity duration-200"></div>
-    <div data-user-view-stage class="absolute inset-0 overflow-hidden px-4 py-4 md:px-6 md:py-6">
-        <div class="flex h-full items-center justify-center">
+    <div data-user-view-stage class="absolute inset-0 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
+        <div class="flex min-h-full items-start justify-center md:items-center">
         <div data-user-view-panel class="user-view-shell relative flex translate-y-4 scale-[0.985] flex-col opacity-0 transition-all duration-200">
             <div class="user-view-hero">
                 <div id="user-view-avatar" class="user-view-avatar">U</div>
@@ -796,6 +830,7 @@
     const state = {
         config: { canChooseFacility: false, facilities: [], selectedFacilityId: '' },
         selectedFacilityId: '',
+        includeOperators: false,
         facilitySearch: '',
         activeDropdown: null,
         actionTarget: null,
@@ -850,6 +885,7 @@
         els.facilitySearch = document.getElementById('facility-filter-search');
         els.facilityHint = document.getElementById('facility-filter-hint');
         els.facilityOptions = document.getElementById('facility-filter-options');
+        els.includeOperators = document.getElementById('users-include-operators');
         els.resetFilters = document.getElementById('reset-user-filters');
         els.tableSearch = document.getElementById('users-table-search');
         els.tableBody = document.getElementById('users-table-body');
@@ -927,6 +963,10 @@
             state.facilitySearch = event.target.value || '';
             renderFacilityOptions();
         });
+        els.includeOperators?.addEventListener('change', (event) => {
+            state.includeOperators = !!event.target.checked;
+            reloadGrid();
+        });
         els.resetFilters?.addEventListener('click', resetFilters);
         els.tableSearch?.addEventListener('input', (event) => {
             clearTimeout(state.table.searchTimer);
@@ -983,7 +1023,7 @@
         });
         els.viewOverlay?.addEventListener('click', closeViewModal);
         els.viewStage?.addEventListener('click', (event) => {
-            if (event.target === els.viewStage) {
+            if (!els.viewPanel?.contains(event.target)) {
                 closeViewModal();
             }
         });
@@ -1075,6 +1115,8 @@
 
     function resetFilters() {
         state.selectedFacilityId = state.config.canChooseFacility ? '' : (getFacilityOptions()[0] ? String(getFacilityOptions()[0].id) : '');
+        state.includeOperators = false;
+        if (els.includeOperators) els.includeOperators.checked = false;
         state.facilitySearch = '';
         if (els.facilitySearch) els.facilitySearch.value = '';
         closeDropdown();
@@ -1086,6 +1128,9 @@
         const url = new URL('/users-list', window.location.origin);
         if (state.selectedFacilityId) {
             url.searchParams.set('facility_id', state.selectedFacilityId);
+        }
+        if (state.config.canChooseFacility && state.includeOperators) {
+            url.searchParams.set('include_operators', '1');
         }
         url.searchParams.set('page', String(state.table.page));
         url.searchParams.set('limit', String(state.table.limit));
@@ -1112,7 +1157,7 @@
                 <td><span class="text-gray-600">${Perfectlum.escapeHtml(row.fullname || '-')}</span></td>
                 <td><a href="mailto:${Perfectlum.escapeHtml(row.email || '')}" class="text-sky-600 hover:underline">${Perfectlum.escapeHtml(row.email || '-')}</a></td>
                 <td><span class="text-gray-600">${Perfectlum.escapeHtml(row.facility || '-')}</span></td>
-                <td>${Perfectlum.badge(row.role || '-', 'info')}</td>
+                <td>${Perfectlum.badge(row.roleLabel || row.role || '-', 'info')}</td>
                 <td>${row.enabled ? Perfectlum.badge(text.active, 'success') : Perfectlum.badge(text.disabled, 'danger')}</td>
                 <td>
                     <div class="flex justify-center">
@@ -1157,7 +1202,7 @@
 
     function roleSummary(role) {
         const key = String(role || '').toLowerCase();
-        if (key === 'super') return text.roleSummarySuper;
+        if (key === 'super' || key === 'superadmin') return text.roleSummarySuper;
         if (key === 'admin') return text.roleSummaryAdmin;
         return text.roleSummaryDefault;
     }
@@ -1227,7 +1272,7 @@
         const displayName = row.fullname || row.username || text.loadingUser;
         const facilityName = row.facility || '-';
         const statusText = row.enabled ? text.active : text.disabled;
-        const roleText = row.role || text.notAvailable;
+        const roleText = row.roleLabel || row.role || text.notAvailable;
 
         els.viewAvatar.textContent = getUserInitials(row);
         els.viewTitle.textContent = displayName;
@@ -1240,7 +1285,7 @@
         els.viewEmail.textContent = row.email || '-';
         els.viewTimezone.textContent = text.notAvailable;
         els.viewPasswordChanged.textContent = text.notAvailable;
-        els.viewRole.textContent = row.role || '-';
+        els.viewRole.textContent = roleText;
         els.viewFacility.textContent = facilityName;
         els.viewDefaultWorkgroup.textContent = text.notAvailable;
         els.viewStatus.textContent = statusText;
@@ -1267,7 +1312,7 @@
         const footprint = view.footprint || {};
         const previews = footprint.previews || {};
         const counts = footprint.counts || {};
-        const roleText = payload?.user_level || row?.role || text.notAvailable;
+        const roleText = payload?.user_level_label || row?.roleLabel || payload?.user_level || row?.role || text.notAvailable;
         const statusText = payload?.enabled ? text.active : text.disabled;
 
         els.viewAvatar.textContent = getUserInitials(row, payload);
@@ -1382,8 +1427,17 @@
         select.innerHTML = html;
     }
 
+    function ensureEditModalRoot() {
+        if (!els.editModal || !document.body || els.editModal.parentElement === document.body) {
+            return;
+        }
+
+        document.body.appendChild(els.editModal);
+    }
+
     async function openEditModal(id) {
         closeActionMenu();
+        ensureEditModalRoot();
         state.edit.id = id || 0;
         state.edit.payload = null;
         state.edit.loading = true;

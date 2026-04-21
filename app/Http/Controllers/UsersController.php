@@ -25,6 +25,17 @@ class UsersController extends Controller
         return 'Display #' . $display->id;
     }
 
+    protected function roleDisplayLabel(?string $role): string
+    {
+        return match ((string) $role) {
+            'super' => 'Superadmin',
+            'admin' => 'Admin',
+            'user' => 'Operator',
+            '', '-' => '-',
+            default => Str::title(str_replace(['_', '-'], ' ', (string) $role)),
+        };
+    }
+
     protected function userAccessFootprint(?User $item, string $role): array
     {
         if (!$item) {
@@ -172,6 +183,7 @@ class UsersController extends Controller
         $page   = (int)$request->get('page', 1);
         $offset = ($page - 1) * $limit;
         $requestedFacilityId = (string) $request->get('facility_id', '');
+        $includeOperators = $request->boolean('include_operators');
 
         $facilityId = '';
         if ($user->hasRole('super')) {
@@ -181,6 +193,11 @@ class UsersController extends Controller
         }
 
         $items = User::query()->whereNotIn('name', ['admin']);
+        $items->when($user->hasRole('super') && !$includeOperators, function ($query) {
+            return $query->whereDoesntHave('roles', function ($roleQuery) {
+                $roleQuery->where('name', 'user');
+            });
+        });
         $items->when(!$user->hasRole('super'), function ($query) {
             return $query->whereDoesntHave('roles', function ($roleQuery) {
                 $roleQuery->where('name', 'super');
@@ -203,6 +220,8 @@ class UsersController extends Controller
         $rows = (clone $items)->orderBy('fullname')->offset($offset)->limit($limit)->get();
 
         $data = $rows->map(function ($row) {
+            $role = $row->getRoleNames()->first() ?: '-';
+
             return [
                 'id' => $row->id,
                 'username' => $row->name,
@@ -211,7 +230,8 @@ class UsersController extends Controller
                 'facilityId' => $row->facility_id,
                 'facility' => $row->facility_name ?: '-',
                 'enabled' => (bool) $row->enabled,
-                'role' => $row->getRoleNames()->first() ?: '-',
+                'role' => $role,
+                'roleLabel' => $this->roleDisplayLabel($role),
             ];
         });
 
@@ -238,7 +258,7 @@ class UsersController extends Controller
             ->orderBy('name')
             ->pluck('name')
             ->values()
-            ->map(fn ($name) => ['id' => $name, 'name' => ucfirst($name)])
+            ->map(fn ($name) => ['id' => $name, 'name' => $this->roleDisplayLabel($name)])
             ->all();
 
         $facilities = $this->facilityOptions($currentUser);
@@ -250,6 +270,7 @@ class UsersController extends Controller
             'fullname' => $item->fullname ?? '',
             'email' => $item->email ?? '',
             'user_level' => $role,
+            'user_level_label' => $this->roleDisplayLabel($role),
             'facility_id' => (string) ($item->facility_id ?? ($isSuper ? '' : $currentUser->facility_id)),
             'enabled' => (bool) ($item->enabled ?? false),
             'is_existing' => (bool) $item->id,
@@ -345,7 +366,10 @@ class UsersController extends Controller
         $userlevels = Role::when(!$isSuper, function($q) {
             return $q->where('name', '<>', 'super');
         })
-        ->pluck('name', 'name')->toArray();
+        ->orderBy('name')
+        ->pluck('name')
+        ->mapWithKeys(fn ($name) => [$name => $this->roleDisplayLabel($name)])
+        ->toArray();
 
         if(!isset($user1->id))
         {

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class History extends Model
 {
@@ -27,6 +28,11 @@ class History extends Model
 
     public function task(){
         return $this->belongsTo('App\Models\Task');
+    }
+
+    public function syncResolution()
+    {
+        return $this->hasOne(HistorySyncResolution::class, 'history_id');
     }
 
     // MUTATOR
@@ -86,14 +92,14 @@ class History extends Model
     }
 
     public function getTimeDisplay() {
-        return date('d/m/Y H:i', $this->time);
+        return Carbon::createFromTimestampUTC((int) $this->time)->format('d/m/Y H:i');
     }
    
     public function getPerformDateAttribute() {
-        return date('d/m/Y', $this->attributes['time']);
+        return Carbon::createFromTimestampUTC((int) $this->attributes['time'])->format('d/m/Y');
     }
     public function getPerformDateTimeAttribute() {
-        return date('Y.m.d H:i:s', $this->attributes['time']);
+        return Carbon::createFromTimestampUTC((int) $this->attributes['time'])->format('Y.m.d H:i:s');
     }
 
     public function getHideinfoAttribute() {

@@ -521,6 +521,9 @@
         display: inline-block;
         max-width: 100%;
         min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
         font-size: 15px;
         font-weight: 700;
         line-height: 1.24;
@@ -530,6 +533,55 @@
 
     .desktop-display-title:hover {
         color: #0284c7;
+    }
+
+    .desktop-display-tooltip {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        max-width: 100%;
+        min-width: 0;
+        vertical-align: middle;
+    }
+
+    .desktop-display-tooltip-bubble {
+        position: absolute;
+        left: 0;
+        bottom: calc(100% + 10px);
+        z-index: 80;
+        min-width: 220px;
+        max-width: min(420px, 70vw);
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: #0f172a;
+        color: #fff;
+        box-shadow: 0 18px 38px rgba(15, 23, 42, 0.22);
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.45;
+        letter-spacing: 0;
+        white-space: pre-line;
+        overflow-wrap: anywhere;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(4px);
+        transition: opacity .16s ease, transform .16s ease;
+    }
+
+    .desktop-display-tooltip-bubble::after {
+        content: '';
+        position: absolute;
+        left: 18px;
+        top: 100%;
+        border: 6px solid transparent;
+        border-top-color: #0f172a;
+    }
+
+    .desktop-display-tooltip:hover .desktop-display-tooltip-bubble,
+    .desktop-display-tooltip:focus-within .desktop-display-tooltip-bubble,
+    .desktop-display-tooltip:focus .desktop-display-tooltip-bubble {
+        opacity: 1;
+        transform: translateY(0);
     }
 
     .desktop-display-meta {
@@ -666,6 +718,52 @@
         font-weight: 600;
         line-height: 1.42;
         color: #0f172a;
+    }
+
+    .desktop-display-issue-tooltip {
+        position: relative;
+        display: block;
+        max-width: 100%;
+    }
+
+    .desktop-display-issue-tooltip-bubble {
+        position: absolute;
+        left: 0;
+        bottom: calc(100% + 10px);
+        z-index: 80;
+        min-width: 220px;
+        max-width: min(420px, 70vw);
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: #0f172a;
+        color: #fff;
+        box-shadow: 0 18px 38px rgba(15, 23, 42, 0.22);
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.45;
+        letter-spacing: 0;
+        white-space: pre-line;
+        overflow-wrap: anywhere;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(4px);
+        transition: opacity .16s ease, transform .16s ease;
+    }
+
+    .desktop-display-issue-tooltip-bubble::after {
+        content: '';
+        position: absolute;
+        left: 18px;
+        top: 100%;
+        border: 6px solid transparent;
+        border-top-color: #0f172a;
+    }
+
+    .desktop-display-issue-tooltip:hover .desktop-display-issue-tooltip-bubble,
+    .desktop-display-issue-tooltip:focus .desktop-display-issue-tooltip-bubble,
+    .desktop-display-issue-tooltip:focus-within .desktop-display-issue-tooltip-bubble {
+        opacity: 1;
+        transform: translateY(0);
     }
 
     .desktop-display-issue-text.muted {
@@ -1330,12 +1428,16 @@
         border-bottom: 1px solid #e3ecf5;
         background: #f8fbff;
     }
-    .display-table-search {
+    .display-table-search-wrap {
+        position: relative;
         width: min(440px, 100%);
+    }
+    .display-table-search {
+        width: 100%;
         height: 42px;
         border-radius: 999px;
         border: 1px solid #c9d8e8;
-        padding: 0 16px;
+        padding: 0 46px 0 16px;
         font-size: 14px;
         font-weight: 600;
         color: #12263a;
@@ -1345,6 +1447,31 @@
         outline: none;
         border-color: #1d9bf0;
         box-shadow: 0 0 0 3px rgba(29, 155, 240, 0.16);
+    }
+    .display-table-search-clear {
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        display: inline-flex;
+        width: 28px;
+        height: 28px;
+        align-items: center;
+        justify-content: center;
+        transform: translateY(-50%);
+        border: 0;
+        border-radius: 999px;
+        color: #64748b;
+        background: transparent;
+        transition: background .18s ease, color .18s ease;
+    }
+    .display-table-search-clear:hover,
+    .display-table-search-clear:focus {
+        color: #0f172a;
+        background: #e8f2fb;
+        outline: none;
+    }
+    .display-table-search-clear[hidden] {
+        display: none;
     }
     .display-table-wrap {
         overflow-x: auto;
@@ -1483,6 +1610,7 @@
     .display-table th:nth-child(1),
     .display-table td:nth-child(1) {
         width: 30%;
+        overflow: visible;
     }
     .display-table th:nth-child(2),
     .display-table td:nth-child(2) {
@@ -1515,6 +1643,7 @@
     .display-table th:nth-child(2),
     .display-table td:nth-child(2) {
         padding-right: 20px;
+        overflow: visible;
     }
     .display-table th:nth-child(3),
     .display-table td:nth-child(3),
@@ -1542,8 +1671,12 @@
         min-height: auto;
         max-width: none;
     }
+    .display-table .desktop-display-issue {
+        overflow: visible;
+    }
     .display-table .desktop-display-summary {
         gap: 2px;
+        overflow: visible;
     }
     .display-table .desktop-display-title {
         font-size: 14px;
@@ -1553,12 +1686,22 @@
         margin-top: 2px;
         flex-wrap: nowrap;
         gap: 4px;
-        overflow: hidden;
+        overflow: visible;
         white-space: nowrap;
+    }
+    .display-table .desktop-display-meta .desktop-display-tooltip {
+        flex: 0 1 auto;
+        min-width: 0;
+        max-width: 132px;
+    }
+    .display-table .desktop-display-heading .desktop-display-tooltip {
+        display: inline-flex;
+        max-width: 100%;
+        flex: 1 1 auto;
     }
     .display-table .desktop-display-meta-button {
         min-width: 0;
-        max-width: 132px;
+        max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -1645,7 +1788,7 @@
             flex-direction: column;
             align-items: stretch;
         }
-        .display-table-search {
+        .display-table-search-wrap {
             width: 100%;
         }
         .display-table-footer {
@@ -1739,7 +1882,12 @@
         </div>
 
         <div class="display-table-toolbar">
-            <input id="display-table-search" type="text" class="display-table-search" placeholder="{{ __('Search displays...') }}">
+            <div class="display-table-search-wrap">
+                <input id="display-table-search" type="text" class="display-table-search" placeholder="{{ __('Search displays...') }}">
+                <button id="display-table-search-clear" type="button" class="display-table-search-clear" aria-label="{{ __('Clear search') }}" hidden>
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
             <div class="text-[12px] font-semibold text-slate-500" id="display-table-meta"></div>
         </div>
 
@@ -1773,13 +1921,13 @@
 <div id="display-action-overlay" class="pointer-events-none fixed inset-0 z-[1200] hidden">
     <div id="display-action-menu" class="pointer-events-auto fixed hidden w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_20px_60px_-28px_rgba(15,23,42,0.35)]">
         @if($canManageDisplays)
-            <button id="display-action-edit" type="button" class="flex w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-sky-50 hover:text-sky-700">
-                <i data-lucide="pencil-line" class="h-4 w-4"></i>
-                {{ __('Edit Display') }}
+            <button id="display-action-edit" type="button" class="grid w-full grid-cols-[1rem_1fr] items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-sky-50 hover:text-sky-700">
+                <i data-lucide="settings" class="h-4 w-4"></i>
+                <span>{{ __('Display Settings') }}</span>
             </button>
-            <button id="display-action-delete" type="button" class="flex w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
+            <button id="display-action-delete" type="button" class="grid w-full grid-cols-[1rem_1fr] items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
                 <i data-lucide="trash-2" class="h-4 w-4"></i>
-                {{ __('Delete Display') }}
+                <span>{{ __('Delete Display') }}</span>
             </button>
         @endif
     </div>
@@ -1840,11 +1988,15 @@
                         </label>
                         <label class="space-y-2">
                             <span class="block text-sm font-medium text-slate-700">{{ __('Screen Size') }}</span>
-                            <input name="ScreenSize" type="text" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
+                            <select name="ScreenSize" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"></select>
                         </label>
                         <label class="space-y-2">
                             <span class="block text-sm font-medium text-slate-700">{{ __('Current LUT Index') }}</span>
-                            <input name="CurrentLUTIndex" type="text" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10">
+                            <select name="CurrentLUTIndex" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"></select>
+                        </label>
+                        <label class="space-y-2">
+                            <span class="block text-sm font-medium text-slate-700">{{ __('Backlight Stabilization') }}</span>
+                            <select name="BacklightStabilization" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10"></select>
                         </label>
                         <label class="space-y-2">
                             <span class="block text-sm font-medium text-slate-700">{{ __('Resolution Horizontal') }}</span>
@@ -1971,6 +2123,8 @@
         displayLoading: false,
         displaySearch: '',
         displaySearchTimer: null,
+        displayRequestSeq: 0,
+        displayRenderedSeq: 0,
         facilitySearch: '',
         workgroupSearch: '',
         workstationSearch: '',
@@ -2001,9 +2155,11 @@
         state.selectedWorkstationId = state.config.selectedWorkstationId || '';
 
         bindElements();
+        portalDisplayLayersToBody();
         bindEvents();
         renderFilters();
         updateDisplaySortIndicators();
+        updateSearchClearButton();
         loadDisplays();
         window.displaysPage = { toggleActionMenu, openEditModal, openDeleteModal };
         window.openDisplayModal = function (displayId, options = {}) {
@@ -2044,6 +2200,7 @@
 
         els.resetFilters = document.getElementById('reset-display-filters');
         els.tableSearch = document.getElementById('display-table-search');
+        els.tableSearchClear = document.getElementById('display-table-search-clear');
         els.tableMeta = document.getElementById('display-table-meta');
         els.tableBody = document.getElementById('displays-table-body');
         els.tableSummary = document.getElementById('display-table-summary');
@@ -2073,6 +2230,20 @@
         els.deleteConfirm = document.getElementById('display-delete-confirm');
     }
 
+    function portalDisplayLayersToBody() {
+        const nodes = [
+            els.actionOverlay,
+            els.editModal,
+            els.deleteModal,
+        ].filter(Boolean);
+
+        nodes.forEach((node) => {
+            if (node.parentElement !== document.body) {
+                document.body.appendChild(node);
+            }
+        });
+    }
+
     function bindEvents() {
         els.facilityTrigger?.addEventListener('click', () => toggleDropdown('facility'));
         els.workgroupTrigger?.addEventListener('click', () => toggleDropdown('workgroup'));
@@ -2093,6 +2264,7 @@
 
         els.tableSearch?.addEventListener('input', (event) => {
             const value = String(event.target.value || '').trim();
+            updateSearchClearButton();
             if (state.displaySearchTimer) {
                 window.clearTimeout(state.displaySearchTimer);
             }
@@ -2101,6 +2273,26 @@
                 state.displayPage = 1;
                 loadDisplays();
             }, 260);
+        });
+
+        els.tableSearchClear?.addEventListener('click', () => {
+            if (!els.tableSearch) return;
+
+            if (state.displaySearchTimer) {
+                window.clearTimeout(state.displaySearchTimer);
+                state.displaySearchTimer = null;
+            }
+
+            const hadSearch = els.tableSearch.value.length > 0 || state.displaySearch.length > 0;
+            els.tableSearch.value = '';
+            state.displaySearch = '';
+            state.displayPage = 1;
+            updateSearchClearButton();
+            els.tableSearch.focus();
+
+            if (hadSearch) {
+                loadDisplays();
+            }
         });
 
         els.sortButtons.forEach((button) => {
@@ -2184,6 +2376,16 @@
 
     function csrfToken() {
         return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    }
+
+    function updateSearchClearButton() {
+        if (!els.tableSearchClear || !els.tableSearch) return;
+
+        if (String(els.tableSearch.value || '').length > 0) {
+            els.tableSearchClear.removeAttribute('hidden');
+        } else {
+            els.tableSearchClear.setAttribute('hidden', 'hidden');
+        }
     }
 
     function getFacilityOptions() {
@@ -2356,6 +2558,11 @@
         if (els.workgroupSearch) els.workgroupSearch.value = '';
         if (els.workstationSearch) els.workstationSearch.value = '';
         if (els.tableSearch) els.tableSearch.value = '';
+        if (state.displaySearchTimer) {
+            window.clearTimeout(state.displaySearchTimer);
+            state.displaySearchTimer = null;
+        }
+        updateSearchClearButton();
         closeDropdown();
         renderFilters();
         loadDisplays();
@@ -2416,7 +2623,15 @@
         };
         const badge = badgeByType[type] || '';
 
-        return `<button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'${type}',id:${Number(id) || 0}}}))" class="desktop-display-meta-button"><span class="desktop-display-meta-badge">${Perfectlum.escapeHtml(badge)}</span><span class="desktop-display-meta-label">${Perfectlum.escapeHtml(label)}</span></button>`;
+        return `
+            <span class="desktop-display-tooltip">
+                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'${type}',id:${Number(id) || 0}}}))" class="desktop-display-meta-button">
+                    <span class="desktop-display-meta-badge">${Perfectlum.escapeHtml(badge)}</span>
+                    <span class="desktop-display-meta-label">${Perfectlum.escapeHtml(label)}</span>
+                </button>
+                <span class="desktop-display-tooltip-bubble" role="tooltip">${Perfectlum.escapeHtml(label)}</span>
+            </span>
+        `;
     }
 
     function buildUniqueTextParts(parts = []) {
@@ -2452,9 +2667,12 @@
             <div class="desktop-display-summary">
                 <div class="desktop-display-heading">
                     <span class="desktop-display-kicker-dot ${healthy ? 'healthy' : 'alert'}"></span>
-                    <button type="button" onclick="window.openDisplayModal(${item.id})" class="desktop-display-title text-left">
-                        ${Perfectlum.escapeHtml(item.displayName)}
-                    </button>
+                    <span class="desktop-display-tooltip">
+                        <button type="button" onclick="window.openDisplayModal(${item.id})" class="desktop-display-title text-left">
+                            ${Perfectlum.escapeHtml(item.displayName)}
+                        </button>
+                        <span class="desktop-display-tooltip-bubble" role="tooltip">${Perfectlum.escapeHtml(item.displayName)}</span>
+                    </span>
                 </div>
                 ${contextParts.length ? `
                     <div class="desktop-display-meta">
@@ -2517,14 +2735,21 @@
                 : (failedCheckText ? text.latestFailedCheck : text.latestFailedRun)));
         const note = detailParts.join(' • ');
 
+        const issueTooltip = primary
+            ? `<span class="desktop-display-issue-tooltip-bubble" role="tooltip">${Perfectlum.escapeHtml(primary)}</span>`
+            : '';
+
         return `
             <div class="desktop-display-issue">
                 <div class="desktop-display-issue-kicker ${healthy ? 'healthy' : 'alert'}">
                     ${Perfectlum.escapeHtml(kicker)}
                 </div>
-                <div class="desktop-display-issue-text ${healthy ? 'muted' : ''}">
-                    ${Perfectlum.escapeHtml(primary)}
-                </div>
+                <span class="desktop-display-issue-tooltip" tabindex="0" aria-label="${Perfectlum.escapeHtml(primary)}">
+                    <div class="desktop-display-issue-text ${healthy ? 'muted' : ''}">
+                        ${Perfectlum.escapeHtml(primary)}
+                    </div>
+                    ${issueTooltip}
+                </span>
                 ${note ? `<div class="desktop-display-issue-note">${Perfectlum.escapeHtml(note)}</div>` : ''}
             </div>
         `;
@@ -2565,12 +2790,13 @@
         const match = normalized.match(/^(.*)\s(\d{2}:\d{2})$/);
         const date = match ? match[1] : normalized;
         const time = match ? match[2] : '';
-        const label = payload.mode === 'created' ? `${text.added} • ` : '';
-        const combined = `${label}${date || '-'}` + (time ? ` ${time}` : '');
+        const label = payload.mode === 'created' ? `${text.added} - ` : '';
+        const dateLine = `${label}${date || '-'}`;
 
         return `
             <div class="desktop-display-updated-block">
-                <span class="desktop-display-updated-date">${Perfectlum.escapeHtml(combined)}</span>
+                <span class="desktop-display-updated-date">${Perfectlum.escapeHtml(dateLine)}</span>
+                ${time ? `<span class="desktop-display-updated-time">${Perfectlum.escapeHtml(time)}</span>` : ''}
             </div>
         `;
     }
@@ -2679,18 +2905,24 @@
 
     async function loadDisplays() {
         closeActionMenu();
+        const requestSeq = ++state.displayRequestSeq;
         state.displayLoading = true;
         renderDisplayPager();
         renderDisplayRows();
         let hasError = false;
         try {
             const payload = await Perfectlum.request(buildDisplaysUrl());
+            if (requestSeq !== state.displayRequestSeq) {
+                return;
+            }
+
             const incoming = Array.isArray(payload?.data) ? payload.data : [];
             state.displayRows = mapDisplayRows(incoming);
             state.displayTotal = Number(payload?.total || 0);
             if (!Number.isFinite(state.displayTotal) || state.displayTotal < state.displayRows.length) {
                 state.displayTotal = state.displayRows.length;
             }
+            state.displayRenderedSeq = requestSeq;
 
             const totalPages = Math.max(1, Math.ceil(state.displayTotal / state.displayLimit));
             if (state.displayPage > totalPages) {
@@ -2698,6 +2930,9 @@
                 return loadDisplays();
             }
         } catch (error) {
+            if (requestSeq !== state.displayRequestSeq) {
+                return;
+            }
             hasError = true;
             state.displayRows = [];
             state.displayTotal = 0;
@@ -2705,6 +2940,9 @@
                 els.tableBody.innerHTML = `<tr><td colspan="6" class="display-empty text-rose-600">${Perfectlum.escapeHtml(error.message || text.unableToLoadData)}</td></tr>`;
             }
         } finally {
+            if (requestSeq !== state.displayRequestSeq) {
+                return;
+            }
             state.displayLoading = false;
             if (!hasError) {
                 renderDisplayRows();
@@ -2742,13 +2980,17 @@
     function fillSelect(select, options, selectedValue) {
         if (!select) return;
         const items = Array.isArray(options) ? [...options] : [];
+        const normalizedSelected = String(selectedValue ?? '').trim();
+        if (normalizedSelected && !items.some((item) => String(item?.value ?? '') === normalizedSelected)) {
+            items.push({ value: normalizedSelected, label: normalizedSelected });
+        }
         items.sort((a, b) => String(a.label || a.value).localeCompare(String(b.label || b.value), undefined, { sensitivity: 'base', numeric: true }));
-        select.innerHTML = items.map((item) => {
+        select.innerHTML = ['<option value=""></option>', ...items.map((item) => {
             const value = String(item.value ?? '');
             const label = Perfectlum.escapeHtml(item.label ?? item.value ?? '');
             const selected = String(selectedValue ?? '') === value ? ' selected' : '';
             return `<option value="${Perfectlum.escapeHtml(value)}"${selected}>${label}</option>`;
-        }).join('');
+        })].join('');
     }
 
     function setFieldValue(name, value) {
@@ -2780,14 +3022,16 @@
             const fields = payload.fields || {};
             fillSelect(els.editForm.querySelector('[name="TypeOfDisplay"]'), payload.options?.TypeOfDisplay || [], fields.TypeOfDisplay);
             fillSelect(els.editForm.querySelector('[name="DisplayTechnology"]'), payload.options?.DisplayTechnology || [], fields.DisplayTechnology);
+            fillSelect(els.editForm.querySelector('[name="ScreenSize"]'), payload.options?.ScreenSize || [], fields.ScreenSize);
+            fillSelect(els.editForm.querySelector('[name="CurrentLUTIndex"]'), payload.options?.lut_names || [], fields.CurrentLUTIndex);
+            fillSelect(els.editForm.querySelector('[name="BacklightStabilization"]'), payload.options?.BacklightStabilization || [], fields.BacklightStabilization);
 
             [
                 'Manufacturer',
                 'Model',
                 'SerialNumber',
                 'InventoryNumber',
-                'ScreenSize',
-                'CurrentLUTIndex',
+                'BacklightStabilization',
                 'ResolutionHorizontal',
                 'ResolutionVertical',
                 'InstalationDate',
@@ -2825,6 +3069,9 @@
         els.editForm.reset();
         fillSelect(els.editForm.querySelector('[name="TypeOfDisplay"]'), [], '');
         fillSelect(els.editForm.querySelector('[name="DisplayTechnology"]'), [], '');
+        fillSelect(els.editForm.querySelector('[name="ScreenSize"]'), [], '');
+        fillSelect(els.editForm.querySelector('[name="CurrentLUTIndex"]'), [], '');
+        fillSelect(els.editForm.querySelector('[name="BacklightStabilization"]'), [], '');
         els.editSave.disabled = false;
         els.editSave.textContent = text.saveChanges;
     }

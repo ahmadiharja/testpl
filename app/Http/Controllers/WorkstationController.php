@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class WorkstationController extends Controller
 {
@@ -11,7 +12,65 @@ class WorkstationController extends Controller
         return in_array($role, ['super', 'admin'], true);
     }
 
-    protected function workstation_display_payload($display)
+    protected function unresolved_failed_display_summaries(array $displayIds): array
+    {
+        $displayIds = collect($displayIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($displayIds)) {
+            return [];
+        }
+
+        $summaries = [];
+        $seenTests = [];
+        $historyRows = \App\Models\History::query()
+            ->whereIn('display_id', $displayIds)
+            ->whereNull('deleted_at')
+            ->select(['id', 'display_id', 'name', 'regulation', 'result', 'time'])
+            ->orderBy('display_id')
+            ->orderByDesc('time')
+            ->orderByDesc('id')
+            ->get();
+
+        foreach ($historyRows as $history) {
+            $displayId = (int) $history->display_id;
+            $testKey = trim((string) ($history->regulation ?? '')) ?: trim((string) ($history->name ?? '')) ?: ('history:' . (int) $history->id);
+            $compoundKey = $displayId . '|' . mb_strtolower($testKey);
+
+            if (isset($seenTests[$compoundKey])) {
+                continue;
+            }
+
+            $seenTests[$compoundKey] = true;
+
+            if ((int) $history->result === 2) {
+                continue;
+            }
+
+            if (!isset($summaries[$displayId])) {
+                $summaries[$displayId] = [
+                    'latest_failed_history_name' => trim((string) ($history->name ?? '')) ?: $testKey,
+                    'latest_failed_history_time' => (int) $history->time,
+                    'unresolved_tests_count' => 0,
+                ];
+            }
+
+            $summaries[$displayId]['unresolved_tests_count']++;
+
+            if ((int) $history->time > (int) $summaries[$displayId]['latest_failed_history_time']) {
+                $summaries[$displayId]['latest_failed_history_name'] = trim((string) ($history->name ?? '')) ?: $testKey;
+                $summaries[$displayId]['latest_failed_history_time'] = (int) $history->time;
+            }
+        }
+
+        return $summaries;
+    }
+
+    protected function workstation_display_payload($display, array $unresolvedSummaries = [])
     {
         $preferences = $display->preferences->pluck('value', 'name');
         $manufacturer = $preferences['Manufacturer'] ?? $display->manufacturer ?? '';
@@ -22,12 +81,29 @@ class WorkstationController extends Controller
             $name .= ' (' . $serial . ')';
         }
 
+        $summary = $unresolvedSummaries[(int) $display->id] ?? null;
+        $hasUnresolvedFailure = $summary !== null;
+        $needsAttention = (int) $display->status !== 1 || $hasUnresolvedFailure;
+        $unresolvedCount = (int) ($summary['unresolved_tests_count'] ?? 0);
+        $latestFailedName = trim((string) ($summary['latest_failed_history_name'] ?? ''));
+        $attentionText = $hasUnresolvedFailure && $latestFailedName
+            ? __('Unresolved failed test: :test', ['test' => $latestFailedName])
+            : ($needsAttention ? __('Display needs attention') : __('Healthy'));
+
+        if ($hasUnresolvedFailure && $unresolvedCount > 1) {
+            $attentionText .= ' ' . __('(+:count more)', ['count' => $unresolvedCount - 1]);
+        }
+
         return [
             'id' => $display->id,
             'name' => trim($name) ?: ($display->treetext ?: ('Display #' . $display->id)),
             'model' => $model ?: '-',
-            'statusLabel' => (int) $display->status === 1 ? 'Healthy' : 'Needs Attention',
-            'statusTone' => (int) $display->status === 1 ? 'success' : 'danger',
+            'statusLabel' => $needsAttention ? 'Needs Attention' : 'Healthy',
+            'statusTone' => $needsAttention ? 'danger' : 'success',
+            'attentionText' => $attentionText,
+            'hasUnresolvedFailure' => $hasUnresolvedFailure,
+            'unresolvedTestsCount' => $unresolvedCount,
+            'latestFailedHistoryName' => $latestFailedName ?: null,
             'connectedLabel' => 'Online',
         ];
     }
@@ -54,26 +130,37 @@ class WorkstationController extends Controller
     public function api_workstation_modal(Request $request, $id)
     {
         [$workstation, $user, $userRole, $facility] = $this->workstation_modal_guard($request, $id);
+        $siblingWorkstationModels = optional($workstation->workgroup)->workstations()
+            ->with('displays.preferences')
+            ->get()
+            ->sortBy('name')
+            ->values();
+
+        $displayIds = $siblingWorkstationModels
+            ->flatMap(fn ($item) => $item->displays->pluck('id'))
+            ->merge($workstation->displays->pluck('id'))
+            ->map(fn ($item) => (int) $item)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        $unresolvedSummaries = $this->unresolved_failed_display_summaries($displayIds);
 
         $displays = $workstation->displays
             ->sortBy(function ($display) {
                 return $display->treetext ?: ('Display #' . $display->id);
             })
             ->values()
-            ->map(fn ($display) => $this->workstation_display_payload($display));
+            ->map(fn ($display) => $this->workstation_display_payload($display, $unresolvedSummaries));
 
-        $siblingWorkstations = optional($workstation->workgroup)->workstations()
-            ->with('displays.preferences')
-            ->get()
-            ->sortBy('name')
-            ->values()
-            ->map(function ($sibling) use ($workstation) {
+        $siblingWorkstations = $siblingWorkstationModels
+            ->map(function ($sibling) use ($workstation, $unresolvedSummaries) {
                 $siblingDisplays = $sibling->displays
                     ->sortBy(function ($display) {
                         return $display->treetext ?: ('Display #' . $display->id);
                     })
                     ->values()
-                    ->map(fn ($display) => $this->workstation_display_payload($display));
+                    ->map(fn ($display) => $this->workstation_display_payload($display, $unresolvedSummaries));
 
                 return [
                     'id' => $sibling->id,
@@ -128,10 +215,7 @@ class WorkstationController extends Controller
         [$workstation, $user, $userRole, $facility] = $this->workstation_modal_guard($request, $id);
 
         $facilities = \App\Models\Facility::query()
-            ->when($userRole !== 'super', function ($query) use ($user) {
-                return $query->where('id', $user->facility_id);
-            })
-            ->orderBy('name')
+            ->where('id', optional($facility)->id)
             ->get(['id', 'name'])
             ->map(fn ($item) => ['id' => $item->id, 'name' => $item->name])
             ->values();
@@ -175,7 +259,7 @@ class WorkstationController extends Controller
 
     public function move_workstation_modal(Request $request, $id)
     {
-        [$workstation, $user, $userRole] = $this->workstation_modal_guard($request, $id);
+        [$workstation, $user, $userRole, $currentFacility] = $this->workstation_modal_guard($request, $id);
 
         if (!$this->workstation_can_manage($userRole)) {
             return response()->json(['message' => 'You are not allowed to move this workstation.'], 403);
@@ -186,9 +270,24 @@ class WorkstationController extends Controller
         ]);
 
         $workgroup = \App\Models\Workgroup::with('facility')->findOrFail($validated['workgroup_id']);
+        if ((int) $workgroup->facility_id !== (int) optional($currentFacility)->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Workstation can only be moved to a workgroup inside the same facility.',
+            ], 422);
+        }
+
         if ($userRole !== 'super' && (int) $workgroup->facility_id !== (int) optional($user)->facility_id) {
             abort(404);
         }
+
+        if ((int) $workstation->workgroup_id === (int) $workgroup->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This workstation is already in the selected workgroup.',
+            ], 422);
+        }
+
         $workstation->workgroup_id = $workgroup->id;
         $workstation->save();
 
@@ -235,6 +334,25 @@ class WorkstationController extends Controller
                 abort(403);
             }
 
+            $validator = Validator::make($request->all(), [
+                'name' => ['required', 'string', 'max:255'],
+                'workgroup_id' => ['required', 'integer', 'exists:workgroups,id'],
+            ]);
+
+            if ($validator->fails()) {
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => 0,
+                        'message' => $validator->errors()->first(),
+                        'errors' => $validator->errors(),
+                    ], 422);
+                }
+
+                return back()->withErrors($validator)->withInput();
+            }
+
+            $validated = $validator->validated();
+
             $id=$request->input('id');
             if($id=='0')
             {
@@ -256,20 +374,28 @@ class WorkstationController extends Controller
                 $request->session()->flash('success', 'Workstation updated successfully!');
             }
 
-                $item->name = $request->input('name');
+                $item->name = $validated['name'];
                 //$item->city = $request->input('city');
                 //$item->state = $request->input('state');
                 //$item->postcode = $request->input('postcode');
                 //$item->fax = $request->input('fax');
                 $item->user_id = $user->id;
-                $targetWorkgroup = \App\Models\Workgroup::findOrFail($request->input('workgroup_id'));
+                $targetWorkgroup = \App\Models\Workgroup::findOrFail($validated['workgroup_id']);
                 if ($role !== 'super' && (int) $targetWorkgroup->facility_id !== (int) $user->facility_id) {
                     abort(403);
                 }
                 $item->workgroup_id = $targetWorkgroup->id;
                 $item->save();
 
-            return redirect('workstations');
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => 1,
+                    'message' => $id == '0' ? 'Workstation created successfully.' : 'Workstation updated successfully.',
+                    'id' => $item->id,
+                ]);
+            }
+
+            return redirect()->route('workstations.management');
         }
 
         $workgroup_id = request('workgroup_id')?request('workgroup_id'):'';

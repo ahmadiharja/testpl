@@ -2,8 +2,23 @@
 
 @php
     $settings = $data ?? [];
-    $siteLogo = !empty($settings['Site logo']) ? url($settings['Site logo']) : '';
-    $favicon = !empty($settings['favicon']) ? url($settings['favicon']) : '';
+    $brandingAsset = static function (string $key, string $fallback) use ($settings): string {
+        $path = trim((string) ($settings[$key] ?? ''));
+
+        if ($path === '') {
+            return asset($fallback);
+        }
+
+        if (\Illuminate\Support\Str::startsWith($path, ['http://', 'https://', '//', 'data:'])) {
+            return $path;
+        }
+
+        return url($path);
+    };
+
+    $siteLogo = $brandingAsset('Site logo', 'assets/images/perfectlum-logo.png');
+    $favicon = $brandingAsset('favicon', 'assets/images/perfectlum_circle.png');
+    $sidebarCollapsedLogo = $brandingAsset('Sidebar collapsed logo', 'assets/images/perfectlum_circle.png');
 @endphp
 
 <div class="flex flex-col gap-6 pb-8" x-data='{ activeTab: @json(request("tab") === "release" ? "release" : (request("tab") === "smtp" ? "smtp" : "branding")), releaseType: "build" }'>
@@ -25,7 +40,7 @@
                         <span class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-500"><i data-lucide="image" class="h-4.5 w-4.5"></i></span>
                         <span class="min-w-0">
                             <span class="block text-sm font-semibold">{{ __('Brand Identity') }}</span>
-                            <span class="mt-0.5 block text-xs leading-5 text-slate-500">{{ __('Manage site name, logo, favicon, and default sender details.') }}</span>
+                            <span class="mt-0.5 block text-xs leading-5 text-slate-500">{{ __('Manage site name, logos, favicon, and default sender details.') }}</span>
                         </span>
                     </button>
 
@@ -71,7 +86,7 @@
                 <form method="post" enctype="multipart/form-data" class="space-y-6">
                     {{ csrf_field() }}
 
-                    <div class="grid gap-5 xl:grid-cols-2">
+                    <div class="grid gap-5" style="grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));">
                         <div class="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
                             <div class="flex items-start gap-4">
                                 <div class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[1.2rem] border border-slate-200 bg-white">
@@ -87,6 +102,26 @@
                                         class="mt-4 inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-sky-600 transition hover:border-sky-200 hover:bg-sky-50">
                                         <i data-lucide="upload" class="h-4 w-4"></i>
                                         Choose Logo
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                            <div class="flex items-start gap-4">
+                                <div class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[1.2rem] border border-slate-200 bg-white">
+                                    <img src="{{ $sidebarCollapsedLogo }}" alt="Sidebar Minimized Logo" id="sidebarCompactLogoPreview" class="h-full w-full object-contain p-3">
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-semibold text-slate-900">Sidebar Minimized Logo</p>
+                                    <p class="mt-1 text-xs leading-5 text-slate-500">Used when the sidebar is collapsed. Square PNG or JPG recommended, maximum 5 MB.</p>
+                                    <input type="file" id="sidebarCompactLogoUpload" name="sidebar_collapsed_logo" accept="image/*,.ico" class="hidden">
+                                    <button
+                                        type="button"
+                                        onclick="document.getElementById('sidebarCompactLogoUpload').click();"
+                                        class="mt-4 inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-sky-600 transition hover:border-sky-200 hover:bg-sky-50">
+                                        <i data-lucide="upload" class="h-4 w-4"></i>
+                                        Choose Compact Logo
                                     </button>
                                 </div>
                             </div>
@@ -293,25 +328,25 @@
 </div>
 
 <script>
-    document.getElementById('imageUpload')?.addEventListener('change', function (event) {
-        const file = event.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function () {
-            document.getElementById('imagePreview').src = reader.result;
-        };
-        reader.readAsDataURL(file);
-    });
+    function bindImagePreview(inputId, imageId) {
+        document.getElementById(inputId)?.addEventListener('change', function (event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
 
-    document.getElementById('imageUpload2')?.addEventListener('change', function (event) {
-        const file = event.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function () {
-            document.getElementById('favicon_image').src = reader.result;
-        };
-        reader.readAsDataURL(file);
-    });
+            const preview = document.getElementById(imageId);
+            if (!preview) return;
+
+            const reader = new FileReader();
+            reader.onload = function () {
+                preview.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    bindImagePreview('imageUpload', 'imagePreview');
+    bindImagePreview('imageUpload2', 'favicon_image');
+    bindImagePreview('sidebarCompactLogoUpload', 'sidebarCompactLogoPreview');
 
     (function () {
         const currentVersionEl = document.getElementById('current_version');

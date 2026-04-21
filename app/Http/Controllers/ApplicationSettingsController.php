@@ -115,6 +115,11 @@ class ApplicationSettingsController extends Controller
     }
 
     public $fields = array('Language',
+                'DataBaseSynchronizationInterval',
+                'RemindMinutes',
+                'backupPeriod',
+                'UseScheduler',
+                'UpdateSoftwareAutomaticaly',
                 'units',
                 'LumUnits',
                 'AmbientLight',
@@ -324,6 +329,16 @@ class ApplicationSettingsController extends Controller
                 if ($request->input('Language')) {
                     $ws->updatePreference('Language', $request->input('Language'));
                 }
+                foreach (['DataBaseSynchronizationInterval', 'RemindMinutes', 'backupPeriod'] as $field) {
+                    if ($request->filled($field)) {
+                        $ws->updatePreference($field, $request->input($field));
+                    }
+                }
+                foreach (['UseScheduler', 'UpdateSoftwareAutomaticaly'] as $field) {
+                    if ($request->has($field)) {
+                        $ws->updatePreference($field, $request->boolean($field) ? 'true' : 'false');
+                    }
+                }
                 if ($request->input('LumUnits')) {
                     $ws->updatePreference('LumUnits', $request->input('LumUnits'));
                 }
@@ -424,6 +439,24 @@ class ApplicationSettingsController extends Controller
                 if ($colorTemp != 'native') {
                     $ws->updatePreference('ColorTemperatureAdjustment',  $colorTemp);    
                 }
+
+                $directColorTemp = (string) $colorTemp;
+                if (array_key_exists($directColorTemp, $this->color_convert)) {
+                    $directColorTemp = (string) $this->color_convert[$directColorTemp];
+                }
+
+                if ($directColorTemp !== '') {
+                    $ws->updatePreference('ColorTemperature', $directColorTemp);
+                }
+
+                if ($directColorTemp !== 'native' && is_numeric($directColorTemp)) {
+                    $this->Ttoxy((float) $directColorTemp);
+                    if ($this->x > 0 && $this->y > 0) {
+                        $ws->updatePreference('ColorX', (string) round($this->x, 6));
+                        $ws->updatePreference('ColorY', (string) round($this->y, 6));
+                    }
+                }
+
                 $ws->updatePreference('WhiteLevel', $whiteLevel);     
                 $ws->updatePreference('BlackLevel', $blackLevel);     
 

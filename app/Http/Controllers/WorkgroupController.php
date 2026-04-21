@@ -6,9 +6,70 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Validator;
 
 class WorkgroupController extends Controller
 {
+    protected function normalizeWorkgroupPhone(Request $request): ?string
+    {
+        if (!$request->has('phone_country_code') && !$request->has('phone_local')) {
+            return $request->input('phone');
+        }
+
+        $countryCode = preg_replace('/[^0-9+]/', '', (string) $request->input('phone_country_code', ''));
+        $localNumber = preg_replace('/\D+/', '', (string) $request->input('phone_local', ''));
+        $localNumber = ltrim($localNumber, '0');
+
+        if ($countryCode === '' && $localNumber === '') {
+            return '';
+        }
+
+        if ($countryCode !== '' && !str_starts_with($countryCode, '+')) {
+            $countryCode = '+' . $countryCode;
+        }
+
+        return trim($countryCode . $localNumber);
+    }
+
+    protected function normalizeWorkgroupName(string $name): string
+    {
+        return mb_strtolower(preg_replace('/\s+/', ' ', trim($name)));
+    }
+
+    protected function workgroupNameExistsInFacility(string $name, int $facilityId, int $exceptId = 0): bool
+    {
+        $normalized = $this->normalizeWorkgroupName($name);
+
+        return \App\Models\Workgroup::query()
+            ->where('facility_id', $facilityId)
+            ->when($exceptId > 0, fn ($query) => $query->where('id', '!=', $exceptId))
+            ->get(['name'])
+            ->contains(fn ($workgroup) => $this->normalizeWorkgroupName((string) $workgroup->name) === $normalized);
+    }
+
+    protected function resolveFacilityIdFromLookup(Request $request): void
+    {
+        $lookup = trim((string) $request->input('facility_lookup', ''));
+        if ($lookup === '') {
+            return;
+        }
+
+        if (preg_match('/#(\d+)\)?$/', $lookup, $matches)) {
+            $request->merge(['facility_id' => (int) $matches[1]]);
+            return;
+        }
+
+        if (ctype_digit($lookup)) {
+            $request->merge(['facility_id' => (int) $lookup]);
+            return;
+        }
+
+        $facilityId = \App\Models\Facility::where('name', $lookup)->value('id');
+        if ($facilityId) {
+            $request->merge(['facility_id' => (int) $facilityId]);
+        }
+    }
+
     protected function workgroup_can_manage(?string $role): bool
     {
         return in_array($role, ['super', 'admin'], true);
@@ -114,7 +175,7 @@ class WorkgroupController extends Controller
             $siblingWorkgroups = collect();
             if ($includeStructure) {
                 $siblingWorkgroups = \App\Models\Workgroup::with([
-                    'workstations.displays:id,workstation_id,status,name',
+                    'workstations.displays',
                 ])
                     ->where('facility_id', $workgroup->facility_id)
                     ->orderBy('name')
@@ -149,7 +210,7 @@ class WorkgroupController extends Controller
                                     'displays' => $displays->map(function ($display) {
                                         return [
                                             'id' => $display->id,
-                                            'name' => $display->name ?: ('Display #' . $display->id),
+                                            'name' => $display->treetext ?: ('Display #' . $display->id),
                                             'statusTone' => (int) $display->status === 1 ? 'success' : 'danger',
                                             'statusLabel' => (int) $display->status === 1 ? 'Healthy' : 'Needs Attention',
                                             'connectedLabel' => 'Online',
@@ -235,19 +296,36 @@ class WorkgroupController extends Controller
             return response()->json(['message' => 'You are not allowed to edit this workgroup.'], 403);
         }
 
+        $request->merge(['phone' => $this->normalizeWorkgroupPhone($request)]);
+
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9][A-Za-z0-9\s._,\'()\/-]*$/'],
             'address' => ['nullable', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'regex:/^\+?[0-9]{0,20}$/'],
             'facility_id' => ['nullable', 'integer', 'exists:facilities,id'],
+        ], [
+            'name.regex' => 'Workgroup Name may only contain letters, numbers, spaces, and basic punctuation.',
+            'phone.regex' => 'Phone number may contain a country code and up to 20 digits.',
         ]);
+
+        $targetFacilityId = $userRole === 'super' && !empty($validated['facility_id'])
+            ? (int) $validated['facility_id']
+            : (int) $workgroup->facility_id;
+
+        if ($this->workgroupNameExistsInFacility($validated['name'], $targetFacilityId, (int) $workgroup->id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Workgroup Name must be unique within the selected facility.',
+                'errors' => ['name' => ['Workgroup Name must be unique within the selected facility.']],
+            ], 422);
+        }
 
         $workgroup->name = $validated['name'];
         $workgroup->address = $validated['address'] ?? '';
         $workgroup->phone = $validated['phone'] ?? '';
 
-        if ($userRole === 'super' && !empty($validated['facility_id'])) {
-            $workgroup->facility_id = $validated['facility_id'];
+        if ($userRole === 'super') {
+            $workgroup->facility_id = $targetFacilityId;
         }
 
         $workgroup->save();
@@ -275,6 +353,33 @@ class WorkgroupController extends Controller
                 abort(403);
             }
 
+            $this->resolveFacilityIdFromLookup($request);
+            $request->merge(['phone' => $this->normalizeWorkgroupPhone($request)]);
+
+            $validator = Validator::make($request->all(), [
+                'name' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9][A-Za-z0-9\s._,\'()\/-]*$/'],
+                'address' => ['nullable', 'string', 'max:255'],
+                'phone' => ['nullable', 'regex:/^\+?[0-9]{0,20}$/'],
+                'facility_id' => ['required', 'integer', 'exists:facilities,id'],
+            ], [
+                'name.regex' => 'Workgroup Name may only contain letters, numbers, spaces, and basic punctuation.',
+                'phone.regex' => 'Phone number may contain a country code and up to 20 digits.',
+            ]);
+
+            if ($validator->fails()) {
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => 0,
+                        'message' => $validator->errors()->first(),
+                        'errors' => $validator->errors(),
+                    ], 422);
+                }
+
+                return back()->withErrors($validator)->withInput();
+            }
+
+            $validated = $validator->validated();
+
             $id=$request->input('id');
             if($id=='0')
             {
@@ -282,7 +387,7 @@ class WorkgroupController extends Controller
                 $item->created_at=NOW();
                 $request->session()->flash('success', 'Workgroup created successfully!');
                 if ($role !== 'super') {
-                    $requestFacilityId = (int) $request->input('facility_id');
+                    $requestFacilityId = (int) $validated['facility_id'];
                     if ($requestFacilityId !== (int) $user->facility_id) {
                         abort(403);
                     }
@@ -301,24 +406,45 @@ class WorkgroupController extends Controller
                 $request->session()->flash('success', 'Workgroup updated successfully!');
             }
 
-                $item->name = $request->input('name');
-                $item->address = $request->input('address');
-                //$item->city = $request->input('city');
-                //$item->state = $request->input('state');
-                //$item->postcode = $request->input('postcode');
-                $item->phone = $request->input('phone');
-                //$item->fax = $request->input('fax');
-                $item->user_id = $user->id;
                 $targetFacilityId = $role === 'super'
-                    ? (int) $request->input('facility_id')
+                    ? (int) $validated['facility_id']
                     : (int) $user->facility_id;
                 if ($targetFacilityId <= 0 || !\App\Models\Facility::where('id', $targetFacilityId)->exists()) {
                     abort(422);
                 }
+
+                if ($this->workgroupNameExistsInFacility($validated['name'], $targetFacilityId, (int) ($item->id ?? 0))) {
+                    if ($request->expectsJson() || $request->ajax()) {
+                        return response()->json([
+                            'success' => 0,
+                            'message' => 'Workgroup Name must be unique within the selected facility.',
+                            'errors' => ['name' => ['Workgroup Name must be unique within the selected facility.']],
+                        ], 422);
+                    }
+
+                    return back()->withErrors(['name' => 'Workgroup Name must be unique within the selected facility.'])->withInput();
+                }
+
+                $item->name = $validated['name'];
+                $item->address = $validated['address'] ?? '';
+                //$item->city = $request->input('city');
+                //$item->state = $request->input('state');
+                //$item->postcode = $request->input('postcode');
+                $item->phone = $validated['phone'] ?? '';
+                //$item->fax = $request->input('fax');
+                $item->user_id = $user->id;
                 $item->facility_id = $targetFacilityId;
                 $item->save();
 
-            return redirect('workgroups');
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => 1,
+                    'message' => $id == '0' ? 'Workgroup created successfully.' : 'Workgroup updated successfully.',
+                    'id' => $item->id,
+                ]);
+            }
+
+            return redirect()->route('workgroups.management');
         }
         
         /*$workgroups=array(); $i=0;
@@ -424,7 +550,9 @@ class WorkgroupController extends Controller
             $item->name='';
             $item->address='';
             $item->phone='';
-            $item->facility_id=0;
+            $item->facility_id = $role === 'super'
+                ? (int) $request->input('facility_id', 0)
+                : (int) $user->facility_id;
         }
 
         $data['success']=1;

@@ -11,17 +11,19 @@
 
     <x-bento-card title="{{ __('Facility Details') }}" dot-color="sky">
         <div class="p-6">
-            <form method="post" action="" class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+            <form method="post" action="" class="grid grid-cols-1 gap-5 md:grid-cols-2" data-facility-details-form data-name-max="100" data-description-min="10">
                 {{ csrf_field() }}
                 <input type="hidden" name="facility_update" value="{{ $item->id }}">
 
                 <div>
                     <label class="mb-2 block text-[12px] font-semibold text-gray-500">{{ __('Facility Name') }}</label>
-                    <input type="text" name="name" value="{{ $item->name }}" required class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-[13px] text-gray-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                    <input type="text" name="name" value="{{ $item->name }}" required maxlength="100" data-facility-name aria-describedby="facility-details-name-help" class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-[13px] text-gray-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                    <p id="facility-details-name-help" data-facility-name-message class="mt-2 hidden text-[12px] font-medium text-rose-600"></p>
                 </div>
-                <div>
+                <div class="md:col-span-2">
                     <label class="mb-2 block text-[12px] font-semibold text-gray-500">{{ __('Description') }}</label>
-                    <input type="text" name="description" value="{{ $item->description }}" class="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-[13px] text-gray-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                    <textarea name="description" data-facility-description aria-describedby="facility-details-description-help" class="min-h-[104px] w-full resize-y rounded-xl border border-gray-200 bg-white px-4 py-3 text-[13px] leading-5 text-gray-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">{{ $item->description }}</textarea>
+                    <p id="facility-details-description-help" data-facility-description-message class="mt-2 hidden text-[12px] font-medium text-rose-600">{{ __('Description must be at least :min characters.', ['min' => 10]) }}</p>
                 </div>
                 <div>
                     <label class="mb-2 block text-[12px] font-semibold text-gray-500">{{ __('Location') }}</label>
@@ -32,7 +34,7 @@
                     {!! Timezone::selectForm($item->timezone, __('-- Select a timezone --'), ['required' => 'true', 'class' => 'h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-[13px] text-gray-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20', 'name' => 'timezone', 'id' => 'timezone']) !!}
                     <p class="mt-2 text-[12px] text-gray-500">{{ __('Current time:') }} {{ $item->currentTime }}</p>
                 </div>
-                <div class="md:col-span-2 xl:col-span-4 flex justify-end">
+                <div class="md:col-span-2 flex justify-end">
                     <button type="submit" class="rounded-xl bg-sky-500 px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-sky-400">
                         {{ __('Update Facility') }}
                     </button>
@@ -57,7 +59,70 @@
     </x-data-table>
 </div>
 
+@include('workgroups.form_ui_script')
+
 <script>
+function bindFacilityDetailsValidation() {
+    const form = document.querySelector('[data-facility-details-form]');
+    if (!form || form.dataset.validationBound === '1') return;
+    form.dataset.validationBound = '1';
+
+    const setFieldState = (input, invalid) => {
+        input?.classList.toggle('border-rose-300', invalid);
+        input?.classList.toggle('focus:border-rose-400', invalid);
+        input?.classList.toggle('focus:ring-rose-500/20', invalid);
+        input?.classList.toggle('focus:border-sky-500', !invalid);
+        input?.classList.toggle('focus:ring-sky-500/20', !invalid);
+    };
+
+    const nameInput = form.querySelector('[data-facility-name]');
+    const nameMessage = form.querySelector('[data-facility-name-message]');
+    const nameMax = Number(form.dataset.nameMax || 100);
+    const validateName = (force = false) => {
+        if (!nameInput || !nameMessage) return true;
+        const trimmed = String(nameInput.value || '').trim();
+        let message = '';
+
+        if (trimmed.length === 0) {
+            message = 'Facility Name is required.';
+        } else if (trimmed.length > nameMax) {
+            message = `Facility Name must not exceed ${nameMax} characters.`;
+        } else if (!/^[A-Za-z0-9][A-Za-z0-9\s._,'()/-]*$/.test(trimmed)) {
+            message = 'Facility Name may only contain letters, numbers, spaces, and basic punctuation.';
+        }
+
+        const invalid = message !== '';
+        nameMessage.textContent = message;
+        nameMessage.classList.toggle('hidden', !invalid && !force);
+        setFieldState(nameInput, invalid);
+        return !invalid;
+    };
+
+    const descriptionInput = form.querySelector('[data-facility-description]');
+    const descriptionMessage = form.querySelector('[data-facility-description-message]');
+    const descriptionMin = Number(form.dataset.descriptionMin || 10);
+    const validateDescription = (force = false) => {
+        if (!descriptionInput || !descriptionMessage) return true;
+        const value = String(descriptionInput.value || '').trim();
+        const invalid = value.length > 0 && value.length < descriptionMin;
+        descriptionMessage.classList.toggle('hidden', !invalid && !force);
+        setFieldState(descriptionInput, invalid);
+        return !invalid;
+    };
+
+    nameInput?.addEventListener('input', () => validateName());
+    nameInput?.addEventListener('blur', () => validateName(true));
+    descriptionInput?.addEventListener('input', () => validateDescription());
+    descriptionInput?.addEventListener('blur', () => validateDescription(true));
+    form.addEventListener('submit', (event) => {
+        if (!validateName(true) || !validateDescription(true)) {
+            event.preventDefault();
+        }
+    });
+}
+
+document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', bindFacilityDetailsValidation) : bindFacilityDetailsValidation();
+
 function facilityPage() {
     return {
         showWorkgroupPanel: false,
@@ -67,6 +132,7 @@ function facilityPage() {
             const formData = new FormData();
             formData.append('_token', '{{ csrf_token() }}');
             formData.append('id', id);
+            if (id === '0') formData.append('facility_id', '{{ $item->id }}');
 
             const response = await fetch('{{ url('workgroup-form') }}', {
                 method: 'POST',
@@ -78,6 +144,7 @@ function facilityPage() {
             this.workgroupPanelTitle = id === '0' ? @js(__('Add Workgroup')) : @js(__('Edit Workgroup'));
             this.workgroupFormHtml = data.content;
             this.showWorkgroupPanel = true;
+            this.$nextTick(() => window.WorkgroupFormUI?.init(document.querySelector('[x-data="facilityPage()"]')));
         },
         closeWorkgroupPanel() {
             this.showWorkgroupPanel = false;

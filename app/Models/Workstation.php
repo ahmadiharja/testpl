@@ -74,7 +74,6 @@ class Workstation extends Model
     public function getLinkAttribute() {
         return "<a href='".url('/')."/workstations-info/{$this->id}'>{$this->name}</a>";
     }
-    // TODO
     public function getLastConnectedAttribute() {
         $timezone = $this->workgroup?->facility?->timezone ?? config('app.timezone', 'UTC');   
         return Carbon::parse($this->attributes['last_connected'])->setTimezone($timezone)->format('Y-m-d H:i:s');

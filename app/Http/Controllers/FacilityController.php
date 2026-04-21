@@ -3,12 +3,66 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class FacilityController extends Controller
 {
+    public function redirect_to_facilities()
+    {
+        return redirect()->route('facilities.management', [], 301);
+    }
+
+    protected function normalizeWorkgroupPhone(Request $request): ?string
+    {
+        if (!$request->has('phone_country_code') && !$request->has('phone_local')) {
+            return $request->input('phone');
+        }
+
+        $countryCode = preg_replace('/[^0-9+]/', '', (string) $request->input('phone_country_code', ''));
+        $localNumber = preg_replace('/\D+/', '', (string) $request->input('phone_local', ''));
+
+        if ($countryCode === '' && $localNumber === '') {
+            return '';
+        }
+
+        if ($countryCode !== '' && !str_starts_with($countryCode, '+')) {
+            $countryCode = '+' . $countryCode;
+        }
+
+        return trim($countryCode . $localNumber);
+    }
+
+    protected function resolveFacilityIdFromLookup(Request $request): void
+    {
+        $lookup = trim((string) $request->input('facility_lookup', ''));
+        if ($lookup === '') {
+            return;
+        }
+
+        if (preg_match('/#(\d+)\)?$/', $lookup, $matches)) {
+            $request->merge(['facility_id' => (int) $matches[1]]);
+            return;
+        }
+
+        if (ctype_digit($lookup)) {
+            $request->merge(['facility_id' => (int) $lookup]);
+            return;
+        }
+
+        $facilityId = \App\Models\Facility::where('name', $lookup)->value('id');
+        if ($facilityId) {
+            $request->merge(['facility_id' => (int) $facilityId]);
+        }
+    }
+
     protected function facility_can_manage(?string $role): bool
     {
         return in_array($role, ['super', 'admin'], true);
+    }
+
+    protected function facility_can_create(?string $role): bool
+    {
+        return $role === 'super';
     }
 
     protected function facility_can_delete(?string $role): bool
@@ -73,8 +127,8 @@ class FacilityController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9][A-Za-z0-9\s._,\'()\/-]*$/'],
+            'description' => ['nullable', 'string', 'min:10', 'max:255'],
             'location' => ['nullable', 'string', 'max:255'],
             'timezone' => ['nullable', 'string', 'max:255'],
         ]);
@@ -129,6 +183,8 @@ class FacilityController extends Controller
         if($request->input('id')!='')
         {
             abort_unless($this->facility_can_manage($role), 403);
+            $this->resolveFacilityIdFromLookup($request);
+            $phone = $this->normalizeWorkgroupPhone($request);
             $id2=$request->input('id');
             if($id2=='0')
             {
@@ -154,7 +210,7 @@ class FacilityController extends Controller
                 //$item->city = $request->input('city');
                 //$item->state = $request->input('state');
                 //$item->postcode = $request->input('postcode');
-                $item->phone = $request->input('phone');
+                $item->phone = $phone ?? '';
                 //$item->fax = $request->input('fax');
                 $item->user_id = $user->id;
                 $targetFacilityId = $role === 'super'
@@ -255,9 +311,30 @@ class FacilityController extends Controller
             }
 
             $id=$request->input('id');
-            if ($id == '0' && $role !== 'super') {
+            if ($id == '0' && !$this->facility_can_create($role)) {
                 abort(403);
             }
+
+            $validator = Validator::make($request->all(), [
+                'name' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9][A-Za-z0-9\s._,\'()\/-]*$/'],
+                'description' => ['nullable', 'string', 'min:10', 'max:255'],
+                'location' => ['nullable', 'string', 'max:255'],
+                'timezone' => ['required', 'string', 'max:255'],
+            ]);
+
+            if ($validator->fails()) {
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => 0,
+                        'message' => $validator->errors()->first(),
+                        'errors' => $validator->errors(),
+                    ], 422);
+                }
+
+                return back()->withErrors($validator)->withInput();
+            }
+
+            $validated = $validator->validated();
             if($id=='0')
             {
                 $item = new \App\Models\Facility();
@@ -278,10 +355,10 @@ class FacilityController extends Controller
             }
             
             
-            $item->name = $request->input('name');
-            $item->location = $request->input('location');
-            $item->description = $request->input('description');
-            $item->timezone = $request->input('timezone');
+            $item->name = $validated['name'];
+            $item->location = $validated['location'] ?? '';
+            $item->description = $validated['description'] ?? '';
+            $item->timezone = $validated['timezone'];
             $item->user_id = $user->id;
         
             $item->save();
@@ -293,7 +370,15 @@ class FacilityController extends Controller
         //event(new TreeChanged($item->id));
         
         //return redirect('/facilities')->with('success', 'Facility Created');
-        return redirect('facilities-management');
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => 1,
+                'message' => $id == '0' ? 'Facility created successfully.' : 'Facility updated successfully.',
+                'id' => $item->id,
+            ]);
+        }
+
+        return redirect()->route('facilities.management');
         }
         
         return view('facilities.facilities_management', ['title' =>'Facility Management']);
@@ -320,7 +405,7 @@ class FacilityController extends Controller
             if ($role !== 'super' && (int) $item->id !== (int) optional($user)->facility_id) {
                 abort(404);
             }
-        } elseif ($id === '0' && $role !== 'super') {
+        } elseif ($id === '0' && !$this->facility_can_create($role)) {
             abort(403);
         }
         

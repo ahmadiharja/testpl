@@ -1,180 +1,228 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $historyReport['name'] }} - Print Preview</title>
-    <style>
-        :root {
-            --bg: #f3f7fb;
-            --surface: #ffffff;
-            --surface-soft: #f8fbff;
-            --border: #dbe5f0;
-            --text: #14213d;
-            --muted: #7b8cab;
-            --accent: #147df5;
-            --accent-soft: #e9f3ff;
-        }
-        * { box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; margin: 0; background: linear-gradient(180deg, #eef5fb 0%, #f8fbff 100%); color: var(--text); }
-        .shell { max-width: 980px; margin: 0 auto; padding: 28px 22px 44px; }
-        .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin-bottom: 22px; padding: 20px 24px; border: 1px solid var(--border); border-radius: 24px; background: linear-gradient(135deg, #ffffff 0%, #f5faff 100%); box-shadow: 0 18px 50px -30px rgba(20, 33, 61, 0.45); }
-        .button { border: 1px solid #bfcee2; background: white; color: var(--text); padding: 10px 16px; border-radius: 999px; font-weight: 700; cursor: pointer; text-decoration: none; }
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: 20px; margin-bottom: 16px; box-shadow: 0 16px 42px -34px rgba(20, 33, 61, 0.5); }
-        .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted); }
-        .title { font-size: 30px; line-height: 1.15; font-weight: 800; margin: 8px 0 0; max-width: 720px; }
-        .subtitle { margin-top: 8px; color: var(--muted); font-size: 14px; }
-        .meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
-        .meta-item { border: 1px solid var(--border); background: var(--surface-soft); border-radius: 16px; padding: 14px; }
-        .meta-item strong { display: block; margin-top: 8px; font-size: 14px; }
-        .badge { display: inline-block; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
-        .success { background: #dcfce7; color: #166534; }
-        .danger { background: #fee2e2; color: #991b1b; }
-        .warning { background: #fef3c7; color: #92400e; }
-        .neutral { background: #e2e8f0; color: #475569; }
-        table { width: 100%; border-collapse: collapse; margin-top: 16px; overflow: hidden; border-radius: 16px; }
-        th, td { border-bottom: 1px solid var(--border); padding: 12px; text-align: left; font-size: 14px; vertical-align: top; }
-        th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); background: #f8fbff; }
-        .question { display: flex; justify-content: space-between; gap: 16px; border: 1px solid var(--border); background: var(--surface-soft); border-radius: 14px; padding: 14px; margin-top: 12px; }
-        .comment { border: 1px solid var(--border); background: var(--surface-soft); border-radius: 14px; padding: 14px; margin-top: 16px; }
-        .graphs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
-        .graph { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--surface-soft); }
-        .graph-title { padding: 12px 14px; border-bottom: 1px solid var(--border); font-weight: 700; }
-        .graph img { display: block; width: 100%; background: white; }
-        .graph-canvas { background: white; padding: 14px; }
-        .graph-canvas svg { display: block; width: 100%; height: 220px; overflow: visible; }
-        .step-title { font-size: 22px; font-weight: 800; margin-top: 10px; }
-        .hero-row { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
-        @media print {
-            body { background: white; }
-            .toolbar { display: none; }
-            .shell { max-width: none; padding: 0; }
-            .card { break-inside: avoid; box-shadow: none; }
-        }
-    </style>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>{{ $historyReport['name'] ?? 'History Report' }}</title>
 </head>
-<body>
-    <div class="shell">
-        <div class="toolbar">
-            <div>
-                <div class="label">Print Preview</div>
-                <div class="title">{{ $historyReport['name'] }}</div>
-                <div class="subtitle">Formatted report for browser preview and direct printing.</div>
-            </div>
-            <button class="button" onclick="window.print()">Print</button>
-        </div>
+<body style="margin:0; padding:0; font-family: dejavusans, sans-serif; color:#0f172a; font-size:10.5px; line-height:1.42; background:#ffffff;">
+    @php
+        $report = $historyReport ?? [];
+        $leftFacts = collect($report['reportFactsLeft'] ?? []);
+        $rightFacts = collect($report['reportFactsRight'] ?? []);
+        $footerFacts = collect($report['reportFactsFooter'] ?? []);
+        $summaryRows = collect($report['summaryRows'] ?? []);
+        $sections = collect($report['sections'] ?? []);
+        $resultLabel = strtoupper((string) ($report['resultLabel'] ?? 'UNKNOWN'));
+        $resultTone = (string) ($report['resultTone'] ?? 'neutral');
+        $resultColor = match ($resultTone) {
+            'success' => '#15803d',
+            'danger' => '#b91c1c',
+            'warning' => '#b45309',
+            default => '#334155',
+        };
+        $resultBg = match ($resultTone) {
+            'success' => '#ecfdf3',
+            'danger' => '#fef2f2',
+            'warning' => '#fff7ed',
+            default => '#f8fafc',
+        };
+    @endphp
 
-        <div class="card">
-            <div class="hero-row">
-                <div>
-                    <div class="label">Performed At</div>
-                    <div style="font-size:20px;font-weight:800;margin-top:8px;">{{ $historyReport['performedAt'] }}</div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; margin-bottom:14px;">
+        <tr>
+            <td width="56%" valign="middle">
+                @if(!empty($logoPerfectLum))
+                    <img src="{{ $logoPerfectLum }}" alt="PerfectLum" style="height:42px; display:block;">
+                @else
+                    <div style="font-size:24px; font-weight:700; color:#0f172a;">PerfectLum</div>
+                @endif
+            </td>
+            <td width="44%" align="right" valign="middle">
+                @if(!empty($logoQubyx))
+                    <img src="{{ $logoQubyx }}" alt="QUBYX" style="height:28px; display:inline-block;">
+                @else
+                    <div style="font-size:20px; font-weight:700; color:#111827;">QUBYX</div>
+                @endif
+            </td>
+        </tr>
+    </table>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; margin-bottom:18px;">
+        <tr>
+            <td width="64%" valign="top" style="padding-right:18px;">
+                <div style="font-size:8.5px; letter-spacing:0.24em; color:#64748b; text-transform:uppercase; margin-bottom:7px;">Display QA Report</div>
+                <div style="font-size:20px; font-weight:700; line-height:1.18; color:#0f172a; margin-bottom:8px;">
+                    {{ $report['name'] ?? 'History Report' }}
                 </div>
-                <span class="badge {{ $historyReport['resultTone'] }}">{{ $historyReport['resultLabel'] }}</span>
-            </div>
-            <div class="meta">
-                <div class="meta-item"><span class="label">Facility</span><strong>{{ $historyReport['display']['facility'] }}</strong></div>
-                <div class="meta-item"><span class="label">Workgroup</span><strong>{{ $historyReport['display']['workgroup'] }}</strong></div>
-                <div class="meta-item"><span class="label">Workstation</span><strong>{{ $historyReport['display']['workstation'] }}</strong></div>
-            </div>
-        </div>
+                <div style="font-size:9.5px; color:#475569; max-width:340px; line-height:1.45;">
+                    Structured verification summary prepared from the synchronized client report for printing and review.
+                </div>
+            </td>
+            <td width="36%" valign="top" align="right">
+                <table width="82%" align="right" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; background:{{ $resultBg }}; border:1px solid #dbe3ee;">
+                    <tr>
+                        <td style="padding:10px 12px 0 12px; font-size:8.5px; letter-spacing:0.18em; color:#64748b; text-transform:uppercase;" align="right">Result</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:2px 12px 6px 12px; font-size:16px; font-weight:700; color:{{ $resultColor }};" align="right">{{ $resultLabel }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:0 12px 12px 12px; font-size:9.5px; color:#475569;" align="right">
+                            Test date: {{ $report['performedAt'] ?? '-' }}<br>
+                            Printed: {{ $report['printedAt'] ?? '-' }}
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 
-        <div class="card">
-            <div class="label">Header Details</div>
-            <div class="meta">
-                @foreach ($historyReport['header'] as $item)
-                    <div class="meta-item">
-                        <span class="label">{{ $item['label'] }}</span>
-                        <strong>{{ $item['value'] }}</strong>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-
-        @foreach ($historyReport['sections'] as $section)
-            <div class="card">
-                <div class="label">Step</div>
-                <div class="step-title">{{ $section['name'] }}</div>
-
-                @if (count($section['scores']))
-                    <x-history-scores variant="print">
-                        @foreach ($section['scores'] as $score)
-                            <tr>
-                                <td>{!! $score['name'] !!}</td>
-                                <td>{!! $score['limit'] !!}</td>
-                                <td>{!! $score['measured'] !!}</td>
-                                <td><span class="badge {{ $score['statusTone'] }}">{{ $score['statusLabel'] }}</span></td>
-                            </tr>
-                        @endforeach
-                    </x-history-scores>
-                @endif
-
-                <x-history-questions variant="print">
-                    @foreach ($section['questions'] as $question)
-                        <div class="question">
-                            <div>{!! $question['text'] !!}</div>
-                            <span class="badge {{ $question['tone'] }}">{{ $question['answer'] }}</span>
-                        </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; margin-bottom:18px;">
+        <tr>
+            <td width="48%" valign="top">
+                <div style="display:block; margin:0 0 10px 0;">
+                    <span style="display:inline-block; padding:6px 10px; background:#eef4fb; border:1px solid #dbe7f3; font-size:8.5px; letter-spacing:0.24em; color:#334155; text-transform:uppercase; font-weight:700;">
+                        Site Information
+                    </span>
+                </div>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+                    @foreach($leftFacts as $fact)
+                        <tr>
+                            <td width="48%" style="padding:6px 10px; border-bottom:1px solid #e5e7eb; font-size:9.5px; color:#334155;">{{ $fact['label'] ?? '-' }}</td>
+                            <td width="52%" style="padding:6px 10px; border-bottom:1px solid #e5e7eb; background:#f8fafc; font-size:9.5px; color:#0f172a;">{{ $fact['value'] ?? '-' }}</td>
+                        </tr>
                     @endforeach
-                </x-history-questions>
+                </table>
+            </td>
+            <td width="4%"></td>
+            <td width="48%" valign="top">
+                <div style="display:block; margin:0 0 10px 0;">
+                    <span style="display:inline-block; padding:6px 10px; background:#eef4fb; border:1px solid #dbe7f3; font-size:8.5px; letter-spacing:0.24em; color:#334155; text-transform:uppercase; font-weight:700;">
+                        Display Information
+                    </span>
+                </div>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+                    @foreach($rightFacts as $fact)
+                        <tr>
+                            <td width="48%" style="padding:6px 10px; border-bottom:1px solid #e5e7eb; font-size:9.5px; color:#334155;">{{ $fact['label'] ?? '-' }}</td>
+                            <td width="52%" style="padding:6px 10px; border-bottom:1px solid #e5e7eb; background:#f8fafc; font-size:9.5px; color:#0f172a;">{{ $fact['value'] ?? '-' }}</td>
+                        </tr>
+                    @endforeach
+                    @foreach($footerFacts as $fact)
+                        <tr>
+                            <td width="48%" style="padding:6px 10px; border-bottom:1px solid #e5e7eb; font-size:9.5px; color:#334155;">{{ $fact['label'] ?? '-' }}</td>
+                            <td width="52%" style="padding:6px 10px; border-bottom:1px solid #e5e7eb; background:#f8fafc; font-size:9.5px; color:#0f172a;">{{ $fact['value'] ?? '-' }}</td>
+                        </tr>
+                    @endforeach
+                </table>
+            </td>
+        </tr>
+    </table>
 
-                @if ($section['comment'])
-                    <div class="comment">
-                        <div class="label">Comment</div>
-                        <div style="margin-top:10px;">{{ $section['comment'] }}</div>
-                    </div>
-                @endif
+    <div style="border-top:1px solid #cbd5e1; margin-bottom:12px;"></div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; margin-bottom:8px;">
+        <tr>
+            <td width="72%" style="font-size:17px; font-weight:700; color:#0f172a;">{{ $report['name'] ?? 'History Report' }}</td>
+            <td width="28%" align="right" style="font-size:8.5px; letter-spacing:0.2em; text-transform:uppercase; color:#64748b;">Result <span style="font-size:13px; font-weight:700; color:{{ $resultColor }}; margin-left:8px;">{{ $resultLabel }}</span></td>
+        </tr>
+    </table>
 
-                @if (count($section['graphs']))
-                    <x-history-graphs variant="print">
-                        @foreach ($section['graphs'] as $graph)
-                            <div class="graph">
-                                <div class="graph-title">{{ $graph['name'] }}</div>
-                                @if (!empty($graph['chart']))
-                                    @php
-                                        $xMin = (float) ($graph['xMin'] ?? 0);
-                                        $xMax = (float) ($graph['xMax'] ?? 100);
-                                        $yMin = (float) ($graph['yMin'] ?? 0);
-                                        $yMax = (float) ($graph['yMax'] ?? 100);
-                                        $xRange = ($xMax - $xMin) ?: 1;
-                                        $yRange = ($yMax - $yMin) ?: 1;
-                                    @endphp
-                                    <div class="graph-canvas">
-                                        <svg viewBox="0 0 100 56" preserveAspectRatio="none">
-                                            @foreach ($graph['lines'] as $line)
-                                                @php
-                                                    $polyline = collect($line['points'] ?? [])->map(function ($point) use ($xMin, $xRange, $yMin, $yRange) {
-                                                        $rawX = (float) ($point['x'] ?? 0);
-                                                        $rawY = (float) ($point['y'] ?? 0);
-                                                        $x = (($rawX - $xMin) / $xRange) * 100;
-                                                        $y = 52 - ((($rawY - $yMin) / $yRange) * 46);
-                                                        $x = max(0, min(100, $x));
-                                                        $y = max(4, min(52, $y));
-                                                        return round($x, 3) . ',' . round($y, 3);
-                                                    })->implode(' ');
-                                                @endphp
-                                                @if ($polyline !== '')
-                                                    <polyline
-                                                        fill="none"
-                                                        stroke="{{ $line['color'] ?? '#147df5' }}"
-                                                        stroke-width="1.35"
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        points="{{ $polyline }}"
-                                                    ></polyline>
-                                                @endif
-                                            @endforeach
-                                        </svg>
-                                    </div>
-                                @elseif (!empty($graph['url']))
-                                    <img src="{{ $graph['url'] }}" alt="{{ $graph['name'] }}">
-                                @endif
-                            </div>
-                        @endforeach
-                    </x-history-graphs>
-                @endif
-            </div>
+    @if($summaryRows->isNotEmpty())
+        <div style="font-size:8.5px; letter-spacing:0.22em; text-transform:uppercase; color:#64748b; margin-bottom:8px;">Summary</div>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; margin-bottom:16px;">
+            <tr>
+                <td style="padding:7px 8px; border:1px solid #94a3b8; background:#eef2f7; font-size:9.5px; font-weight:700; color:#0f172a;" width="70%">Test</td>
+                <td style="padding:7px 8px; border:1px solid #94a3b8; background:#eef2f7; font-size:9.5px; font-weight:700; color:#0f172a;" width="30%" align="center">Result</td>
+            </tr>
+            @foreach($summaryRows as $row)
+                @php
+                    $tone = $row['tone'] ?? 'neutral';
+                    $answerColor = match ($tone) {
+                        'success' => '#15803d',
+                        'danger' => '#b91c1c',
+                        'warning' => '#b45309',
+                        default => '#334155',
+                    };
+                @endphp
+                <tr>
+                    <td style="padding:7px 8px; border:1px solid #cbd5e1; font-size:9.5px; color:#0f172a;">{{ $row['question'] ?? '-' }}</td>
+                    <td style="padding:7px 8px; border:1px solid #cbd5e1; font-size:9.5px; font-weight:700; color:{{ $answerColor }};" align="center">{{ strtoupper((string) ($row['answer'] ?? '-')) }}</td>
+                </tr>
+            @endforeach
+        </table>
+    @endif
+
+    @if($sections->isNotEmpty())
+        <pagebreak />
+
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; margin-bottom:14px;">
+            <tr>
+                <td width="70%" style="font-size:8.5px; letter-spacing:0.2em; text-transform:uppercase; color:#64748b;">Question Review</td>
+                <td width="30%" align="right" style="font-size:8.5px; letter-spacing:0.2em; text-transform:uppercase; color:#64748b;">Detailed Responses</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="padding-top:6px; font-size:15px; font-weight:700; color:#0f172a;">{{ $report['name'] ?? 'History Report' }}</td>
+            </tr>
+        </table>
+
+        @foreach($sections as $sectionIndex => $section)
+            <div style="font-size:8.5px; letter-spacing:0.18em; text-transform:uppercase; color:#64748b; margin-bottom:6px; margin-top:{{ $sectionIndex === 0 ? '0' : '12px' }};">{{ $section['name'] ?? ('Section ' . ($sectionIndex + 1)) }}</div>
+
+            @foreach(($section['questions'] ?? []) as $question)
+                @php
+                    $tone = $question['tone'] ?? 'neutral';
+                    $answerColor = match ($tone) {
+                        'success' => '#15803d',
+                        'danger' => '#b91c1c',
+                        'warning' => '#b45309',
+                        default => '#334155',
+                    };
+                @endphp
+                <div style="background:#eef2f7; border:1px solid #cbd5e1; padding:6px 8px; font-size:9.5px; font-weight:700; color:#0f172a; margin-top:8px;">
+                    {{ $question['text'] ?? '-' }}
+                </div>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; margin-bottom:10px; page-break-inside:avoid;">
+                    <tr>
+                        <td width="86%" style="padding:7px 8px; border:1px solid #cbd5e1; font-size:9.5px; color:#0f172a;">{{ $question['text'] ?? '-' }}</td>
+                        <td width="14%" align="center" style="padding:7px 8px; border:1px solid #cbd5e1; font-size:9.5px; font-weight:700; color:{{ $answerColor }};">{{ strtolower((string) ($question['answer'] ?? '-')) }}</td>
+                    </tr>
+                </table>
+            @endforeach
+
+            @if(!empty($section['comment']))
+                <div style="background:#fff7ed; border:1px solid #fed7aa; padding:7px 9px; font-size:9.5px; color:#7c2d12; margin-bottom:10px;">
+                    <span style="font-weight:700;">Comment:</span> {{ $section['comment'] }}
+                </div>
+            @endif
+
+            @if(!empty($section['scores']) && count($section['scores']))
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; margin-bottom:12px; page-break-inside:avoid;">
+                    <tr>
+                        <td style="padding:7px 8px; border:1px solid #94a3b8; background:#eef2f7; font-size:9.5px; font-weight:700;" width="42%">Metric</td>
+                        <td style="padding:7px 8px; border:1px solid #94a3b8; background:#eef2f7; font-size:9.5px; font-weight:700;" width="18%">Limit</td>
+                        <td style="padding:7px 8px; border:1px solid #94a3b8; background:#eef2f7; font-size:9.5px; font-weight:700;" width="20%">Measured</td>
+                        <td style="padding:7px 8px; border:1px solid #94a3b8; background:#eef2f7; font-size:9.5px; font-weight:700;" width="20%">Status</td>
+                    </tr>
+                    @foreach($section['scores'] as $score)
+                        @php
+                            $scoreTone = $score['statusTone'] ?? 'neutral';
+                            $scoreColor = match ($scoreTone) {
+                                'success' => '#15803d',
+                                'danger' => '#b91c1c',
+                                'warning' => '#b45309',
+                                default => '#334155',
+                            };
+                        @endphp
+                        <tr>
+                            <td style="padding:7px 8px; border:1px solid #cbd5e1; font-size:9.5px;">{{ $score['name'] ?? '-' }}</td>
+                            <td style="padding:7px 8px; border:1px solid #cbd5e1; font-size:9.5px;">{{ $score['limit'] ?? '-' }}</td>
+                            <td style="padding:7px 8px; border:1px solid #cbd5e1; font-size:9.5px;">{{ $score['measured'] ?? '-' }}</td>
+                            <td style="padding:7px 8px; border:1px solid #cbd5e1; font-size:9.5px; font-weight:700; color:{{ $scoreColor }};">{{ $score['statusLabel'] ?? '-' }}</td>
+                        </tr>
+                    @endforeach
+                </table>
+            @endif
         @endforeach
-    </div>
+    @endif
 </body>
 </html>

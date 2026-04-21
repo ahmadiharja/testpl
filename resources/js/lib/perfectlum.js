@@ -145,17 +145,18 @@ let desktopActionMenuTarget = null;
 const desktopSpaPilotRoutes = new Set([
     '/dashboard',
     '/facilities-management',
-    '/workgroups',
-    '/workstations',
-    '/displays',
-    '/histories-reports',
+    '/workgroups-management',
+    '/workstations-management',
+    '/displays-management',
+    '/history-reports',
     '/users-management',
-    '/display-calibration',
-    '/scheduler',
+    '/displays-calibration',
+    '/displays-scheduler',
     '/client-monitor',
     '/site-settings',
     '/global-settings',
     '/alert-settings',
+    '/scope-explorer',
     '/profile-settings',
     '/facility-info',
 ]);
@@ -1394,8 +1395,9 @@ function getDesktopActionConfigFromButton(button) {
             pageKey: 'workstationsPage',
             editButtonId: 'workstation-action-edit',
             deleteButtonId: 'workstation-action-delete',
-            editLabel: 'Edit Workstation',
+            editLabel: 'Workstation Setting',
             deleteLabel: 'Delete Workstation',
+            editIcon: 'settings',
         },
         {
             type: 'display',
@@ -1404,8 +1406,9 @@ function getDesktopActionConfigFromButton(button) {
             pageKey: 'displaysPage',
             editButtonId: 'display-action-edit',
             deleteButtonId: 'display-action-delete',
-            editLabel: 'Edit Display',
+            editLabel: 'Display Settings',
             deleteLabel: 'Delete Display',
+            editIcon: 'settings',
         },
         {
             type: 'user',
@@ -1485,11 +1488,11 @@ function ensureDesktopGlobalActionMenu() {
     menu.style.padding = '0.5rem';
     menu.style.boxShadow = '0 24px 80px -36px rgba(15, 23, 42, 0.55)';
     menu.innerHTML = `
-        <button type="button" data-desktop-global-action="edit" class="flex w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-sky-50 hover:text-sky-700">
+        <button type="button" data-desktop-global-action="edit" class="grid w-full grid-cols-[1rem_1fr] items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-sky-50 hover:text-sky-700">
             <span aria-hidden="true">✎</span>
             <span data-desktop-global-action-label="edit">Edit</span>
         </button>
-        <button type="button" data-desktop-global-action="delete" class="mt-1 flex w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
+        <button type="button" data-desktop-global-action="delete" class="mt-1 grid w-full grid-cols-[1rem_1fr] items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
             <span aria-hidden="true">×</span>
             <span data-desktop-global-action-label="delete">Delete</span>
         </button>
@@ -1546,6 +1549,12 @@ function openDesktopGlobalActionMenu(event, button, config) {
     const deleteButton = menu.querySelector('[data-desktop-global-action="delete"]');
     menu.querySelector('[data-desktop-global-action-label="edit"]').textContent = config.editLabel;
     menu.querySelector('[data-desktop-global-action-label="delete"]').textContent = config.deleteLabel;
+    const editIcon = editButton?.querySelector('span[aria-hidden="true"]');
+    if (editIcon) {
+        editIcon.innerHTML = config.editIcon === 'settings'
+            ? '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.32-1.915"/><circle cx="12" cy="12" r="3"/></svg>'
+            : '&#9998;';
+    }
     editButton.classList.toggle('hidden', !canEdit);
     deleteButton.classList.toggle('hidden', !canDelete);
 
@@ -1608,16 +1617,17 @@ function resolveDesktopActiveMenu(doc, pathname) {
     const pathMap = {
         '/dashboard': 'Dashboard',
         '/facilities-management': 'Facilities',
-        '/workgroups': 'Workgroups',
-        '/workstations': 'Workstations',
-        '/displays': 'Displays',
-        '/display-calibration': 'Calibrate Display',
-        '/scheduler': 'Scheduler',
-        '/histories-reports': 'History & Reports',
+        '/workgroups-management': 'Workgroups',
+        '/workstations-management': 'Workstations',
+        '/displays-management': 'Displays',
+        '/displays-calibration': 'Calibrate Display',
+        '/displays-scheduler': 'Scheduler',
+        '/history-reports': 'History & Reports',
         '/users-management': 'Users',
         '/site-settings': 'Site Settings',
         '/global-settings': 'Application Settings',
         '/alert-settings': 'Alert Settings',
+        '/scope-explorer': 'Scope Explorer',
         '/client-monitor': 'Client Monitor',
     };
 
@@ -1678,15 +1688,15 @@ function syncDesktopShell(doc) {
     const currentSignature = document.body?.dataset?.desktopShellSignature || '';
     const nextSignature = doc.body?.dataset?.desktopShellSignature || '';
 
-    if (!nextSignature || currentSignature === nextSignature) {
-        return;
-    }
-
     const sidebarUpdated = replaceDesktopShellFragment('#desktop-sidebar-shell', doc);
     const headerUpdated = replaceDesktopShellFragment('#desktop-top-header', doc);
 
     if (sidebarUpdated || headerUpdated) {
-        document.body.dataset.desktopShellSignature = nextSignature;
+        if (nextSignature) {
+            document.body.dataset.desktopShellSignature = nextSignature;
+        } else if (currentSignature) {
+            document.body.dataset.desktopShellSignature = currentSignature;
+        }
 
         if (window.lucide?.createIcons) {
             window.lucide.createIcons();
@@ -1705,6 +1715,13 @@ function setDesktopLoadingState(isLoading) {
     content?.classList.toggle('opacity-80', !!isLoading);
     scrollArea.classList.toggle('cursor-progress', !!isLoading);
     stage.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+}
+
+function waitForDesktopPaint() {
+    return new Promise((resolve) => {
+        const raf = window.requestAnimationFrame || ((callback) => window.setTimeout(callback, 16));
+        raf(() => window.setTimeout(resolve, 0));
+    });
 }
 
 function isDesktopNavigationPolishContext() {
@@ -1921,6 +1938,7 @@ function bootDesktopShell() {
         setDesktopLoadingState(true);
         closeDesktopGlobalActionMenu();
         closeDesktopPersistentOverlays();
+        cleanupDesktopPageRuntime();
 
         try {
             const payload = await fetchDesktopPagePayload(target.toString());
@@ -1947,9 +1965,23 @@ function bootDesktopShell() {
                 window.Alpine.destroyTree(content);
             }
 
-            syncElementAttributes(content, nextContent, { preserve: ['id'] });
-            content.innerHTML = nextContent.innerHTML;
+            const swapDesktopContent = () => {
+                syncElementAttributes(content, nextContent, { preserve: ['id'] });
+                content.innerHTML = nextContent.innerHTML;
+            };
+
+            if (window.Alpine?.mutateDom) {
+                window.Alpine.mutateDom(swapDesktopContent);
+            } else {
+                swapDesktopContent();
+            }
             document.title = doc.title || document.title;
+
+            syncDesktopShell(doc);
+            syncDesktopMenuState(doc, target.pathname);
+
+            scrollArea.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+            await waitForDesktopPaint();
 
             runDesktopPageScripts(doc, runtimeScripts, nextContentScripts);
 
@@ -1961,24 +1993,19 @@ function bootDesktopShell() {
                 window.lucide.createIcons();
             }
 
-            [
-                'dashboardPageMount',
-                'schedulerPageMount',
-                'calibrationPageMount',
-            ].forEach((key) => {
-                if (typeof window[key] === 'function') {
-                    try {
-                        window[key]();
-                    } catch (_) {
-                        // Allow the page to fallback gracefully if a mount hook fails.
-                    }
+            const mountHookMap = {
+                '/dashboard': 'dashboardPageMount',
+                '/displays-scheduler': 'schedulerPageMount',
+                '/displays-calibration': 'calibrationPageMount',
+            };
+            const mountHook = mountHookMap[target.pathname];
+            if (mountHook && typeof window[mountHook] === 'function') {
+                try {
+                    window[mountHook]();
+                } catch (_) {
+                    // Allow the page to fallback gracefully if a mount hook fails.
                 }
-            });
-
-            syncDesktopShell(doc);
-            syncDesktopMenuState(doc, target.pathname);
-
-            scrollArea.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+            }
 
             if (push) {
                 history.pushState({ desktopShell: true }, '', payload.responseUrl || target.toString());

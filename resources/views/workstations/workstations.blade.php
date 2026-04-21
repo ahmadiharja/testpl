@@ -54,6 +54,20 @@
         'qualityAssurance' => __('Quality Assurance'),
         'location' => __('Location'),
         'workstationName' => __('Workstation Name'),
+        'language' => __('Language'),
+        'databaseSynchronizationInterval' => __('Database Synchronization Interval'),
+        'reminderInterval' => __('Reminder Interval'),
+        'backupPeriod' => __('Backup Period'),
+        'selectLanguage' => __('Select language'),
+        'selectSyncInterval' => __('Select sync interval'),
+        'selectReminderInterval' => __('Select reminder interval'),
+        'selectBackupPeriod' => __('Select backup period'),
+        'enableScheduler' => __('Enable Scheduler'),
+        'enableSchedulerDescription' => __('Allow the client application to run and remind scheduled tasks.'),
+        'schedulerAppliedOnNextSync' => __('Applied on the workstation after the next client sync.'),
+        'reminderRequiresScheduler' => __('Enable Scheduler first to adjust reminder timing.'),
+        'updateSoftwareAutomatically' => __('Update Software Automatically'),
+        'updateSoftwareAutomaticallyDescription' => __('Let the workstation pull approved software updates automatically.'),
         'unitsOfLength' => __('Units of Length'),
         'unitsOfLuminance' => __('Units of Luminance'),
         'veilingLuminance' => __('Veiling Luminance'),
@@ -74,6 +88,10 @@
         'maxLuminance' => __('Max Luminance'),
         'selectMaxLuminance' => __('Select max luminance'),
         'blackLevel' => __('Black Level'),
+        'applyWhiteLevel' => __('Apply white level target'),
+        'applyWhiteLevelDescription' => __('Tell the client to apply the selected max luminance target during calibration.'),
+        'applyBlackLevel' => __('Apply black level target'),
+        'applyBlackLevelDescription' => __('Tell the client to apply the selected black level target during calibration.'),
         'gamut' => __('Gamut'),
         'selectGamut' => __('Select gamut'),
         'createDisplayIccProfile' => __('Create Display ICC Profile'),
@@ -83,6 +101,10 @@
         'selectCategory' => __('Select category'),
         'bodyRegion' => __('Body Region'),
         'startDailyTestsAutomatically' => __('Start daily tests automatically'),
+        'qaStepsCatalog' => __('QA Steps Catalog'),
+        'qaStepsCatalogDescription' => __('Read-only QA step details received from the client application.'),
+        'qaStepsCatalogEmpty' => __('No QA step catalog has been received from this workstation yet.'),
+        'received' => __('Received'),
         'facilityLabel' => __('Facility Label'),
         'department' => __('Department'),
         'room' => __('Room'),
@@ -205,12 +227,16 @@
         border-bottom: 1px solid #e3ecf5;
         background: #f8fbff;
     }
-    .workstation-table-search {
+    .workstation-table-search-wrap {
+        position: relative;
         width: min(440px, 100%);
+    }
+    .workstation-table-search {
+        width: 100%;
         height: 42px;
         border-radius: 999px;
         border: 1px solid #c9d8e8;
-        padding: 0 16px;
+        padding: 0 46px 0 16px;
         font-size: 14px;
         font-weight: 600;
         color: #12263a;
@@ -220,6 +246,31 @@
         outline: none;
         border-color: #1d9bf0;
         box-shadow: 0 0 0 3px rgba(29, 155, 240, 0.16);
+    }
+    .workstation-table-search-clear {
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        display: inline-flex;
+        width: 28px;
+        height: 28px;
+        align-items: center;
+        justify-content: center;
+        transform: translateY(-50%);
+        border: 0;
+        border-radius: 999px;
+        color: #64748b;
+        background: transparent;
+        transition: background .18s ease, color .18s ease;
+    }
+    .workstation-table-search-clear:hover,
+    .workstation-table-search-clear:focus {
+        color: #0f172a;
+        background: #e8f2fb;
+        outline: none;
+    }
+    .workstation-table-search-clear[hidden] {
+        display: none;
     }
     .workstation-table-wrap {
         overflow-x: auto;
@@ -254,9 +305,53 @@
     }
     .workstation-table td:nth-child(2),
     .workstation-table td:nth-child(3) {
-        overflow: hidden;
+        overflow: visible;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+    .workstation-tooltip-cell {
+        position: relative;
+        display: block;
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: 100%;
+        vertical-align: middle;
+    }
+    .workstation-tooltip-bubble {
+        position: absolute;
+        left: 0;
+        bottom: calc(100% + 10px);
+        z-index: 80;
+        min-width: 220px;
+        max-width: min(420px, 70vw);
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: #0f172a;
+        color: #fff;
+        box-shadow: 0 18px 38px rgba(15, 23, 42, 0.22);
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.45;
+        letter-spacing: 0;
+        white-space: pre-line;
+        overflow-wrap: anywhere;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(4px);
+        transition: opacity .16s ease, transform .16s ease;
+    }
+    .workstation-tooltip-bubble::after {
+        content: '';
+        position: absolute;
+        left: 18px;
+        top: 100%;
+        border: 6px solid transparent;
+        border-top-color: #0f172a;
+    }
+    .workstation-tooltip-cell:hover .workstation-tooltip-bubble,
+    .workstation-tooltip-cell:focus .workstation-tooltip-bubble {
+        opacity: 1;
+        transform: translateY(0);
     }
     .workstation-table th:nth-child(4),
     .workstation-table th:nth-child(5),
@@ -302,7 +397,9 @@
         flex-shrink: 0;
     }
     .workstation-scope-link {
+        display: block;
         min-width: 0;
+        max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -437,7 +534,7 @@
             flex-direction: column;
             align-items: stretch;
         }
-        .workstation-table-search {
+        .workstation-table-search-wrap {
             width: 100%;
         }
         .workstation-table-footer {
@@ -515,7 +612,12 @@
         </div>
 
         <div class="workstation-table-toolbar">
-            <input id="workstation-table-search" type="text" class="workstation-table-search" placeholder="{{ __('Search workstations...') }}">
+            <div class="workstation-table-search-wrap">
+                <input id="workstation-table-search" type="text" class="workstation-table-search" placeholder="{{ __('Search workstations...') }}">
+                <button id="workstation-table-search-clear" type="button" class="workstation-table-search-clear" aria-label="{{ __('Clear search') }}" hidden>
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
             <div class="text-[12px] font-semibold text-slate-500" id="workstation-table-meta"></div>
         </div>
 
@@ -564,16 +666,16 @@
             <button
                 id="workstation-action-edit"
                 type="button"
-                class="flex w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-sky-50 hover:text-sky-700">
-                <i data-lucide="pencil-line" class="h-4 w-4"></i>
-                {{ __('Edit Workstation') }}
+                class="grid w-full grid-cols-[1rem_1fr] items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-sky-50 hover:text-sky-700">
+                <i data-lucide="settings" class="h-4 w-4"></i>
+                <span>{{ __('Workstation Setting') }}</span>
             </button>
             <button
                 id="workstation-action-delete"
                 type="button"
-                class="flex w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
+                class="grid w-full grid-cols-[1rem_1fr] items-center gap-3 whitespace-nowrap rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
                 <i data-lucide="trash-2" class="h-4 w-4"></i>
-                {{ __('Delete Workstation') }}
+                <span>{{ __('Delete Workstation') }}</span>
             </button>
         @endif
     </div>
@@ -583,7 +685,7 @@
     <div class="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]">
         <div class="flex items-start justify-between border-b border-slate-200 px-6 py-5">
             <div>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Edit Workstation') }}</p>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Workstation Settings') }}</p>
                 <h3 id="workstation-edit-title" class="mt-2 text-2xl font-semibold text-slate-900">{{ __('Update workstation details') }}</h3>
                 <p id="workstation-edit-subtitle" class="mt-2 text-sm text-slate-500">{{ __('Adjust workstation information and settings without leaving the table.') }}</p>
             </div>
@@ -765,10 +867,12 @@
         state.selectedWorkgroupId = state.config.selectedWorkgroupId || '';
 
         bindElements();
+        portalWorkstationLayersToBody();
         bindEvents();
         renderFilters();
         updateWorkstationSortIndicators();
         updateAttentionSortIndicators();
+        updateSearchClearButton();
         loadWorkstations();
         window.workstationsPage = {
             toggleActionMenu,
@@ -802,6 +906,7 @@
 
         els.resetFilters = document.getElementById('reset-workstation-filters');
         els.tableSearch = document.getElementById('workstation-table-search');
+        els.tableSearchClear = document.getElementById('workstation-table-search-clear');
         els.tableMeta = document.getElementById('workstation-table-meta');
         els.tableBody = document.getElementById('workstations-table-body');
         els.tableSummary = document.getElementById('workstation-table-summary');
@@ -845,6 +950,21 @@
         els.attentionSortButtons = Array.from(document.querySelectorAll('[data-attention-sort]'));
     }
 
+    function portalWorkstationLayersToBody() {
+        const nodes = [
+            els.actionOverlay,
+            els.editModal,
+            els.deleteModal,
+            els.attentionModal,
+        ].filter(Boolean);
+
+        nodes.forEach((node) => {
+            if (node.parentElement !== document.body) {
+                document.body.appendChild(node);
+            }
+        });
+    }
+
     function bindEvents() {
         els.facilityTrigger?.addEventListener('click', () => toggleDropdown('facility'));
         els.workgroupTrigger?.addEventListener('click', () => toggleDropdown('workgroup'));
@@ -868,6 +988,7 @@
 
         els.tableSearch?.addEventListener('input', (event) => {
             const value = String(event.target.value || '').trim();
+            updateSearchClearButton();
             if (state.workstationSearchTimer) {
                 window.clearTimeout(state.workstationSearchTimer);
             }
@@ -876,6 +997,26 @@
                 state.workstationPage = 1;
                 loadWorkstations();
             }, 260);
+        });
+
+        els.tableSearchClear?.addEventListener('click', () => {
+            if (!els.tableSearch) return;
+
+            if (state.workstationSearchTimer) {
+                window.clearTimeout(state.workstationSearchTimer);
+                state.workstationSearchTimer = null;
+            }
+
+            const hadSearch = els.tableSearch.value.length > 0 || state.workstationSearch.length > 0;
+            els.tableSearch.value = '';
+            state.workstationSearch = '';
+            state.workstationPage = 1;
+            updateSearchClearButton();
+            els.tableSearch.focus();
+
+            if (hadSearch) {
+                loadWorkstations();
+            }
         });
 
         els.sortButtons.forEach((button) => {
@@ -1005,6 +1146,16 @@
 
     function csrfToken() {
         return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    }
+
+    function updateSearchClearButton() {
+        if (!els.tableSearchClear || !els.tableSearch) return;
+
+        if (String(els.tableSearch.value || '').length > 0) {
+            els.tableSearchClear.removeAttribute('hidden');
+        } else {
+            els.tableSearchClear.setAttribute('hidden', 'hidden');
+        }
     }
 
     function getFacilityOptions() {
@@ -1173,6 +1324,11 @@
         if (els.facilitySearch) els.facilitySearch.value = '';
         if (els.workgroupSearch) els.workgroupSearch.value = '';
         if (els.tableSearch) els.tableSearch.value = '';
+        if (state.workstationSearchTimer) {
+            window.clearTimeout(state.workstationSearchTimer);
+            state.workstationSearchTimer = null;
+        }
+        updateSearchClearButton();
         closeDropdown();
         renderFilters();
         loadWorkstations();
@@ -1267,11 +1423,18 @@
         }
 
         els.tableBody.innerHTML = rows.map((item) => {
-            const failedCount = Number(item.failedDisplaysCount || 0);
+            const failedCount = Number(item.attentionCount || 0);
             const name = String(item.name || '-');
             const encodedName = encodeURIComponent(name);
             const wgName = String(item.wgName || '-');
             const facName = String(item.facName || '-');
+            const wgTooltip = wgName.trim() && wgName !== '-'
+                ? `<span class="workstation-tooltip-bubble" role="tooltip">${Perfectlum.escapeHtml(wgName)}</span>`
+                : '';
+            const facTooltip = facName.trim() && facName !== '-'
+                ? `<span class="workstation-tooltip-bubble" role="tooltip">${Perfectlum.escapeHtml(facName)}</span>`
+                : '';
+            const lastConnected = formatBrowserDateTime(item.lastConnectedAt, item.lastConnected || '-');
             return `
                 <tr class="workstation-row-clickable" data-action="open-workstation-row" data-workstation-id="${Number(item.id || 0)}">
                     <td>
@@ -1283,11 +1446,11 @@
                             </div>
                         </div>
                     </td>
-                    <td>${!item.wgId || wgName === '-' ? '-' : `<span class="workstation-scope-cell"><span class="workstation-scope-badge">WG</span><button type="button" data-action="open-hierarchy" data-hierarchy-type="workgroup" data-hierarchy-id="${Number(item.wgId || 0)}" class="workstation-scope-link cursor-pointer text-slate-600 transition hover:text-sky-600 hover:underline">${Perfectlum.escapeHtml(wgName)}</button></span>`}</td>
-                    <td>${!item.facId || facName === '-' ? '-' : `<span class="workstation-scope-cell"><span class="workstation-scope-badge">F</span><button type="button" data-action="open-hierarchy" data-hierarchy-type="facility" data-hierarchy-id="${Number(item.facId || 0)}" class="workstation-scope-link cursor-pointer text-slate-600 transition hover:text-sky-600 hover:underline">${Perfectlum.escapeHtml(facName)}</button></span>`}</td>
+                    <td>${!item.wgId || wgName === '-' ? '-' : `<span class="workstation-scope-cell"><span class="workstation-scope-badge">WG</span><span class="workstation-tooltip-cell min-w-0" tabindex="0" aria-label="${Perfectlum.escapeHtml(wgName)}"><button type="button" data-action="open-hierarchy" data-hierarchy-type="workgroup" data-hierarchy-id="${Number(item.wgId || 0)}" class="workstation-scope-link cursor-pointer text-slate-600 transition hover:text-sky-600 hover:underline">${Perfectlum.escapeHtml(wgName)}</button>${wgTooltip}</span></span>`}</td>
+                    <td>${!item.facId || facName === '-' ? '-' : `<span class="workstation-scope-cell"><span class="workstation-scope-badge">F</span><span class="workstation-tooltip-cell min-w-0" tabindex="0" aria-label="${Perfectlum.escapeHtml(facName)}"><button type="button" data-action="open-hierarchy" data-hierarchy-type="facility" data-hierarchy-id="${Number(item.facId || 0)}" class="workstation-scope-link cursor-pointer text-slate-600 transition hover:text-sky-600 hover:underline">${Perfectlum.escapeHtml(facName)}</button>${facTooltip}</span></span>`}</td>
                     <td>${Perfectlum.escapeHtml(String(item.sleepTime || '-'))}</td>
                     <td><span class="font-semibold text-slate-700">${Perfectlum.escapeHtml(String(item.displaysCount ?? 0))}</span></td>
-                    <td>${Perfectlum.escapeHtml(String(item.lastConnected || '-'))}</td>
+                    <td><div class="leading-tight"><div>${Perfectlum.escapeHtml(String(lastConnected.date || '-'))}</div>${lastConnected.time ? `<div class="mt-1">${Perfectlum.escapeHtml(String(lastConnected.time))}</div>` : ''}</div></td>
                     <td class="text-center">${!canManageWorkstations ? '' : `<button type="button" data-action="menu" data-workstation-id="${Number(item.id || 0)}" data-workstation-name="${encodedName}" class="workstation-row-action mx-auto transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2"></circle><circle cx="12" cy="5" r="2"></circle><circle cx="12" cy="19" r="2"></circle></svg></button>`}</td>
                 </tr>
             `;
@@ -1579,11 +1742,86 @@
         return boolValue(state.edit.settings?.[name]) ? 'checked' : '';
     }
 
+    function formatBrowserDateTime(value, fallback = '-') {
+        if (!value) return { date: fallback, time: '' };
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return { date: fallback, time: '' };
+
+        const parts = new Intl.DateTimeFormat(undefined, {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        }).formatToParts(date);
+
+        const datePart = [parts.find((part) => part.type === 'day')?.value, parts.find((part) => part.type === 'month')?.value, parts.find((part) => part.type === 'year')?.value]
+            .filter(Boolean)
+            .join(' ');
+        const timePart = [parts.find((part) => part.type === 'hour')?.value, parts.find((part) => part.type === 'minute')?.value]
+            .filter(Boolean)
+            .join(':');
+
+        return {
+            date: datePart || fallback,
+            time: timePart || '',
+        };
+    }
+
     function selectOptionsHtml(name, placeholder = 'Select an option', preferredOrder = []) {
         const current = String(state.edit.settings?.[name] ?? '');
         const options = parseOptionList(state.edit.options?.[name], preferredOrder);
+        const hasCurrentOption = options.some((option) => option.value === current);
         const placeholderOption = `<option value="">${Perfectlum.escapeHtml(placeholder)}</option>`;
         return placeholderOption + options.map((option) => `
+            <option value="${Perfectlum.escapeHtml(option.value)}" ${option.value === current ? 'selected' : ''}>
+                ${Perfectlum.escapeHtml(option.label)}
+            </option>
+        `).join('') + (current && !hasCurrentOption ? `
+            <option value="${Perfectlum.escapeHtml(current)}" selected>${Perfectlum.escapeHtml(current)}</option>
+        ` : '');
+    }
+
+    function colorTemperatureSelectionState() {
+        const raw = state.edit.options?.ColorTemperatureAdjustment_extcombo
+            || state.edit.options?.ColorTemperatureAdjustment
+            || {};
+        const options = parseOptionList(raw);
+        const presetValues = new Set(['native', ...options.map((option) => String(option.value))]);
+        const current = String(state.edit.settings?.ColorTemperatureAdjustment ?? '');
+        const customValue = String(state.edit.settings?.ColorTemperatureAdjustment_ext ?? '');
+        const isCustom = current === '20' || (current !== '' && !presetValues.has(current));
+
+        return {
+            isCustom,
+            selectValue: isCustom ? '20' : current,
+            inputValue: isCustom ? (current === '20' ? customValue : current) : customValue,
+        };
+    }
+
+    function colorTemperatureOptionsHtml() {
+        const current = colorTemperatureSelectionState().selectValue;
+        const raw = state.edit.options?.ColorTemperatureAdjustment_extcombo
+            || state.edit.options?.ColorTemperatureAdjustment
+            || {};
+        const options = parseOptionList(raw);
+        const normalized = [];
+        const seen = new Set();
+
+        [{ value: 'native', label: 'native' }, ...options].forEach((option) => {
+            const key = String(option.value);
+            if (seen.has(key)) return;
+            seen.add(key);
+            normalized.push({
+                value: key,
+                label: String(option.label),
+            });
+        });
+
+        const placeholderOption = `<option value="">${Perfectlum.escapeHtml(text.selectTemperature)}</option>`;
+
+        return placeholderOption + normalized.map((option) => `
             <option value="${Perfectlum.escapeHtml(option.value)}" ${option.value === current ? 'selected' : ''}>
                 ${Perfectlum.escapeHtml(option.label)}
             </option>
@@ -1640,6 +1878,31 @@
                     </div>
                     <div class="grid gap-5 md:grid-cols-2">
                         <label class="space-y-2">
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.language)}</span>
+                            <select name="Language" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                                ${selectOptionsHtml('Language', text.selectLanguage)}
+                            </select>
+                        </label>
+                        <label class="space-y-2">
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.databaseSynchronizationInterval)}</span>
+                            <select name="DataBaseSynchronizationInterval" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                                ${selectOptionsHtml('DataBaseSynchronizationInterval', text.selectSyncInterval)}
+                            </select>
+                        </label>
+                        <label class="space-y-2">
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.reminderInterval)}</span>
+                            <select name="RemindMinutes" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400" ${state.edit.settings.UseScheduler ? '' : 'disabled'}>
+                                ${selectOptionsHtml('RemindMinutes', text.selectReminderInterval)}
+                            </select>
+                            <p class="text-xs text-slate-500">${Perfectlum.escapeHtml(state.edit.settings.UseScheduler ? text.schedulerAppliedOnNextSync : text.reminderRequiresScheduler)}</p>
+                        </label>
+                        <label class="space-y-2">
+                            <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.backupPeriod)}</span>
+                            <select name="backupPeriod" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                                ${selectOptionsHtml('backupPeriod', text.selectBackupPeriod)}
+                            </select>
+                        </label>
+                        <label class="space-y-2">
                             <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.unitsOfLength)}</span>
                             <select name="units" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                                 ${selectOptionsHtml('units', text.selectLengthUnit)}
@@ -1670,6 +1933,23 @@
                             <input name="EndEnergySaveMode" value="${inputValue('EndEnergySaveMode')}" type="text" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         </label>
                     </div>
+                    <div class="mt-5 grid gap-3 md:grid-cols-2">
+                        <label class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">
+                            <input name="UseScheduler" type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500" ${checkedAttr('UseScheduler')}>
+                            <span class="space-y-1">
+                                <span class="block font-semibold text-slate-800">${Perfectlum.escapeHtml(text.enableScheduler)}</span>
+                                <span class="block text-xs leading-5 text-slate-500">${Perfectlum.escapeHtml(text.enableSchedulerDescription)}</span>
+                            </span>
+                        </label>
+                        <label class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">
+                            <input name="UpdateSoftwareAutomaticaly" type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500" ${checkedAttr('UpdateSoftwareAutomaticaly')}>
+                            <span class="space-y-1">
+                                <span class="block font-semibold text-slate-800">${Perfectlum.escapeHtml(text.updateSoftwareAutomatically)}</span>
+                                <span class="block text-xs leading-5 text-slate-500">${Perfectlum.escapeHtml(text.updateSoftwareAutomaticallyDescription)}</span>
+                            </span>
+                        </label>
+                    </div>
+                    <p class="mt-3 text-xs text-slate-500">${Perfectlum.escapeHtml(text.schedulerAppliedOnNextSync)}</p>
                     <label class="mt-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-700">
                         <input name="PutDisplaysToEnergySaveMode" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500" ${checkedAttr('PutDisplaysToEnergySaveMode')}>
                         ${Perfectlum.escapeHtml(text.enableDisplayEnergySaveMode)}
@@ -1680,6 +1960,7 @@
     }
 
     function renderDisplayCalibrationTab() {
+        const colorTemperature = colorTemperatureSelectionState();
         return `
             <div class="grid gap-5 lg:grid-cols-2">
                 <div class="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
@@ -1696,12 +1977,24 @@
                                 ${selectOptionsHtml('CalibrationType', text.selectResponse)}
                             </select>
                         </label>
-                        <label class="space-y-2">
+                        <div class="space-y-2">
                             <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.colorTemperature)}</span>
-                            <select name="ColorTemperatureAdjustment" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                                ${selectOptionsHtml('ColorTemperatureAdjustment_extcombo', text.selectTemperature)}
-                            </select>
-                        </label>
+                            <div class="grid gap-3 ${colorTemperature.isCustom ? 'grid-cols-[minmax(0,1fr)_220px]' : 'grid-cols-1'}">
+                                <select name="ColorTemperatureAdjustment" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                                    ${colorTemperatureOptionsHtml()}
+                                </select>
+                                ${colorTemperature.isCustom ? `
+                                    <input
+                                        name="ColorTemperatureAdjustment_ext"
+                                        value="${Perfectlum.escapeHtml(colorTemperature.inputValue)}"
+                                        type="text"
+                                        inputmode="numeric"
+                                        placeholder="Custom value"
+                                        class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                                    >
+                                ` : ''}
+                            </div>
+                        </div>
                         <label class="space-y-2">
                             <span class="text-sm font-semibold text-slate-700">${Perfectlum.escapeHtml(text.maxLuminance)}</span>
                             <select name="WhiteLevel" class="h-12 w-full rounded-2xl border border-slate-200 px-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
@@ -1718,11 +2011,104 @@
                                 ${selectOptionsHtml('gamut_name', text.selectGamut)}
                             </select>
                         </label>
+                        <div class="grid gap-3 md:col-span-2 md:grid-cols-2">
+                            <label class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">
+                                <input name="SetWhiteLevel" type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500" ${checkedAttr('SetWhiteLevel')}>
+                                <span class="space-y-1">
+                                    <span class="block font-semibold text-slate-800">${Perfectlum.escapeHtml(text.applyWhiteLevel)}</span>
+                                    <span class="block text-xs leading-5 text-slate-500">${Perfectlum.escapeHtml(text.applyWhiteLevelDescription)}</span>
+                                </span>
+                            </label>
+                            <label class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">
+                                <input name="SetBlackLevel" type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500" ${checkedAttr('SetBlackLevel')}>
+                                <span class="space-y-1">
+                                    <span class="block font-semibold text-slate-800">${Perfectlum.escapeHtml(text.applyBlackLevel)}</span>
+                                    <span class="block text-xs leading-5 text-slate-500">${Perfectlum.escapeHtml(text.applyBlackLevelDescription)}</span>
+                                </span>
+                            </label>
+                        </div>
                     </div>
                     <label class="mt-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-700">
                         <input name="CreateICCICMProfile" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500" ${checkedAttr('CreateICCICMProfile')}>
                         ${Perfectlum.escapeHtml(text.createDisplayIccProfile)}
                     </label>
+                </div>
+            </div>
+        `;
+    }
+
+    function qaStepsCatalogState() {
+        const raw = state.edit.settings?.QA_steps_catalog;
+        if (!raw) return { receivedAt: '', steps: [] };
+
+        try {
+            const decoded = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            const stepsPayload = decoded?.steps ?? decoded;
+            let steps = [];
+
+            if (Array.isArray(stepsPayload)) {
+                steps = stepsPayload;
+            } else if (stepsPayload && typeof stepsPayload === 'object') {
+                steps = Object.entries(stepsPayload).map(([key, value]) => {
+                    if (value && typeof value === 'object') {
+                        return { key, ...value };
+                    }
+                    return { key, name: value };
+                });
+            }
+
+            return {
+                receivedAt: decoded?.received_at || '',
+                steps: steps.filter((step) => step && typeof step === 'object'),
+            };
+        } catch (error) {
+            return { receivedAt: '', steps: [] };
+        }
+    }
+
+    function renderQaStepsCatalog() {
+        const catalog = qaStepsCatalogState();
+        if (!catalog.steps.length) {
+            return `
+                <div class="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                    ${Perfectlum.escapeHtml(text.qaStepsCatalogEmpty)}
+                </div>
+            `;
+        }
+
+        const received = catalog.receivedAt ? formatBrowserDateTime(catalog.receivedAt) : null;
+        const rows = catalog.steps.slice(0, 80).map((step, index) => {
+            const label = step.name || step.title || step.caption || step.stepName || step.key || step.id || `Step ${index + 1}`;
+            const detail = step.description || step.text || step.type || step.group || step.category || step.limit || '';
+            const identifier = step.id || step.stepId || step.step_id || step.key || '';
+
+            return `
+                <tr class="border-t border-slate-100">
+                    <td class="px-3 py-2 text-xs font-semibold text-slate-500">${index + 1}</td>
+                    <td class="px-3 py-2 text-sm font-semibold text-slate-800">${Perfectlum.escapeHtml(String(label))}</td>
+                    <td class="px-3 py-2 text-xs text-slate-500">${Perfectlum.escapeHtml(String(identifier || '-'))}</td>
+                    <td class="px-3 py-2 text-xs text-slate-500">${Perfectlum.escapeHtml(String(detail || '-'))}</td>
+                </tr>
+            `;
+        }).join('');
+
+        return `
+            <div class="mt-5 rounded-[1.25rem] border border-slate-200 bg-white shadow-sm">
+                <div class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-4 py-4">
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-900">${Perfectlum.escapeHtml(text.qaStepsCatalog)}</h4>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">${Perfectlum.escapeHtml(text.qaStepsCatalogDescription)}</p>
+                    </div>
+                    ${received ? `
+                        <span class="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-500">
+                            ${Perfectlum.escapeHtml(text.received)}: ${Perfectlum.escapeHtml(received.date)} ${Perfectlum.escapeHtml(received.time)}
+                        </span>
+                    ` : ''}
+                </div>
+                <div class="max-h-64 overflow-y-auto">
+                    <table class="min-w-full table-fixed">
+                        <tbody>${rows}</tbody>
+                    </table>
                 </div>
             </div>
         `;
@@ -1754,6 +2140,7 @@
                         <input name="AutoDailyTests" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500" ${checkedAttr('AutoDailyTests')}>
                         ${Perfectlum.escapeHtml(text.startDailyTestsAutomatically)}
                     </label>
+                    ${renderQaStepsCatalog()}
                 </div>
             </div>
         `;
@@ -1824,6 +2211,17 @@
             input.addEventListener(eventName, async (event) => {
                 const target = event.currentTarget;
                 state.edit.settings[target.name] = target.type === 'checkbox' ? target.checked : target.value;
+                if (target.name === 'UseScheduler') {
+                    renderEditModal();
+                    return;
+                }
+                if (target.name === 'ColorTemperatureAdjustment') {
+                    if (target.value !== '20') {
+                        state.edit.settings.ColorTemperatureAdjustment_ext = '';
+                    }
+                    renderEditModal();
+                    return;
+                }
                 if (target.id === 'workstation-edit-regulation') {
                     await refreshClassificationOptions(target.value);
                 }
@@ -1844,11 +2242,11 @@
         window.lucide?.createIcons();
     }
 
-    async function refreshClassificationOptions(regulation) {
+    async function refreshClassificationOptions(regulation, target = 'UsedClassification') {
         if (!state.edit.id) return;
         try {
             const items = await Perfectlum.request(`/app-settings/get/categories?id=ws-${state.edit.id}&regulation=${encodeURIComponent(regulation || '')}`);
-            state.edit.options.UsedClassification = items.reduce((acc, item) => {
+            state.edit.options[target] = items.reduce((acc, item) => {
                 acc[item.key] = item.value;
                 return acc;
             }, {});
@@ -1897,11 +2295,21 @@
                 ...payload.data,
                 name: payload.data?.name ?? meta.name ?? '',
                 workgroup_id: String(payload.data?.workgroup_id ?? meta.workgroup?.id ?? ''),
+                UseScheduler: boolValue(payload.data?.UseScheduler),
+                UpdateSoftwareAutomaticaly: boolValue(payload.data?.UpdateSoftwareAutomaticaly),
                 PutDisplaysToEnergySaveMode: boolValue(payload.data?.PutDisplaysToEnergySaveMode),
                 CreateICCICMProfile: boolValue(payload.data?.CreateICCICMProfile),
                 AutoDailyTests: boolValue(payload.data?.AutoDailyTests),
             };
             state.edit.options = payload.options || {};
+            const knownColorTemps = new Set([
+                'native',
+                ...parseOptionList(state.edit.options?.ColorTemperatureAdjustment_extcombo || state.edit.options?.ColorTemperatureAdjustment || {}).map((option) => String(option.value)),
+            ]);
+            const currentColorTemp = String(state.edit.settings.ColorTemperatureAdjustment ?? '');
+            if (currentColorTemp && !knownColorTemps.has(currentColorTemp)) {
+                state.edit.settings.ColorTemperatureAdjustment_ext = currentColorTemp;
+            }
             els.editTitle.textContent = meta.name || text.updateWorkstationDetails;
             els.editSubtitle.textContent = `${meta.facility?.name || '-'} / ${meta.workgroup?.name || '-'} / ${meta.name || '-'}`;
             els.editLoading.classList.add('hidden');
@@ -1926,13 +2334,17 @@
         let endpoint = `/app-settings/save/app/ws-${state.edit.id}`;
 
         if (state.edit.tab === 'application') {
-            ['name', 'workgroup_id', 'units', 'LumUnits', 'AmbientLight', 'AmbientStable', 'StartEnergySaveMode', 'EndEnergySaveMode']
+            ['name', 'workgroup_id', 'Language', 'DataBaseSynchronizationInterval', 'RemindMinutes', 'backupPeriod', 'units', 'LumUnits', 'AmbientLight', 'AmbientStable', 'StartEnergySaveMode', 'EndEnergySaveMode']
                 .forEach((key) => formData.append(key, state.edit.settings[key] ?? ''));
+            formData.append('UseScheduler', state.edit.settings.UseScheduler ? '1' : '0');
+            formData.append('UpdateSoftwareAutomaticaly', state.edit.settings.UpdateSoftwareAutomaticaly ? '1' : '0');
             formData.append('PutDisplaysToEnergySaveMode', state.edit.settings.PutDisplaysToEnergySaveMode ? '1' : '0');
         } else if (state.edit.tab === 'display-calibration') {
             endpoint = `/app-settings/save/dc/ws-${state.edit.id}`;
-            ['CalibrationPresents', 'CalibrationType', 'ColorTemperatureAdjustment', 'WhiteLevel', 'BlackLevel', 'gamut_name']
+            ['CalibrationPresents', 'CalibrationType', 'ColorTemperatureAdjustment', 'ColorTemperatureAdjustment_ext', 'WhiteLevel', 'BlackLevel', 'gamut_name']
                 .forEach((key) => formData.append(key, state.edit.settings[key] ?? ''));
+            formData.append('SetWhiteLevel', state.edit.settings.SetWhiteLevel ? 'true' : 'false');
+            formData.append('SetBlackLevel', state.edit.settings.SetBlackLevel ? 'true' : 'false');
             formData.append('CreateICCICMProfile', state.edit.settings.CreateICCICMProfile ? '1' : '0');
         } else if (state.edit.tab === 'quality-assurance') {
             endpoint = `/app-settings/save/qa/ws-${state.edit.id}`;
@@ -2009,6 +2421,7 @@
                 throw new Error(payload.msg || text.unableToDeleteWorkstation);
             }
             closeDeleteModal();
+            window.notify?.('success', payload.msg || 'Workstation deleted successfully.');
             loadWorkstations();
         } catch (error) {
             window.alert(error.message || text.unableToDeleteWorkstation);

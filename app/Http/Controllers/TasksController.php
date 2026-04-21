@@ -103,6 +103,73 @@ class TasksController extends Controller
             ->timestamp;
     }
 
+    protected function taskRequestWantsJson(Request $request): bool
+    {
+        return $request->ajax() || $request->expectsJson();
+    }
+
+    protected function taskValidationFailure(Request $request, string $message, array $errors = [], int $status = 422)
+    {
+        if ($this->taskRequestWantsJson($request)) {
+            return response()->json([
+                'success' => 0,
+                'message' => $message,
+                'errors' => $errors ?: ['startdate' => [$message]],
+            ], $status);
+        }
+
+        return back()->withErrors($errors ?: ['startdate' => $message])->withInput();
+    }
+
+    protected function validateStartDateNotPast(Request $request, array $displayIds = [], ?\App\Models\Task $task = null): ?string
+    {
+        $rawDate = trim((string) $request->input('startdate', ''));
+        if ($rawDate === '') {
+            return null;
+        }
+
+        $normalizedDate = str_replace('.', '-', $rawDate);
+        try {
+            Carbon::createFromFormat('Y-m-d', $normalizedDate);
+        } catch (\Throwable $e) {
+            return 'Start date is invalid.';
+        }
+
+        $timezones = collect();
+        if ($task) {
+            $timezones->push($this->resolveTaskTimezone($task));
+        }
+
+        if (!empty($displayIds)) {
+            $displayTimezones = \App\Models\Display::query()
+                ->join('workstations', 'workstations.id', '=', 'displays.workstation_id')
+                ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+                ->join('facilities', 'facilities.id', '=', 'workgroups.facility_id')
+                ->whereIn('displays.id', $displayIds)
+                ->pluck('facilities.timezone');
+            $timezones = $timezones->merge($displayTimezones);
+        }
+
+        $timezones = $timezones
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($timezones->isEmpty()) {
+            $timezones->push(config('app.timezone', 'UTC'));
+        }
+
+        foreach ($timezones as $timezone) {
+            $selectedDate = Carbon::createFromFormat('Y-m-d', $normalizedDate, $timezone)->startOfDay();
+            $today = Carbon::now($timezone)->startOfDay();
+            if ($selectedDate->lt($today)) {
+                return 'Start date cannot be in the past.';
+            }
+        }
+
+        return null;
+    }
+
     public function edit_task(Request $request)
     {
         $user = $this->taskManager($request);
@@ -173,6 +240,8 @@ class TasksController extends Controller
             'request' => $request,
             'quickCalibration' => $request->boolean('quick_calibration'),
             'lockTaskType' => $request->boolean('lock_tasktype') || $request->boolean('quick_calibration'),
+            'rescheduleLite' => $request->boolean('reschedule_lite'),
+            'minStartDate' => Carbon::now(config('app.timezone', 'UTC'))->format('Y-m-d'),
         );
 
         $data=array();
@@ -219,6 +288,10 @@ class TasksController extends Controller
                 ], 422);
             }
 
+            if ($message = $this->validateStartDateNotPast($request, $displayIds)) {
+                return $this->taskValidationFailure($request, $message);
+            }
+
             foreach ($displayIds as $displayId) {
                 $task = new Task();
                 $task->display_id = $displayId;
@@ -241,6 +314,10 @@ class TasksController extends Controller
                 return response()->json(['success' => 0, 'message' => 'You do not have access to update this task.'], 403);
             }
 
+            if ($message = $this->validateStartDateNotPast($request, [], $task)) {
+                return $this->taskValidationFailure($request, $message);
+            }
+
             $this->setTask($task, $request);
             $task->nextrun = $this->computeTaskNextRunTimestamp($task);
             $task->updated_at = now();
@@ -248,6 +325,10 @@ class TasksController extends Controller
         }
 
         $data['success']=1;
+        if (!$this->taskRequestWantsJson($request)) {
+            return back()->with('success', 'Task saved successfully.');
+        }
+
         return response()->json($data);
     }
 

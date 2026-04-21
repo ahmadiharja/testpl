@@ -147,10 +147,22 @@
                             <form id="mapp-form-application" class="mapp-field">
                                 {{ csrf_field() }}
                                 <div class="mapp-grid two">
+                                    <label><span>{{ __('Language') }}</span><select id="Language" name="Language"></select></label>
+                                    <label><span>{{ __('Database Synchronization Interval') }}</span><select id="DataBaseSynchronizationInterval" name="DataBaseSynchronizationInterval"></select></label>
+                                    <label><span>{{ __('Reminder Interval') }}</span><select id="RemindMinutes" name="RemindMinutes"></select><small>{{ __('Applied on the workstation after the next client sync.') }}</small></label>
+                                    <label><span>{{ __('Backup Period') }}</span><select id="backupPeriod" name="backupPeriod"></select></label>
                                     <label><span>{{ __('Units of Length') }}</span><select id="units" name="units"></select></label>
                                     <label><span>{{ __('Units of Luminance') }}</span><select id="LumUnits" name="LumUnits"></select></label>
                                     <label><span>{{ __('Veiling Luminance') }}</span><input id="AmbientLight" name="AmbientLight" type="text"></label>
                                     <label><span>{{ __('Ambient Conditions Stable') }}</span><select id="AmbientStable" name="AmbientStable"></select></label>
+                                </div>
+                                <div class="mapp-toggle">
+                                    <div><span>{{ __('Scheduler') }}</span><strong>{{ __('Enable scheduler') }}</strong><small>{{ __('Allow scheduled workstation actions.') }}</small></div>
+                                    <input id="UseScheduler" name="UseScheduler" type="checkbox" value="1">
+                                </div>
+                                <div class="mapp-toggle">
+                                    <div><span>{{ __('Software updates') }}</span><strong>{{ __('Update automatically') }}</strong><small>{{ __('Allow automatic software updates.') }}</small></div>
+                                    <input id="UpdateSoftwareAutomaticaly" name="UpdateSoftwareAutomaticaly" type="checkbox" value="1">
                                 </div>
                                 <div class="mapp-toggle">
                                     <div><span>{{ __('Energy save mode') }}</span><strong>{{ __('Enable schedule window') }}</strong><small>{{ __('Apply start and end times.') }}</small></div>
@@ -370,7 +382,7 @@
                     location: { label: txt.location, action: 'location' },
                     move: { label: txt.move, action: 'app' },
                 };
-                const fieldIds = ['units','LumUnits','AmbientLight','AmbientStable','PutDisplaysToEnergySaveMode','StartEnergySaveMode','EndEnergySaveMode','CalibrationPresents','CalibrationType','Gamma','gamut_name','ColorTemperatureAdjustment','ColorTemperatureAdjustment_ext','WhiteLevel_u_extcombo','WhiteLevel_u_input','WhiteLevel','BlackLevel','SetWhiteLevel','SetBlackLevel','CreateICCICMProfile','UsedRegulation','UsedClassification','UsedClassificationForLastScheduling','UsedRegulationForLastScheduling','bodyRegion','AutoDailyTests','Facility','Department','Room','ResponsiblePersonName','ResponsiblePersonAddress','ResponsiblePersonCity','ResponsiblePersonEmail','ResponsiblePersonPhoneNumber','workgroup_id'];
+                const fieldIds = ['Language','DataBaseSynchronizationInterval','RemindMinutes','backupPeriod','UseScheduler','UpdateSoftwareAutomaticaly','units','LumUnits','AmbientLight','AmbientStable','PutDisplaysToEnergySaveMode','StartEnergySaveMode','EndEnergySaveMode','CalibrationPresents','CalibrationType','Gamma','gamut_name','ColorTemperatureAdjustment','ColorTemperatureAdjustment_ext','WhiteLevel_u_extcombo','WhiteLevel_u_input','WhiteLevel','BlackLevel','SetWhiteLevel','SetBlackLevel','CreateICCICMProfile','UsedRegulation','UsedClassification','UsedClassificationForLastScheduling','UsedRegulationForLastScheduling','bodyRegion','AutoDailyTests','Facility','Department','Room','ResponsiblePersonName','ResponsiblePersonAddress','ResponsiblePersonCity','ResponsiblePersonEmail','ResponsiblePersonPhoneNumber','workgroup_id'];
                 const curMap = () => st.entityMaps[st.targetType];
                 const curSel = () => Array.from(st.selections).map((scope) => curMap().get(scope)).filter(Boolean);
                 const isMixed = (field) => (st.currentPayload?.meta?.mixedFields || []).includes(field);
@@ -421,6 +433,12 @@
                 };
                 const syncFields = () => {
                     byId('mapp-energy-fields')?.classList.toggle('hidden', !byId('PutDisplaysToEnergySaveMode')?.checked);
+                    const reminderSelect = byId('RemindMinutes');
+                    const schedulerEnabled = !!byId('UseScheduler')?.checked;
+                    if (reminderSelect) {
+                        reminderSelect.disabled = !schedulerEnabled;
+                        reminderSelect.classList.toggle('disabled', !schedulerEnabled);
+                    }
                     byId('mapp-color-wrap')?.classList.toggle('hidden', byId('ColorTemperatureAdjustment')?.value !== '20');
                     byId('mapp-white-wrap')?.classList.toggle('hidden', byId('WhiteLevel_u_extcombo')?.value !== 'custom');
                     const reg = byId('UsedRegulation')?.value;
@@ -506,6 +524,10 @@
                 const updateSelection = (scope, checked) => { if (checked) st.selections.add(scope); else st.selections.delete(scope); renderBrowser(); renderSummary(); };
                 const resetForms = () => {
                     fieldIds.forEach((id) => { setVal(id, ''); setMixed(id, false); });
+                    fillSelect('Language', optSrc('Language', null), '', false, @json(__('Select language')));
+                    fillSelect('DataBaseSynchronizationInterval', optSrc('DataBaseSynchronizationInterval', null), '', false, @json(__('Select sync interval')));
+                    fillSelect('RemindMinutes', optSrc('RemindMinutes', null), '', false, @json(__('Select reminder interval')));
+                    fillSelect('backupPeriod', optSrc('backupPeriod', null), '', false, @json(__('Select backup period')));
                     fillSelect('units', optSrc('units', null), '', false, txt.selectLen);
                     fillSelect('LumUnits', optSrc('LumUnits', null), '', false, txt.selectLum);
                     fillSelect('AmbientStable', optSrc('AmbientStable', null), '', false, txt.selectVal);
@@ -533,6 +555,10 @@
                 const applyPayload = async () => {
                     const payload = st.currentPayload || { data: {}, options: {}, meta: { mixedFields: [] } };
                     const data = payload.data || {}; const opts = payload.options || {};
+                    fillSelect('Language', optSrc('Language', opts.Language), data.Language, isMixed('Language'), @json(__('Select language')));
+                    fillSelect('DataBaseSynchronizationInterval', optSrc('DataBaseSynchronizationInterval', opts.DataBaseSynchronizationInterval), data.DataBaseSynchronizationInterval, isMixed('DataBaseSynchronizationInterval'), @json(__('Select sync interval')));
+                    fillSelect('RemindMinutes', optSrc('RemindMinutes', opts.RemindMinutes), data.RemindMinutes, isMixed('RemindMinutes'), @json(__('Select reminder interval')));
+                    fillSelect('backupPeriod', optSrc('backupPeriod', opts.backupPeriod), data.backupPeriod, isMixed('backupPeriod'), @json(__('Select backup period')));
                     fillSelect('units', optSrc('units', opts.units), data.units, isMixed('units'), txt.selectLen);
                     fillSelect('LumUnits', optSrc('LumUnits', opts.LumUnits), data.LumUnits, isMixed('LumUnits'), txt.selectLum);
                     fillSelect('AmbientStable', optSrc('AmbientStable', opts.AmbientStable), data.AmbientStable, isMixed('AmbientStable'), txt.selectVal);
@@ -544,7 +570,7 @@
                     fillSelect('workgroup_id', optSrc('workgroup_id', opts.workgroup_id), data.workgroup_id, false, moveEnabled() ? txt.selectDest : txt.moveOff);
                     const moveSelect = byId('workgroup_id'); if (moveSelect) moveSelect.disabled = !moveEnabled();
                     fieldIds.forEach((id) => {
-                        if (['units','LumUnits','AmbientStable','CalibrationPresents','CalibrationType','ColorTemperatureAdjustment','WhiteLevel_u_extcombo','UsedRegulation','UsedClassification','workgroup_id'].includes(id)) return;
+                        if (['Language','DataBaseSynchronizationInterval','RemindMinutes','backupPeriod','units','LumUnits','AmbientStable','CalibrationPresents','CalibrationType','ColorTemperatureAdjustment','WhiteLevel_u_extcombo','UsedRegulation','UsedClassification','workgroup_id'].includes(id)) return;
                         setVal(id, data[id]);
                     });
                     fieldIds.forEach((id) => setMixed(id, isMixed(id)));
@@ -597,8 +623,17 @@
                     const forms = { application:'mapp-form-application', calibration:'mapp-form-calibration', qa:'mapp-form-qa', location:'mapp-form-location', move:'mapp-form-move' };
                     const form = byId(forms[st.modalTab]); if (!form) return;
                     st.saving = true; renderPanels(); setStatus(txt.saving);
+                    const checkboxFieldsByTab = {
+                        application: ['PutDisplaysToEnergySaveMode', 'UseScheduler', 'UpdateSoftwareAutomaticaly'],
+                        calibration: ['CreateICCICMProfile'],
+                        qa: ['AutoDailyTests'],
+                    };
                     for (const scope of saveScopes()) {
                         const body = new FormData(form);
+                        (checkboxFieldsByTab[st.modalTab] || []).forEach((id) => {
+                            const field = byId(id);
+                            if (field) body.set(id, field.checked ? '1' : '0');
+                        });
                         const response = await fetch(`/app-settings/save/${tabs[st.modalTab].action}/${scope}`, { method:'POST', headers:{ 'X-CSRF-TOKEN': cfg.csrf }, body });
                         if (!response.ok) { st.saving = false; renderPanels(); setStatus(txt.saveFailed, 'error'); return; }
                     }

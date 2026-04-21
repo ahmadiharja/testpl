@@ -2,10 +2,7 @@
 
 namespace App\Exports;
 
-use Illuminate\Contracts\View\View;
-use Maatwebsite\Excel\Concerns\FromView;
-
-class DisplayCalibrationExport implements FromView
+class DisplayCalibrationExport extends StyledReportExport
 {
     private $_data, $_from, $_to, $_site;
 
@@ -15,15 +12,26 @@ class DisplayCalibrationExport implements FromView
         $this->_to = $to;
         $this->_site = $site;
     }
-    
-    public function view(): View
-    {
-        return view('reports.display_calibration_excel', [
-            'data' => $this->_data,
-            'from' => $this->_from,
-            'to' => $this->_to,
-            'site' => $this->_site
-        ]);
-    }
 
+    protected function report(): array
+    {
+        $rows = $this->collection($this->_data);
+
+        return [
+            'title' => 'Display Calibration Schedules',
+            'subtitle' => 'Calibration tasks exported from the selected display scope.',
+            'generatedAt' => now()->format('d M Y H:i'),
+            'total' => $rows->count(),
+            'columns' => ['Display', 'Workstation', 'Workgroup', 'Facility', 'Task Type', 'Schedule Type', 'Due Date'],
+            'rows' => $rows->map(fn($task) => [
+                $this->displayName($task->display),
+                optional(optional($task->display)->workstation)->name ?: '-',
+                optional(optional(optional($task->display)->workstation)->workgroup)->name ?: '-',
+                optional(optional(optional(optional($task->display)->workstation)->workgroup)->facility)->name ?: '-',
+                optional($task->taskType)->title ?: ($task->type ?? '-'),
+                optional($task->ScheduleType)->title ?: ($task->schtype ?? '-'),
+                $this->dueDateForTask($task),
+            ])->values()->all(),
+        ];
+    }
 }

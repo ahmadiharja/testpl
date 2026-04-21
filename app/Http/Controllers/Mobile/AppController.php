@@ -26,6 +26,24 @@ use Illuminate\Support\Str;
 
 class AppController extends Controller
 {
+    protected function staleQaTaskCutoff(): string
+    {
+        return now()->subDays(60)->toDateTimeString();
+    }
+
+    protected function applyQaTaskVisibilityGuard($query)
+    {
+        $cutoff = $this->staleQaTaskCutoff();
+
+        return $query->where(function ($q) use ($cutoff) {
+            $q->where('qa_tasks.updated_at', '>=', $cutoff)
+                ->orWhereHas('display.workstation', function ($workstationQuery) use ($cutoff) {
+                    $workstationQuery->whereNotNull('last_connected')
+                        ->where('last_connected', '>=', $cutoff);
+                });
+        });
+    }
+
     protected function loadSettings(): array
     {
         if (!Schema::hasTable('settings')) {
@@ -188,6 +206,10 @@ class AppController extends Controller
     protected function buildWorkstationOptionCatalog(array $workstationIds): array
     {
         $settingNames = [
+            'Language',
+            'DataBaseSynchronizationInterval',
+            'RemindMinutes',
+            'backupPeriod',
             'units',
             'LumUnits',
             'AmbientStable',
@@ -430,7 +452,9 @@ class AppController extends Controller
             })
             ->when($facilityId, function ($query) use ($facilityId) {
                 return $query->whereHas('display.workstation.workgroup', fn ($scope) => $scope->where('facility_id', $facilityId));
-            })
+            });
+
+        $qaTasksCount = $this->applyQaTaskVisibilityGuard($qaTasksCount)
             ->count();
 
         return [

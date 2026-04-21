@@ -32,6 +32,9 @@
         'updateFacilityDetails' => __('Update facility details'),
         'unableToLoadFacilityForm' => __('Unable to load facility form.'),
         'unableToSaveFacility' => __('Unable to save facility.'),
+        'facilityCreated' => __('Facility created successfully.'),
+        'facilityUpdated' => __('Facility updated successfully.'),
+        'facilityDeleted' => __('Facility deleted successfully.'),
         'deleteFacility' => __('Delete Facility'),
         'deleting' => __('Deleting...'),
         'unableToDeleteFacility' => __('Unable to delete facility.'),
@@ -114,12 +117,16 @@
         border-bottom: 1px solid #e3ecf5;
         background: #f8fbff;
     }
-    .facility-table-search {
+    .facility-table-search-wrap {
+        position: relative;
         width: min(440px, 100%);
+    }
+    .facility-table-search {
+        width: 100%;
         height: 42px;
         border-radius: 999px;
         border: 1px solid #c9d8e8;
-        padding: 0 16px;
+        padding: 0 46px 0 16px;
         font-size: 14px;
         font-weight: 600;
         color: #12263a;
@@ -129,6 +136,31 @@
         outline: none;
         border-color: #1d9bf0;
         box-shadow: 0 0 0 3px rgba(29, 155, 240, 0.16);
+    }
+    .facility-table-search-clear {
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        display: inline-flex;
+        width: 28px;
+        height: 28px;
+        align-items: center;
+        justify-content: center;
+        transform: translateY(-50%);
+        border: 0;
+        border-radius: 999px;
+        color: #64748b;
+        background: transparent;
+        transition: background .18s ease, color .18s ease;
+    }
+    .facility-table-search-clear:hover,
+    .facility-table-search-clear:focus {
+        color: #0f172a;
+        background: #e8f2fb;
+        outline: none;
+    }
+    .facility-table-search-clear[hidden] {
+        display: none;
     }
     .facility-table-wrap {
         overflow-x: auto;
@@ -300,7 +332,7 @@
             flex-wrap: wrap;
             align-items: center;
         }
-        .facility-table-search {
+        .facility-table-search-wrap {
             width: 100%;
         }
         .facility-table-footer {
@@ -367,7 +399,12 @@
             </button>
         </div>
         <div class="facility-table-toolbar">
-            <input id="facility-table-search" type="text" class="facility-table-search" placeholder="{{ __('Search facilities...') }}">
+            <div class="facility-table-search-wrap">
+                <input id="facility-table-search" type="text" class="facility-table-search" placeholder="{{ __('Search facilities...') }}">
+                <button id="facility-table-search-clear" type="button" class="facility-table-search-clear" aria-label="{{ __('Clear search') }}" hidden>
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
             <div class="text-[12px] font-semibold text-slate-500" id="facility-table-meta"></div>
         </div>
         <div class="facility-table-wrap">
@@ -582,10 +619,12 @@
 
         initialized = true;
         bindElements();
+        portalFacilityLayersToBody();
         bindEvents();
         updateFacilitySortIndicators();
         updateAttentionSortIndicators();
         renderStatusFilter();
+        updateSearchClearButton();
         loadFacilities();
         window.facilitiesPage = { toggleActionMenu, openEditModal, openDeleteModal };
         window.lucide?.createIcons();
@@ -596,6 +635,7 @@
         els.statusButtons = Array.from(document.querySelectorAll('[data-status]'));
         els.resetFilters = document.getElementById('reset-facility-filters');
         els.tableSearch = document.getElementById('facility-table-search');
+        els.tableSearchClear = document.getElementById('facility-table-search-clear');
         els.tableMeta = document.getElementById('facility-table-meta');
         els.tableBody = document.getElementById('facilities-table-body');
         els.tableSummary = document.getElementById('facility-table-summary');
@@ -634,6 +674,21 @@
         els.attentionSortButtons = Array.from(document.querySelectorAll('[data-attention-sort]'));
     }
 
+    function portalFacilityLayersToBody() {
+        const nodes = [
+            els.actionOverlay,
+            els.editModal,
+            els.deleteModal,
+            els.attentionModal,
+        ].filter(Boolean);
+
+        nodes.forEach((node) => {
+            if (node.parentElement !== document.body) {
+                document.body.appendChild(node);
+            }
+        });
+    }
+
     function bindEvents() {
         els.createButton?.addEventListener('click', () => openEditModal(0));
         els.statusButtons.forEach((button) => {
@@ -648,6 +703,7 @@
 
         els.tableSearch?.addEventListener('input', (event) => {
             const value = String(event.target.value || '').trim();
+            updateSearchClearButton();
             if (state.facilitySearchTimer) {
                 window.clearTimeout(state.facilitySearchTimer);
             }
@@ -656,6 +712,26 @@
                 state.facilityPage = 1;
                 loadFacilities();
             }, 260);
+        });
+
+        els.tableSearchClear?.addEventListener('click', () => {
+            if (!els.tableSearch) return;
+
+            if (state.facilitySearchTimer) {
+                window.clearTimeout(state.facilitySearchTimer);
+                state.facilitySearchTimer = null;
+            }
+
+            const hadSearch = els.tableSearch.value.length > 0 || state.facilitySearch.length > 0;
+            els.tableSearch.value = '';
+            state.facilitySearch = '';
+            state.facilityPage = 1;
+            updateSearchClearButton();
+            els.tableSearch.focus();
+
+            if (hadSearch) {
+                loadFacilities();
+            }
         });
 
         els.sortButtons.forEach((button) => {
@@ -793,6 +869,22 @@
         return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     }
 
+    function showSuccessBalloon(message) {
+        if (typeof window.notify === 'function') {
+            window.notify('success', message);
+        }
+    }
+
+    function updateSearchClearButton() {
+        if (!els.tableSearchClear || !els.tableSearch) return;
+
+        if (String(els.tableSearch.value || '').length > 0) {
+            els.tableSearchClear.removeAttribute('hidden');
+        } else {
+            els.tableSearchClear.setAttribute('hidden', 'hidden');
+        }
+    }
+
     function resetFilters() {
         state.selectedStatus = state.defaultStatus || '';
         state.facilitySearch = '';
@@ -800,6 +892,11 @@
         if (els.tableSearch) {
             els.tableSearch.value = '';
         }
+        if (state.facilitySearchTimer) {
+            window.clearTimeout(state.facilitySearchTimer);
+            state.facilitySearchTimer = null;
+        }
+        updateSearchClearButton();
         renderStatusFilter();
         loadFacilities();
     }
@@ -1044,9 +1141,58 @@
     function bindEditForm() {
         const form = els.editForm.querySelector('form');
         if (!form) return;
+        const nameInput = form.querySelector('[data-facility-name]');
+        const nameMessage = form.querySelector('[data-facility-name-message]');
+        const nameMax = Number(form.dataset.nameMax || 100);
+        const setFieldState = (input, invalid) => {
+            input?.classList.toggle('border-rose-300', invalid);
+            input?.classList.toggle('focus:border-rose-400', invalid);
+            input?.classList.toggle('focus:ring-rose-500/20', invalid);
+            input?.classList.toggle('focus:border-sky-500', !invalid);
+            input?.classList.toggle('focus:ring-sky-500/20', !invalid);
+        };
+        const validateName = (force = false) => {
+            if (!nameInput || !nameMessage) return true;
+            const value = String(nameInput.value || '');
+            const trimmed = value.trim();
+            let message = '';
+
+            if (trimmed.length === 0) {
+                message = 'Facility Name is required.';
+            } else if (trimmed.length > nameMax) {
+                message = `Facility Name must not exceed ${nameMax} characters.`;
+            } else if (!/^[A-Za-z0-9][A-Za-z0-9\s._,'()/-]*$/.test(trimmed)) {
+                message = 'Facility Name may only contain letters, numbers, spaces, and basic punctuation.';
+            }
+
+            const invalid = message !== '';
+            nameMessage.textContent = message;
+            nameMessage.classList.toggle('hidden', !invalid && !force);
+            setFieldState(nameInput, invalid);
+            return !invalid;
+        };
+
+        const descriptionInput = form.querySelector('[data-facility-description]');
+        const descriptionMessage = form.querySelector('[data-facility-description-message]');
+        const descriptionMin = Number(form.dataset.descriptionMin || 10);
+        const validateDescription = (force = false) => {
+            if (!descriptionInput || !descriptionMessage) return true;
+            const value = String(descriptionInput.value || '').trim();
+            const invalid = value.length > 0 && value.length < descriptionMin;
+            descriptionMessage.classList.toggle('hidden', !invalid && !force);
+            setFieldState(descriptionInput, invalid);
+            return !invalid;
+        };
+
+        nameInput?.addEventListener('input', () => validateName());
+        nameInput?.addEventListener('blur', () => validateName(true));
+        descriptionInput?.addEventListener('input', () => validateDescription());
+        descriptionInput?.addEventListener('blur', () => validateDescription(true));
+
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
             if (form.dataset.submitting === '1') return;
+            if (!validateName(true) || !validateDescription(true)) return;
             form.dataset.submitting = '1';
 
             try {
@@ -1054,9 +1200,11 @@
                 if (!formData.get('_token')) {
                     formData.append('_token', csrfToken());
                 }
-                await Perfectlum.postForm(form.getAttribute('action') || window.location.pathname, formData);
+                const isCreate = String(formData.get('id') || '0') === '0';
+                const payload = await Perfectlum.postForm(form.getAttribute('action') || window.location.pathname, formData);
                 closeEditModal();
                 loadFacilities();
+                showSuccessBalloon(payload?.message || (isCreate ? text.facilityCreated : text.facilityUpdated));
             } catch (error) {
                 els.editError.textContent = error.message || text.unableToSaveFacility;
                 els.editError.classList.remove('hidden');
@@ -1147,7 +1295,7 @@
                 <td class="px-4 py-3 text-[13px] text-slate-600">${Perfectlum.escapeHtml(item.updatedAt || '-')}</td>
                 <td class="px-4 py-3 text-[12px] text-rose-600">${Perfectlum.escapeHtml(item.attentionText || 'No alert detail')}</td>
                 <td class="px-4 py-3 text-right">
-                    <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'display',id:${Number(item.displayId || 0)}}}))" class="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[12px] font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+                    <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'display',id:${Number(item.id || item.displayId || 0)}}}))" class="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[12px] font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
                         ${Perfectlum.escapeHtml(text.openDisplay)}
                     </button>
                 </td>
@@ -1160,7 +1308,7 @@
     function fetchAttentionPageV2(page) {
         return Perfectlum.request(Perfectlum.buildServerUrl('/api/displays', {
             facility_id: Number(state.attentionTarget.id),
-            type: 'failed',
+            status: 2,
             sort: 'updated_at',
             order: 'desc',
             limit: state.attentionLimit,
@@ -1287,6 +1435,7 @@
             }
             closeDeleteModal();
             loadFacilities();
+            showSuccessBalloon(payload.msg || text.facilityDeleted);
         } catch (error) {
             window.alert(error.message || text.unableToDeleteFacility);
             els.deleteConfirm.disabled = false;

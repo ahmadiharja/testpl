@@ -92,11 +92,9 @@
         align-items: center;
         justify-content: flex-end;
         line-height: 1;
-        position: relative;
-        z-index: 5;
     }
 
-    #tasks-grid .scheduler-cell-action > .relative {
+    #tasks-grid .scheduler-cell-action > button {
         display: inline-flex;
         align-items: center;
     }
@@ -107,6 +105,14 @@
         display: flex;
         flex-direction: column;
         gap: 4px;
+    }
+
+    .scheduler-task-title-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 0;
     }
 
     .scheduler-task-title,
@@ -124,6 +130,71 @@
 
     .scheduler-task-title.is-overdue {
         color: #dc2626;
+    }
+
+    .scheduler-task-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1.1;
+        white-space: nowrap;
+        text-transform: none;
+        flex: 0 0 auto;
+        border: 1px solid #bfdbfe;
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    .scheduler-task-pill--startup {
+        border-color: #cbd5e1;
+        background: #f8fafc;
+        color: #475569;
+    }
+
+    .scheduler-task-pill--once {
+        border-color: #ddd6fe;
+        background: #f5f3ff;
+        color: #6d28d9;
+    }
+
+    .scheduler-task-pill--daily {
+        border-color: #bae6fd;
+        background: #f0f9ff;
+        color: #0369a1;
+    }
+
+    .scheduler-task-pill--weekly {
+        border-color: #bbf7d0;
+        background: #f0fdf4;
+        color: #15803d;
+    }
+
+    .scheduler-task-pill--monthly {
+        border-color: #fde68a;
+        background: #fffbeb;
+        color: #b45309;
+    }
+
+    .scheduler-task-pill--quarterly {
+        border-color: #fecaca;
+        background: #fef2f2;
+        color: #b91c1c;
+    }
+
+    .scheduler-task-pill--semiannually {
+        border-color: #fbcfe8;
+        background: #fdf2f8;
+        color: #be185d;
+    }
+
+    .scheduler-task-pill--annually {
+        border-color: #bfdbfe;
+        background: #eef2ff;
+        color: #4338ca;
     }
 
     .scheduler-task-meta {
@@ -218,13 +289,32 @@
     }
 
     .scheduler-create-shell {
+        position: relative;
+        overflow: visible;
+        isolation: isolate;
+        z-index: 60;
         border-radius: 1.5rem;
         border: 1px solid #dce8f4;
         background: linear-gradient(180deg, #f9fcff 0%, #ffffff 100%);
         box-shadow: 0 14px 38px -28px rgba(15, 23, 42, 0.22);
     }
 
+    .scheduler-hierarchy-field {
+        position: relative;
+        z-index: 10;
+    }
+
+    .scheduler-hierarchy-field:focus-within {
+        z-index: 120;
+    }
+
+    .scheduler-hierarchy-panel {
+        z-index: 140;
+    }
+
     .scheduler-jobs-shell {
+        position: relative;
+        z-index: 1;
         border-radius: 2rem;
         border: 1px solid #d5e0ec;
         background: linear-gradient(180deg, #f7fbff 0%, #ffffff 100%);
@@ -267,7 +357,10 @@
 
     .scheduler-table-wrap {
         overflow-x: auto;
+        overflow-y: hidden;
         background: #fff;
+        position: relative;
+        z-index: 1;
     }
 
     .scheduler-table {
@@ -346,6 +439,18 @@
         color: #334155;
         vertical-align: middle;
         background: #fff;
+    }
+
+    .scheduler-floating-menu {
+        position: fixed;
+        z-index: 29950;
+        width: 11rem;
+        overflow: hidden;
+        border-radius: 1rem;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        padding: 0.25rem 0;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.14);
     }
 
     .scheduler-table tbody tr:hover td {
@@ -466,7 +571,7 @@
                     {{ __('Schedule Tasks') }}
                 </button>
                 <button type="button"
-                    @click="activeTab = 'calendar'; initCalendarIfNeeded()"
+                    @click="activateCalendar()"
                     class="rounded-t-2xl px-4 py-3 text-sm font-semibold transition"
                     :class="activeTab === 'calendar' ? 'border-b-2 border-sky-500 text-sky-600' : 'text-slate-500 hover:text-slate-700'">
                     {{ __('Calendar') }}
@@ -476,8 +581,7 @@
 
         <div x-show="activeTab === 'tasks'" x-cloak>
             @if($canManageSchedulerDesktop)
-            <div class="scheduler-create-shell mb-6 p-5"
-                x-data="{ openScheduleDisplays: false }">
+            <div class="scheduler-create-shell mb-6 p-5">
                 <div class="mb-4">
                     <p class="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{{ __('Create Schedule') }}</p>
                     <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">{{ __('Schedule tasks by hierarchy') }}</h2>
@@ -487,7 +591,7 @@
                 <form id="scheduler-create-form" onsubmit="event.preventDefault(); window.create_task(this)">
                     @csrf
                     <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
-                        <label class="block">
+                        <label class="block scheduler-hierarchy-field">
                             <span class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Facility') }}</span>
                             <select name="facility2" id="schedule_facility_field"
                                 onchange="fetch_schedule_workgroups(this)"
@@ -504,12 +608,12 @@
                                 @endif
                             </select>
                             <div class="relative">
-                                <button type="button" id="schedule-facility-trigger"
+                                <button type="button" id="schedule-facility-trigger" onclick="window.openScheduleHierarchyDropdown && window.openScheduleHierarchyDropdown('facility')"
                                     class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                                     <span id="schedule-facility-label" class="truncate">{{ __('Please select') }}</span>
                                     <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                                 </button>
-                                <div id="schedule-facility-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
+                                <div id="schedule-facility-panel" class="scheduler-hierarchy-panel absolute left-0 right-0 top-[calc(100%+0.5rem)] hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
                                     <input id="schedule-facility-search" type="text" placeholder="{{ __('Search facilities...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                                     <p id="schedule-facility-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                                     <div id="schedule-facility-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
@@ -517,7 +621,7 @@
                             </div>
                         </label>
 
-                        <label class="block">
+                        <label class="block scheduler-hierarchy-field">
                             <span class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Workgroup') }}</span>
                             <select name="workgroup2" id="schedule_workgroups_field"
                                 onchange="fetch_schedule_workstations(this)"
@@ -525,12 +629,12 @@
                                 <option value="">{{ __('Select facility first') }}</option>
                             </select>
                             <div class="relative">
-                                <button type="button" id="schedule-workgroup-trigger"
+                                <button type="button" id="schedule-workgroup-trigger" onclick="window.openScheduleHierarchyDropdown && window.openScheduleHierarchyDropdown('workgroup')"
                                     class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
                                     <span id="schedule-workgroup-label" class="truncate">{{ __('Select facility first') }}</span>
                                     <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                                 </button>
-                                <div id="schedule-workgroup-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
+                                <div id="schedule-workgroup-panel" class="scheduler-hierarchy-panel absolute left-0 right-0 top-[calc(100%+0.5rem)] hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
                                     <input id="schedule-workgroup-search" type="text" placeholder="{{ __('Search workgroups...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                                     <p id="schedule-workgroup-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                                     <div id="schedule-workgroup-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
@@ -538,7 +642,7 @@
                             </div>
                         </label>
 
-                        <label class="block">
+                        <label class="block scheduler-hierarchy-field">
                             <span class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Workstation') }}</span>
                             <select name="workstation2" id="schedule_workstations_field"
                                 onchange="fetch_schedule_displays(this)"
@@ -546,12 +650,12 @@
                                 <option value="">{{ __('Select workgroup first') }}</option>
                             </select>
                             <div class="relative">
-                                <button type="button" id="schedule-workstation-trigger"
+                                <button type="button" id="schedule-workstation-trigger" onclick="window.openScheduleHierarchyDropdown && window.openScheduleHierarchyDropdown('workstation')"
                                     class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
                                     <span id="schedule-workstation-label" class="truncate">{{ __('Select workgroup first') }}</span>
                                     <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
                                 </button>
-                                <div id="schedule-workstation-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
+                                <div id="schedule-workstation-panel" class="scheduler-hierarchy-panel absolute left-0 right-0 top-[calc(100%+0.5rem)] hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
                                     <input id="schedule-workstation-search" type="text" placeholder="{{ __('Search workstations...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                                     <p id="schedule-workstation-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                                     <div id="schedule-workstation-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
@@ -559,19 +663,16 @@
                             </div>
                         </label>
 
-                        <div class="relative">
+                        <div class="relative scheduler-hierarchy-field">
                             <span class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Displays') }}</span>
-                            <button type="button"
-                                @click="openScheduleDisplays = !openScheduleDisplays"
-                                @click.away="openScheduleDisplays = false"
+                            <button type="button" onclick="window.openScheduleHierarchyDropdown && window.openScheduleHierarchyDropdown('displays')"
                                 id="schedule_displays_dropdown"
                                 class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-left text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                                 <span id="schedule_displays_label" class="truncate">{{ __('Select workstation first') }}</span>
-                                <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400 transition-transform duration-200" :class="openScheduleDisplays ? 'rotate-180' : ''"></i>
+                                <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400 transition-transform duration-200"></i>
                             </button>
-                            <div x-show="openScheduleDisplays" x-cloak
-                                id="schedule_displays_field"
-                                class="absolute left-0 right-0 z-40 mt-2 max-h-72 overflow-auto rounded-[1.25rem] border border-slate-200 bg-white p-2 shadow-[0_20px_45px_rgba(15,23,42,0.14)]"
+                            <div id="schedule_displays_field"
+                                class="scheduler-hierarchy-panel absolute left-0 right-0 mt-2 max-h-72 overflow-auto rounded-[1.25rem] border border-slate-200 bg-white p-2 shadow-[0_20px_45px_rgba(15,23,42,0.14)]"
                                 style="display:none;">
                                 <div class="border-b border-slate-100 p-1 pb-3">
                                     <input id="schedule-displays-search" type="text" placeholder="{{ __('Search displays...') }}" class="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
@@ -583,8 +684,8 @@
                         </div>
 
                         <div class="flex items-end">
-                            <button type="submit"
-                                class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-sky-500 px-6 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(14,165,233,0.24)] transition hover:bg-sky-400">
+                            <button type="submit" id="schedule-submit-btn" disabled
+                                class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-sky-500 px-6 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(14,165,233,0.24)] transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-white/80 disabled:shadow-none">
                                 <i data-lucide="plus" class="h-4 w-4"></i>
                                 {{ __('Add Schedule') }}
                             </button>
@@ -648,12 +749,13 @@
     </section>
 </div>
 
-<div x-data="{ open: false, event: null }"
-    @scheduler-event.window="open = true; event = $event.detail"
-    class="relative z-[9999]">
-    <div x-show="open" x-cloak class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
-    <div x-show="open" x-cloak class="fixed inset-0 z-10 flex items-center justify-center p-4">
-        <div @click.away="open = false"
+<div x-data="schedulerCalendarEventModal()"
+    x-init="mount($root)"
+    @scheduler-event.window="openFromEvent($event.detail)"
+    class="hidden">
+    <div x-show="open" x-cloak class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" style="z-index: 49990;"></div>
+    <div x-show="open" x-cloak class="fixed inset-0 flex items-center justify-center p-4" style="z-index: 50000;">
+        <div @click.away="close()"
             class="w-full max-w-xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.18)]">
             <div class="border-b border-slate-200 px-6 py-5">
                 <p class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">{{ __('Task Detail') }}</p>
@@ -669,13 +771,62 @@
                     <p class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Task Type') }}</p>
                     <p class="mt-2 text-sm font-semibold text-slate-900" x-text="event?.badgeLabel || '-'"></p>
                 </div>
+                <div class="rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-4">
+                    <p class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Schedule') }}</p>
+                    <p class="mt-2 text-sm font-semibold text-slate-900" x-text="event?.scheduleLabel || '-'"></p>
+                </div>
+                <div class="rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-4">
+                    <p class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Last Execution') }}</p>
+                    <p class="mt-2 text-sm font-semibold text-slate-900" x-text="event?.lastRunLabel || '-'"></p>
+                </div>
                 <div class="rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-4 md:col-span-2">
                     <p class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Location') }}</p>
                     <p class="mt-2 text-sm font-semibold text-slate-900" x-text="event?.locationLabel || '-'"></p>
                 </div>
             </div>
+            <div class="border-t border-slate-200 px-6 py-5">
+                <div class="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-5 py-4">
+                    <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                            <p class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Latest Synced Result') }}</p>
+                            <template x-if="event?.historySummary">
+                                <div class="mt-2 space-y-2">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="inline-flex rounded-full border px-2.5 py-1 text-xs font-bold"
+                                            :class="resultToneClass(event?.historySummary?.resultTone)"
+                                            x-text="event?.historySummary?.resultLabel || '-'"></span>
+                                        <span class="text-sm font-semibold text-slate-900" x-text="event?.historySummary?.name || '-'"></span>
+                                    </div>
+                                    <p class="text-sm text-slate-500" x-text="event?.historySummary?.performedAt || '-'"></p>
+                                </div>
+                            </template>
+                            <template x-if="!event?.historySummary">
+                                <p class="mt-2 text-sm text-slate-500">{{ __('No synced result has been recorded for this display yet.') }}</p>
+                            </template>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button"
+                                x-show="event?.historySummary?.reportUrl"
+                                @click="openUrl(event?.historySummary?.reportUrl)"
+                                class="inline-flex h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
+                                {{ __('Open Report') }}
+                            </button>
+                            <button type="button"
+                                x-show="event?.historyReportsUrl"
+                                @click="openUrl(event?.historyReportsUrl)"
+                                class="inline-flex h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
+                                {{ __('History List') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="flex justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4">
-                <button type="button" @click="open = false"
+                <button type="button" x-show="event?.displayCalibrationUrl" @click="openUrl(event?.displayCalibrationUrl)"
+                    class="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
+                    {{ __('Open Display') }}
+                </button>
+                <button type="button" @click="close()"
                     class="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
                     {{ __('Close') }}
                 </button>
@@ -685,13 +836,69 @@
 </div>
 
 <script>
+    function schedulerCalendarEventModal() {
+        return {
+            open: false,
+            event: null,
+            mount(root) {
+                if (root && root.parentElement !== document.body) {
+                    document.body.appendChild(root);
+                }
+                this.toggleShellScroll(false);
+                this.$watch('open', (value) => {
+                    this.toggleShellScroll(value);
+                });
+            },
+            openFromEvent(event) {
+                this.event = event || null;
+                this.open = true;
+            },
+            close() {
+                this.open = false;
+            },
+            openUrl(url) {
+                if (!url) return;
+                window.location.href = url;
+            },
+            resultToneClass(tone) {
+                return {
+                    success: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+                    danger: 'border-rose-200 bg-rose-50 text-rose-700',
+                    warning: 'border-amber-200 bg-amber-50 text-amber-700',
+                    neutral: 'border-slate-200 bg-white text-slate-700',
+                }[tone || 'neutral'] || 'border-slate-200 bg-white text-slate-700';
+            },
+            toggleShellScroll(locked) {
+                const method = locked ? 'add' : 'remove';
+                document.documentElement.classList[method]('overflow-hidden');
+                document.body.classList[method]('overflow-hidden');
+                document.getElementById('desktop-page-stage')?.classList[method]('overflow-hidden');
+                document.getElementById('desktop-scroll-area')?.classList[method]('overflow-hidden');
+            }
+        };
+    }
+
     function schedulerPage() {
         return {
             activeTab: 'tasks',
             calendarReady: false,
             calendarInstance: null,
+            activateCalendar() {
+                this.activeTab = 'calendar';
+                this.$nextTick(() => {
+                    this.initCalendarIfNeeded();
+                });
+            },
             async initCalendarIfNeeded() {
-                if (this.calendarReady) return;
+                if (this.calendarReady) {
+                    this.$nextTick(() => {
+                        requestAnimationFrame(() => {
+                            this.calendarInstance?.updateSize?.();
+                            this.calendarInstance?.refetchEvents?.();
+                        });
+                    });
+                    return;
+                }
                 this.calendarReady = true;
                 const el = document.getElementById('scheduler-calendar');
                 if (!el) return;
@@ -702,6 +909,11 @@
                     onEventClick(event) {
                         window.dispatchEvent(new CustomEvent('scheduler-event', { detail: event }));
                     }
+                });
+
+                requestAnimationFrame(() => {
+                    this.calendarInstance?.updateSize?.();
+                    this.calendarInstance?.refetchEvents?.();
                 });
             }
         };
@@ -722,6 +934,8 @@
             total: 0,
             loading: false,
             fetching: false,
+            fetchController: null,
+            totalSyncTimer: null,
             search: '',
             searchTimer: null,
             rows: [],
@@ -732,6 +946,34 @@
             autoRefreshIntervalHiddenMs: 45000,
             autoRefreshTicks: 0,
         };
+
+        function ensureSchedulerDesktopMenuState() {
+            const appRoot = document.querySelector('body[x-data]');
+            const alpineData = window.Alpine?.$data ? window.Alpine.$data(appRoot) : appRoot?.__x?.$data;
+            if (!alpineData) {
+                return;
+            }
+
+            alpineData.activeMenu = 'Scheduler';
+            alpineData.settingsExpanded = false;
+        }
+
+        function updateScheduleSubmitState() {
+            const button = document.getElementById('schedule-submit-btn');
+            if (!button) return;
+            const facility = document.getElementById('schedule_facility_field')?.value || '';
+            const workgroup = document.getElementById('schedule_workgroups_field')?.value || '';
+            const workstation = document.getElementById('schedule_workstations_field')?.value || '';
+            const field = document.getElementById('schedule-displays-options');
+            let hasDisplay = false;
+            if (field) {
+                const regular = Array.from(field.querySelectorAll('input[name="displays[]"]:not([data-select-all="1"])'));
+                const selected = regular.filter((item) => item.checked);
+                const selectAll = field.querySelector('input[name="displays[]"][data-select-all="1"]');
+                hasDisplay = selected.length > 0 || (selectAll && selectAll.checked && regular.length > 0);
+            }
+            button.disabled = !(facility && workgroup && workstation && hasDisplay);
+        }
 
         function updateScheduleDisplaysLabel() {
             const field = document.getElementById('schedule-displays-options');
@@ -759,6 +1001,7 @@
             label.textContent = selectedRegular.length === 1
                 ? selectedRegular[0].dataset.label
                 : `${selectedRegular.length} ${text.displays} ${text.selected}`;
+            updateScheduleSubmitState();
         }
 
         function resetScheduleDisplays(message) {
@@ -770,6 +1013,7 @@
             if (label) {
                 label.textContent = message;
             }
+            updateScheduleSubmitState();
         }
 
         function parseScheduleSelectOptions(selectId) {
@@ -874,6 +1118,7 @@
                     if (workstationSearch) workstationSearch.value = '';
                     resetScheduleDisplays(text.selectWorkstationFirst);
                     refreshScheduleWorkgroupOptions();
+                    updateScheduleSubmitState();
                 });
         };
 
@@ -898,6 +1143,7 @@
                     if (workstationSearch) workstationSearch.value = '';
                     resetScheduleDisplays(text.selectWorkstationFirst);
                     refreshScheduleWorkstationOptions();
+                    updateScheduleSubmitState();
                 });
         };
 
@@ -925,8 +1171,6 @@
                     }
 
                     content = content
-                        .replace(/name='displays2\\[\\]'/g, "name='displays[]'")
-                        .replace(/name=\"displays2\\[\\]\"/g, 'name="displays[]"')
                         .replace(/form-check-input flex-shrink-0/g, 'h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500/30 cursor-pointer')
                         .replace(/form-check-label flex-grow-1/g, 'ml-3 flex-1 cursor-pointer select-none text-sm text-slate-700')
                         .replace(/form-check mb-0 py-1 px-4/g, 'flex items-center rounded-xl px-3 py-2 hover:bg-slate-50 transition border-b border-slate-100 last:border-0');
@@ -954,6 +1198,7 @@
                     });
 
                     updateScheduleDisplaysLabel();
+                    updateScheduleSubmitState();
                 });
         };
 
@@ -969,20 +1214,40 @@
                 facility: document.getElementById('schedule-facility-panel'),
                 workgroup: document.getElementById('schedule-workgroup-panel'),
                 workstation: document.getElementById('schedule-workstation-panel'),
+                displays: document.getElementById('schedule_displays_field'),
             };
             scheduleHierarchyState.activeDropdown = scheduleHierarchyState.activeDropdown === type ? null : type;
             Object.entries(panels).forEach(([key, panel]) => {
                 if (!panel) return;
-                panel.classList.toggle('hidden', scheduleHierarchyState.activeDropdown !== key);
+                const shouldHide = scheduleHierarchyState.activeDropdown !== key;
+                panel.classList.toggle('hidden', shouldHide);
+                if (key === 'displays') {
+                    panel.style.display = shouldHide ? 'none' : '';
+                }
             });
         }
 
         function closeScheduleDropdowns() {
             scheduleHierarchyState.activeDropdown = null;
-            ['schedule-facility-panel', 'schedule-workgroup-panel', 'schedule-workstation-panel'].forEach((id) => {
-                document.getElementById(id)?.classList.add('hidden');
+            ['schedule-facility-panel', 'schedule-workgroup-panel', 'schedule-workstation-panel', 'schedule_displays_field'].forEach((id) => {
+                const node = document.getElementById(id);
+                node?.classList.add('hidden');
+                if (id === 'schedule_displays_field' && node) {
+                    node.style.display = 'none';
+                }
             });
         }
+
+        window.openScheduleHierarchyDropdown = function (type) {
+            if (type === 'facility') {
+                refreshScheduleFacilityOptions();
+            } else if (type === 'workgroup') {
+                refreshScheduleWorkgroupOptions();
+            } else if (type === 'workstation') {
+                refreshScheduleWorkstationOptions();
+            }
+            toggleScheduleDropdown(type);
+        };
 
         function renderSchedulerTaskActions(row) {
             if (!canManageTasks) {
@@ -991,23 +1256,11 @@
 
             return `
                 <div class="scheduler-cell-action">
-                    <div class="relative">
-                        <button type="button"
-                            data-scheduler-task-toggle="${row.id}"
-                            class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700">
-                            <i data-lucide="more-vertical" class="h-4 w-4"></i>
-                        </button>
-                        <div data-scheduler-task-menu="${row.id}" class="absolute right-0 top-full z-20 mt-2 hidden w-44 overflow-hidden rounded-2xl border border-slate-200 bg-white py-1 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                            <button type="button" data-scheduler-task-edit="${row.id}" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                                <i data-lucide="calendar-clock" class="h-4 w-4 text-sky-500"></i>
-                                ${Perfectlum.escapeHtml(text.scheduleTask)}
-                            </button>
-                            <button type="button" data-scheduler-task-delete="${row.id}" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
-                                <i data-lucide="trash-2" class="h-4 w-4"></i>
-                                ${Perfectlum.escapeHtml(text.deleteTask)}
-                            </button>
-                        </div>
-                    </div>
+                    <button type="button"
+                        data-scheduler-task-toggle="${row.id}"
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700">
+                        <i data-lucide="more-vertical" class="h-4 w-4"></i>
+                    </button>
                 </div>
             `;
         }
@@ -1039,14 +1292,85 @@
             }
         }
 
+        function ensureSchedulerFloatingMenu() {
+            let menu = document.getElementById('scheduler-floating-action-menu');
+            if (menu) {
+                return menu;
+            }
+
+            menu = document.createElement('div');
+            menu.id = 'scheduler-floating-action-menu';
+            menu.className = 'scheduler-floating-menu hidden';
+            menu.innerHTML = `
+                <button type="button" data-scheduler-task-edit-action class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                    <i data-lucide="calendar-clock" class="h-4 w-4 text-sky-500"></i>
+                    ${Perfectlum.escapeHtml(text.scheduleTask)}
+                </button>
+                <button type="button" data-scheduler-task-delete-action class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
+                    <i data-lucide="trash-2" class="h-4 w-4"></i>
+                    ${Perfectlum.escapeHtml(text.deleteTask)}
+                </button>
+            `;
+
+            document.body.appendChild(menu);
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            return menu;
+        }
+
         function closeSchedulerTaskMenus() {
-            document.querySelectorAll('[data-scheduler-task-menu]').forEach((menu) => menu.classList.add('hidden'));
+            const menu = document.getElementById('scheduler-floating-action-menu');
+            if (menu) {
+                menu.classList.add('hidden');
+                delete menu.dataset.taskId;
+            }
+        }
+
+        function openSchedulerTaskMenu(trigger, taskId) {
+            const menu = ensureSchedulerFloatingMenu();
+            const rect = trigger.getBoundingClientRect();
+            const menuWidth = 176;
+            const viewportPadding = 16;
+            const left = Math.min(
+                Math.max(viewportPadding, rect.right - menuWidth),
+                window.innerWidth - menuWidth - viewportPadding
+            );
+            const top = Math.min(
+                rect.bottom + 10,
+                window.innerHeight - 120
+            );
+
+            menu.dataset.taskId = String(taskId);
+            menu.style.left = `${left}px`;
+            menu.style.top = `${top}px`;
+            menu.classList.remove('hidden');
         }
 
         function reloadSchedulerGrid() {
             schedulerTableState.autoRefreshTicks = 0;
-            loadSchedulerTasks({ withoutTotal: false, silent: false });
+            loadSchedulerTasks({ withoutTotal: true, silent: false })
+                .then(() => queueSchedulerTotalSync(180));
             queueSchedulerAutoRefresh();
+        }
+
+        function queueSchedulerTotalSync(delay = 120) {
+            if (schedulerTableState.totalSyncTimer) {
+                clearTimeout(schedulerTableState.totalSyncTimer);
+                schedulerTableState.totalSyncTimer = null;
+            }
+
+            schedulerTableState.totalSyncTimer = window.setTimeout(async () => {
+                schedulerTableState.totalSyncTimer = null;
+                if (!document.body?.contains(document.getElementById('scheduler-tasks-body'))) {
+                    return;
+                }
+                if (schedulerTableState.fetching) {
+                    queueSchedulerTotalSync(220);
+                    return;
+                }
+                await loadSchedulerTasks({ withoutTotal: false, silent: true });
+            }, delay);
         }
 
         function schedulerTasksUrl(options = {}) {
@@ -1071,64 +1395,6 @@
             }
             return `${url.pathname}${url.search}`;
         }
-
-        function renderSchedulerDisplayCell(row) {
-            return `
-                <div class="scheduler-cell-stack space-y-1.5">
-                    <button type="button" data-scheduler-open="display" data-scheduler-id="${Number(row.displayId) || 0}" class="block text-left font-semibold text-sky-600 hover:text-sky-700 hover:underline">${Perfectlum.escapeHtml(row.displayName || '-')}</button>
-                    <div class="text-xs text-slate-500">
-                        <button type="button" data-scheduler-open="workstation" data-scheduler-id="${Number(row.wsId) || 0}" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">${Perfectlum.escapeHtml(row.wsName || '-')}</button>
-                        <span class="mx-1.5">•</span>
-                        <button type="button" data-scheduler-open="workgroup" data-scheduler-id="${Number(row.wgId) || 0}" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">${Perfectlum.escapeHtml(row.wgName || '-')}</button>
-                        <span class="mx-1.5">•</span>
-                        <button type="button" data-scheduler-open="facility" data-scheduler-id="${Number(row.facId) || 0}" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">${Perfectlum.escapeHtml(row.facName || '-')}</button>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderSchedulerRows() {
-            const body = document.getElementById('scheduler-tasks-body');
-            if (!body) return;
-
-            if (schedulerTableState.loading) {
-                body.innerHTML = `<tr><td colspan="8" class="scheduler-empty">Loading...</td></tr>`;
-                return;
-            }
-
-            if (!schedulerTableState.rows.length) {
-                body.innerHTML = `<tr><td colspan="8" class="scheduler-empty">No matching records found</td></tr>`;
-                return;
-            }
-
-            body.innerHTML = schedulerTableState.rows.map((row) => {
-                const dueCls = { danger: 'text-red-600 font-bold', warning: 'text-amber-600 font-semibold', success: 'text-emerald-600' }[row.dueColor] || 'text-slate-500';
-                const createdMuted = row.createdAt === 'Not recorded';
-                const createdCls = createdMuted ? 'text-slate-400 font-medium' : 'text-slate-600 font-semibold';
-                const statusCls = row.statusColor === 'success'
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : 'bg-red-50 text-red-700 border-red-200';
-                const enabledCls = row.enabledColor === 'success'
-                    ? 'bg-sky-50 text-sky-700 border-sky-200'
-                    : 'bg-slate-100 text-slate-600 border-slate-200';
-
-                return `
-                    <tr>
-                        <td><div class="scheduler-cell"><span class="text-sm font-semibold text-slate-900">${Perfectlum.escapeHtml(row.taskName || '-')}</span></div></td>
-                        <td>${renderSchedulerDisplayCell(row)}</td>
-                        <td><div class="scheduler-cell">${Perfectlum.badge(row.scheduleName || '-', 'warning')}</div></td>
-                        <td><div class="scheduler-cell"><span class="text-xs ${dueCls}">${Perfectlum.escapeHtml(row.dueAt || '-')}</span></div></td>
-                        <td><div class="scheduler-cell"><span class="text-xs ${createdCls}">${Perfectlum.escapeHtml(row.createdAt || 'Not recorded')}</span></div></td>
-                        <td><div class="scheduler-cell"><span class="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${statusCls}">${Perfectlum.escapeHtml(row.status || '-')}</span></div></td>
-                        <td><div class="scheduler-cell"><span class="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${enabledCls}">${Perfectlum.escapeHtml(row.enabledLabel || '-')}</span></div></td>
-                        <td>${renderSchedulerTaskActions(row)}</td>
-                    </tr>
-                `;
-            }).join('');
-
-            window.lucide?.createIcons();
-        }
-
         function renderSchedulerMetaButton(type, id, label, badge) {
             const safeLabel = String(label || '').trim();
             const numericId = Number(id) || 0;
@@ -1160,6 +1426,62 @@
             `;
         }
 
+        function renderSchedulerDateTimeCell(value, dateClass = 'text-xs text-slate-600', timeClass = 'text-[11px] font-medium text-slate-400') {
+            const raw = String(value || '').trim();
+            if (!raw || raw === '-' || raw === 'Not recorded') {
+                return `<div class="flex flex-col items-center text-center"><span class="${Perfectlum.escapeHtml(dateClass)}">${Perfectlum.escapeHtml(raw || '-')}</span></div>`;
+            }
+
+            const normalized = raw.replace(/\s+/g, ' ').trim();
+            const parts = normalized.split(' ');
+            let datePart = normalized;
+            let timePart = '';
+
+            if (parts.length >= 4) {
+                datePart = parts.slice(0, 3).join(' ');
+                timePart = parts.slice(3).join(' ');
+            } else if (parts.length === 2 && /^\d{1,2}:\d{2}(:\d{2})?$/.test(parts[1])) {
+                datePart = parts[0];
+                timePart = parts[1];
+            }
+
+            return `
+                <div class="flex flex-col items-center text-center leading-tight">
+                    <span class="${Perfectlum.escapeHtml(dateClass)}">${Perfectlum.escapeHtml(datePart)}</span>
+                    ${timePart ? `<span class="${Perfectlum.escapeHtml(timeClass)}">${Perfectlum.escapeHtml(timePart)}</span>` : ''}
+                </div>
+            `;
+        }
+
+        function getSchedulerTaskPillClass(scheduleName) {
+            const key = String(scheduleName || '').trim().toLowerCase();
+
+            switch (key) {
+                case 'start-up':
+                case 'startup':
+                    return 'scheduler-task-pill--startup';
+                case 'once':
+                    return 'scheduler-task-pill--once';
+                case 'daily':
+                    return 'scheduler-task-pill--daily';
+                case 'weekly':
+                    return 'scheduler-task-pill--weekly';
+                case 'monthly':
+                    return 'scheduler-task-pill--monthly';
+                case 'quarterly':
+                    return 'scheduler-task-pill--quarterly';
+                case 'semiannually':
+                case 'semi-annual':
+                case 'semiannual':
+                    return 'scheduler-task-pill--semiannually';
+                case 'annually':
+                case 'annual':
+                    return 'scheduler-task-pill--annually';
+                default:
+                    return '';
+            }
+        }
+
         function renderSchedulerRows() {
             const body = document.getElementById('scheduler-tasks-body');
             if (!body) return;
@@ -1179,24 +1501,32 @@
                 const createdMuted = row.createdAt === 'Not recorded';
                 const createdCls = createdMuted ? 'text-slate-400 font-medium' : 'text-slate-600 font-semibold';
                 const taskTitleCls = row.dueColor === 'danger' ? 'is-overdue' : '';
-                const taskMeta = [
-                    `Status : ${row.status || '-'}`,
-                    `Type : ${row.scheduleName || '-'}`,
-                    `${row.enabledLabel || '-'}`
-                ].join(' | ');
+                const taskMetaParts = [
+                    `Status: ${row.status || '-'}`
+                ];
+                const taskPillCls = getSchedulerTaskPillClass(row.scheduleName);
+
+                if (row.lastExecutionAt) {
+                    taskMetaParts.push(`Last Execution: ${row.lastExecutionAt}`);
+                }
+
+                const taskMeta = taskMetaParts.join(' | ');
 
                 return `
                     <tr>
                         <td>
                             <div class="scheduler-task-cell">
-                                <span class="scheduler-task-title ${taskTitleCls}">${Perfectlum.escapeHtml(row.taskName || '-')}</span>
+                                <div class="scheduler-task-title-row">
+                                    <span class="scheduler-task-title ${taskTitleCls}">${Perfectlum.escapeHtml(row.taskName || '-')}</span>
+                                    <span class="scheduler-task-pill ${taskPillCls}">${Perfectlum.escapeHtml(row.scheduleName || '-')}</span>
+                                </div>
                                 <div class="scheduler-task-meta">${Perfectlum.escapeHtml(taskMeta)}</div>
                             </div>
                         </td>
                         <td>${renderSchedulerDisplayCell(row)}</td>
                         <td class="hidden"></td>
-                        <td><div class="scheduler-cell justify-center"><span class="text-xs ${dueCls}">${Perfectlum.escapeHtml(row.dueAt || '-')}</span></div></td>
-                        <td><div class="scheduler-cell justify-center"><span class="text-xs ${createdCls}">${Perfectlum.escapeHtml(row.createdAt || 'Not recorded')}</span></div></td>
+                        <td>${renderSchedulerDateTimeCell(row.dueAt || '-', `text-xs ${dueCls}`, 'text-[11px] font-medium text-slate-400')}</td>
+                        <td>${renderSchedulerDateTimeCell(row.createdAt || 'Not recorded', `text-xs ${createdCls}`, 'text-[11px] font-medium text-slate-400')}</td>
                         <td class="hidden"></td>
                         <td class="hidden"></td>
                         <td>${renderSchedulerTaskActions(row)}</td>
@@ -1234,9 +1564,9 @@
             document.querySelectorAll('[data-scheduler-sort-indicator]').forEach((node) => {
                 const key = node.getAttribute('data-scheduler-sort-indicator');
                 if (key === schedulerTableState.sortKey) {
-                    node.textContent = schedulerTableState.sortOrder === 'asc' ? '↑' : '↓';
+                    node.textContent = schedulerTableState.sortOrder === 'asc' ? String.fromCharCode(8593) : String.fromCharCode(8595);
                 } else {
-                    node.textContent = '↕';
+                    node.textContent = String.fromCharCode(8597);
                 }
             });
         }
@@ -1267,8 +1597,52 @@
                 clearTimeout(schedulerTableState.autoRefreshTimer);
                 schedulerTableState.autoRefreshTimer = null;
             }
+            if (schedulerTableState.totalSyncTimer) {
+                clearTimeout(schedulerTableState.totalSyncTimer);
+                schedulerTableState.totalSyncTimer = null;
+            }
+            if (schedulerTableState.searchTimer) {
+                clearTimeout(schedulerTableState.searchTimer);
+                schedulerTableState.searchTimer = null;
+            }
             schedulerTableState.fetching = false;
             schedulerTableState.loading = false;
+            if (schedulerTableState.fetchController) {
+                schedulerTableState.fetchController.abort();
+                schedulerTableState.fetchController = null;
+            }
+            if (window.__schedulerOutsideClickHandler) {
+                document.removeEventListener('click', window.__schedulerOutsideClickHandler);
+                window.__schedulerOutsideClickHandler = null;
+            }
+            if (window.__schedulerVisibilityHandler) {
+                document.removeEventListener('visibilitychange', window.__schedulerVisibilityHandler);
+                window.__schedulerVisibilityHandler = null;
+            }
+            if (window.__schedulerFocusHandler) {
+                window.removeEventListener('focus', window.__schedulerFocusHandler);
+                window.__schedulerFocusHandler = null;
+            }
+            if (window.__schedulerBeforeUnloadHandler) {
+                window.removeEventListener('beforeunload', window.__schedulerBeforeUnloadHandler);
+                window.__schedulerBeforeUnloadHandler = null;
+            }
+            if (window.__schedulerTaskSavedHandler) {
+                window.removeEventListener('task-saved', window.__schedulerTaskSavedHandler);
+                window.__schedulerTaskSavedHandler = null;
+            }
+            if (window.__schedulerDocumentClickHandler) {
+                document.removeEventListener('click', window.__schedulerDocumentClickHandler);
+                window.__schedulerDocumentClickHandler = null;
+            }
+            if (window.__schedulerResizeHandler) {
+                window.removeEventListener('resize', window.__schedulerResizeHandler);
+                window.__schedulerResizeHandler = null;
+            }
+            if (window.__schedulerScrollHandler) {
+                document.getElementById('desktop-scroll-area')?.removeEventListener('scroll', window.__schedulerScrollHandler);
+                window.__schedulerScrollHandler = null;
+            }
         };
 
         async function loadSchedulerTasks(options = {}) {
@@ -1277,6 +1651,7 @@
             if (schedulerTableState.fetching) return;
 
             schedulerTableState.fetching = true;
+            schedulerTableState.fetchController = new AbortController();
             if (!silent) {
                 schedulerTableState.loading = true;
                 renderSchedulerPager();
@@ -1284,7 +1659,9 @@
             }
 
             try {
-                const payload = await Perfectlum.request(schedulerTasksUrl({ withoutTotal }));
+                const payload = await Perfectlum.request(schedulerTasksUrl({ withoutTotal }), {
+                    signal: schedulerTableState.fetchController.signal,
+                });
                 schedulerTableState.rows = Array.isArray(payload?.data) ? payload.data : [];
                 if (typeof payload?.total === 'number' && Number.isFinite(payload.total)) {
                     schedulerTableState.total = Number(payload.total);
@@ -1298,6 +1675,9 @@
                     return loadSchedulerTasks({ withoutTotal: false, silent: false });
                 }
             } catch (error) {
+                if (error?.name === 'AbortError') {
+                    return;
+                }
                 schedulerTableState.rows = [];
                 schedulerTableState.total = 0;
                 const body = document.getElementById('scheduler-tasks-body');
@@ -1305,6 +1685,7 @@
                     body.innerHTML = `<tr><td colspan="8" class="scheduler-empty text-rose-600">${Perfectlum.escapeHtml(error.message || 'Unable to load data')}</td></tr>`;
                 }
             } finally {
+                schedulerTableState.fetchController = null;
                 schedulerTableState.fetching = false;
                 schedulerTableState.loading = false;
                 renderSchedulerRows();
@@ -1313,6 +1694,7 @@
         }
 
         function init() {
+            ensureSchedulerDesktopMenuState();
             const body = document.getElementById('scheduler-tasks-body');
             if (!body || body.dataset.schedulerInitialized === '1') {
                 return;
@@ -1320,59 +1702,86 @@
             body.dataset.schedulerInitialized = '1';
 
             refreshScheduleFacilityOptions();
+            updateScheduleSubmitState();
 
-            document.getElementById('schedule-facility-trigger')?.addEventListener('click', () => {
-                refreshScheduleFacilityOptions();
-                toggleScheduleDropdown('facility');
-            });
-            document.getElementById('schedule-workgroup-trigger')?.addEventListener('click', () => {
-                refreshScheduleWorkgroupOptions();
-                toggleScheduleDropdown('workgroup');
-            });
-            document.getElementById('schedule-workstation-trigger')?.addEventListener('click', () => {
-                refreshScheduleWorkstationOptions();
-                toggleScheduleDropdown('workstation');
-            });
-            document.getElementById('schedule-facility-search')?.addEventListener('input', (e) => {
+            const facilitySearchInput = document.getElementById('schedule-facility-search');
+            if (facilitySearchInput?.__schedulerInputHandler) {
+                facilitySearchInput.removeEventListener('input', facilitySearchInput.__schedulerInputHandler);
+            }
+            facilitySearchInput.__schedulerInputHandler = (e) => {
                 scheduleHierarchyState.facilitySearch = e.target.value || '';
                 refreshScheduleFacilityOptions();
-            });
-            document.getElementById('schedule-workgroup-search')?.addEventListener('input', (e) => {
+            };
+            facilitySearchInput?.addEventListener('input', facilitySearchInput.__schedulerInputHandler);
+
+            const workgroupSearchInput = document.getElementById('schedule-workgroup-search');
+            if (workgroupSearchInput?.__schedulerInputHandler) {
+                workgroupSearchInput.removeEventListener('input', workgroupSearchInput.__schedulerInputHandler);
+            }
+            workgroupSearchInput.__schedulerInputHandler = (e) => {
                 scheduleHierarchyState.workgroupSearch = e.target.value || '';
                 refreshScheduleWorkgroupOptions();
-            });
-            document.getElementById('schedule-workstation-search')?.addEventListener('input', (e) => {
+            };
+            workgroupSearchInput?.addEventListener('input', workgroupSearchInput.__schedulerInputHandler);
+
+            const workstationSearchInput = document.getElementById('schedule-workstation-search');
+            if (workstationSearchInput?.__schedulerInputHandler) {
+                workstationSearchInput.removeEventListener('input', workstationSearchInput.__schedulerInputHandler);
+            }
+            workstationSearchInput.__schedulerInputHandler = (e) => {
                 scheduleHierarchyState.workstationSearch = e.target.value || '';
                 refreshScheduleWorkstationOptions();
-            });
-            document.getElementById('schedule-displays-search')?.addEventListener('input', filterScheduleDisplays);
-            document.addEventListener('click', (event) => {
+            };
+            workstationSearchInput?.addEventListener('input', workstationSearchInput.__schedulerInputHandler);
+
+            const displaysSearchInput = document.getElementById('schedule-displays-search');
+            if (displaysSearchInput?.__schedulerInputHandler) {
+                displaysSearchInput.removeEventListener('input', displaysSearchInput.__schedulerInputHandler);
+            }
+            displaysSearchInput.__schedulerInputHandler = filterScheduleDisplays;
+            displaysSearchInput?.addEventListener('input', displaysSearchInput.__schedulerInputHandler);
+
+            if (window.__schedulerOutsideClickHandler) {
+                document.removeEventListener('click', window.__schedulerOutsideClickHandler);
+            }
+            window.__schedulerOutsideClickHandler = (event) => {
                 if (
                     !document.getElementById('schedule-facility-panel')?.contains(event.target) &&
                     !document.getElementById('schedule-facility-trigger')?.contains(event.target) &&
                     !document.getElementById('schedule-workgroup-panel')?.contains(event.target) &&
                     !document.getElementById('schedule-workgroup-trigger')?.contains(event.target) &&
                     !document.getElementById('schedule-workstation-panel')?.contains(event.target) &&
-                    !document.getElementById('schedule-workstation-trigger')?.contains(event.target)
+                    !document.getElementById('schedule-workstation-trigger')?.contains(event.target) &&
+                    !document.getElementById('schedule_displays_field')?.contains(event.target) &&
+                    !document.getElementById('schedule_displays_dropdown')?.contains(event.target)
                 ) {
                     closeScheduleDropdowns();
                 }
-            });
+            };
+            document.addEventListener('click', window.__schedulerOutsideClickHandler);
 
             const searchInput = document.getElementById('scheduler-table-search');
-            searchInput?.addEventListener('input', (event) => {
+            if (searchInput?.__schedulerSearchHandler) {
+                searchInput.removeEventListener('input', searchInput.__schedulerSearchHandler);
+            }
+            searchInput.__schedulerSearchHandler = (event) => {
                 clearTimeout(schedulerTableState.searchTimer);
                 schedulerTableState.searchTimer = window.setTimeout(() => {
                     schedulerTableState.search = String(event.target.value || '').trim();
                     schedulerTableState.page = 1;
                     schedulerTableState.autoRefreshTicks = 0;
-                    loadSchedulerTasks({ withoutTotal: false, silent: false });
+                    loadSchedulerTasks({ withoutTotal: true, silent: false })
+                        .then(() => queueSchedulerTotalSync(180));
                     queueSchedulerAutoRefresh();
                 }, 350);
-            });
+            };
+            searchInput?.addEventListener('input', searchInput.__schedulerSearchHandler);
 
             document.querySelectorAll('[data-scheduler-sort]').forEach((button) => {
-                button.addEventListener('click', (event) => {
+                if (button.__schedulerSortHandler) {
+                    button.removeEventListener('click', button.__schedulerSortHandler);
+                }
+                button.__schedulerSortHandler = (event) => {
                     event.preventDefault();
                     const key = button.getAttribute('data-scheduler-sort');
                     if (!key) return;
@@ -1385,188 +1794,72 @@
                     schedulerTableState.page = 1;
                     updateSchedulerSortIndicators();
                     schedulerTableState.autoRefreshTicks = 0;
-                    loadSchedulerTasks({ withoutTotal: false, silent: false });
+                    loadSchedulerTasks({ withoutTotal: true, silent: false })
+                        .then(() => queueSchedulerTotalSync(180));
                     queueSchedulerAutoRefresh();
-                });
+                };
+                button.addEventListener('click', button.__schedulerSortHandler);
             });
 
-            document.getElementById('scheduler-page-prev')?.addEventListener('click', () => {
+            const prevButton = document.getElementById('scheduler-page-prev');
+            if (prevButton?.__schedulerPageHandler) {
+                prevButton.removeEventListener('click', prevButton.__schedulerPageHandler);
+            }
+            prevButton.__schedulerPageHandler = () => {
                 if (schedulerTableState.page <= 1 || schedulerTableState.loading || schedulerTableState.fetching) return;
                 schedulerTableState.page -= 1;
                 schedulerTableState.autoRefreshTicks = 0;
                 loadSchedulerTasks({ withoutTotal: false, silent: false });
                 queueSchedulerAutoRefresh();
-            });
+            };
+            prevButton?.addEventListener('click', prevButton.__schedulerPageHandler);
 
-            document.getElementById('scheduler-page-next')?.addEventListener('click', () => {
+            const nextButton = document.getElementById('scheduler-page-next');
+            if (nextButton?.__schedulerPageHandler) {
+                nextButton.removeEventListener('click', nextButton.__schedulerPageHandler);
+            }
+            nextButton.__schedulerPageHandler = () => {
                 const totalPages = Math.max(1, Math.ceil(schedulerTableState.total / schedulerTableState.limit));
                 if (schedulerTableState.page >= totalPages || schedulerTableState.loading || schedulerTableState.fetching) return;
                 schedulerTableState.page += 1;
                 schedulerTableState.autoRefreshTicks = 0;
                 loadSchedulerTasks({ withoutTotal: false, silent: false });
                 queueSchedulerAutoRefresh();
-            });
+            };
+            nextButton?.addEventListener('click', nextButton.__schedulerPageHandler);
 
             updateSchedulerSortIndicators();
-            loadSchedulerTasks({ withoutTotal: false, silent: false });
+            loadSchedulerTasks({ withoutTotal: true, silent: false })
+                .then(() => queueSchedulerTotalSync(180));
             queueSchedulerAutoRefresh();
-            document.addEventListener('visibilitychange', queueSchedulerAutoRefresh);
-            window.addEventListener('focus', queueSchedulerAutoRefresh);
-            window.addEventListener('beforeunload', () => {
+            if (window.__schedulerVisibilityHandler) {
+                document.removeEventListener('visibilitychange', window.__schedulerVisibilityHandler);
+            }
+            window.__schedulerVisibilityHandler = queueSchedulerAutoRefresh;
+            document.addEventListener('visibilitychange', window.__schedulerVisibilityHandler);
+
+            if (window.__schedulerFocusHandler) {
+                window.removeEventListener('focus', window.__schedulerFocusHandler);
+            }
+            window.__schedulerFocusHandler = queueSchedulerAutoRefresh;
+            window.addEventListener('focus', window.__schedulerFocusHandler);
+
+            if (window.__schedulerBeforeUnloadHandler) {
+                window.removeEventListener('beforeunload', window.__schedulerBeforeUnloadHandler);
+            }
+            window.__schedulerBeforeUnloadHandler = () => {
                 if (schedulerTableState.autoRefreshTimer) {
                     clearTimeout(schedulerTableState.autoRefreshTimer);
                     schedulerTableState.autoRefreshTimer = null;
                 }
-            });
-
-            if (false) {
-            var el = document.getElementById('tasks-grid');
-            if (!el || el._gi) return;
-            el._gi = true;
-
-            Perfectlum.createGrid(el, {
-                columns: [
-                    {
-                        name: text.task,
-                        width: '280px',
-                        sort: false,
-                        formatter: (c) => gridjs.html(`
-                            <div class="scheduler-cell">
-                                <span class="text-sm font-semibold text-slate-900">${Perfectlum.escapeHtml(c || '-')}</span>
-                            </div>`)
-                    },
-                    {
-                        name: text.display,
-                        sort: false,
-                        width: '340px',
-                        formatter: (c) => gridjs.html(`
-                            <div class="scheduler-cell-stack space-y-1.5">
-                                <button type="button" onclick="openSchedulerHierarchy('display', ${Number(c.displayId) || 0})" class="block text-left font-semibold text-sky-600 hover:text-sky-700 hover:underline">${Perfectlum.escapeHtml(c.displayName)}</button>
-                                <div class="text-xs text-slate-500">
-                                    <button type="button" onclick="openSchedulerHierarchy('workstation', ${Number(c.wsId) || 0})" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">${Perfectlum.escapeHtml(c.wsName || '-')}</button>
-                                    <span class="mx-1.5">•</span>
-                                    <button type="button" onclick="openSchedulerHierarchy('workgroup', ${Number(c.wgId) || 0})" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">${Perfectlum.escapeHtml(c.wgName || '-')}</button>
-                                    <span class="mx-1.5">•</span>
-                                    <button type="button" onclick="openSchedulerHierarchy('facility', ${Number(c.facId) || 0})" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">${Perfectlum.escapeHtml(c.facName || '-')}</button>
-                                </div>
-                            </div>`)
-                    },
-                    {
-                        name: text.schedule,
-                        width: '140px',
-                        sort: false,
-                        formatter: (c) => gridjs.html(`<div class="scheduler-cell">${Perfectlum.badge(c || '-', 'warning')}</div>`)
-                    },
-                    {
-                        name: text.dueDate,
-                        width: '160px',
-                        sort: false,
-                        formatter: (c, row) => {
-                            const color = row.cells[1].data.dueColor;
-                            const cls = { danger: 'text-red-600 font-bold', warning: 'text-amber-600 font-semibold', success: 'text-emerald-600' }[color] || 'text-slate-500';
-                            return gridjs.html(`<div class="scheduler-cell"><span class="text-xs ${cls}">${Perfectlum.escapeHtml(c)}</span></div>`);
-                        }
-                    },
-                    {
-                        name: text.created,
-                        width: '160px',
-                        sort: false,
-                        formatter: (c) => {
-                            const muted = c === 'Not recorded';
-                            const cls = muted ? 'text-slate-400' : 'text-slate-600';
-                            const weight = muted ? 'font-medium' : 'font-semibold';
-                            return gridjs.html(`<div class="scheduler-cell"><span class="text-xs ${cls} ${weight}">${Perfectlum.escapeHtml(c)}</span></div>`);
-                        }
-                    },
-                    {
-                        name: text.status,
-                        width: '100px',
-                        sort: false,
-                        formatter: (c, row) => {
-                            const ok = row.cells[1].data.statusColor === 'success';
-                            const cls = ok
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : 'bg-red-50 text-red-700 border-red-200';
-                            return gridjs.html(`<div class="scheduler-cell"><span class="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${cls}">${Perfectlum.escapeHtml(c)}</span></div>`);
-                        }
-                    },
-                    {
-                        name: text.enabled,
-                        width: '118px',
-                        sort: false,
-                        formatter: (c, row) => {
-                            const enabled = row.cells[1].data.enabledColor === 'success';
-                            const cls = enabled
-                                ? 'bg-sky-50 text-sky-700 border-sky-200'
-                                : 'bg-slate-100 text-slate-600 border-slate-200';
-                            return gridjs.html(`<div class="scheduler-cell"><span class="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${cls}">${Perfectlum.escapeHtml(c)}</span></div>`);
-                        }
-                    },
-                    {
-                        name: text.actions,
-                        sort: false,
-                        width: '112px',
-                        formatter: (_, row) => gridjs.html(renderSchedulerTaskActions(row.cells[1].data))
-                    },
-                ],
-                server: {
-                    url: '/api/tasks?sort_mode=due{{ $selectedDisplayId ? "&display_id=$selectedDisplayId" : "" }}',
-                    then: d => {
-                        setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 50);
-                        return d.data.map(r => [
-                            r.taskName,
-                            {
-                                id: r.id,
-                                displayId: r.displayId,
-                                wsId: r.wsId,
-                                wgId: r.wgId,
-                                facId: r.facId,
-                                displayName: r.displayName,
-                                wsName: r.wsName,
-                                wgName: r.wgName,
-                                facName: r.facName,
-                                dueColor: r.dueColor,
-                                statusColor: r.statusColor,
-                                enabledColor: r.enabledColor
-                            },
-                            r.scheduleName,
-                            r.dueAt,
-                            r.createdAt,
-                            r.status,
-                            r.enabledLabel,
-                            null
-                        ]);
-                    },
-                    total: d => d.total
-                },
-                pagination: {
-                    enabled: true,
-                    limit: 25,
-                    server: {
-                        url: (prev, pg, lim) => prev + (prev.includes('?') ? '&' : '?') + 'page=' + (pg + 1) + '&limit=' + lim
-                    }
-                },
-                search: {
-                    enabled: true,
-                    server: {
-                        url: (prev, kw) => prev + (prev.includes('?') ? '&' : '?') + 'search=' + encodeURIComponent(kw)
-                    }
-                },
-                sort: { multiColumn: false },
-                className: {
-                    container: 'group',
-                    table: 'w-full text-sm text-left',
-                    thead: 'bg-slate-50/70',
-                    th: 'border-b border-slate-200 bg-transparent align-middle text-xs font-black uppercase tracking-[0.22em] text-slate-400',
-                    td: 'border-b border-slate-100 bg-transparent align-middle',
-                    pagination: 'flex items-center justify-between px-7 py-4 text-xs font-medium text-slate-500'
-                },
-                language: { search: { placeholder: text.searchSchedulerTasks } }
-            });
-            }
+            };
+            window.addEventListener('beforeunload', window.__schedulerBeforeUnloadHandler);
         }
 
-        document.addEventListener('click', (event) => {
+        if (window.__schedulerDocumentClickHandler) {
+            document.removeEventListener('click', window.__schedulerDocumentClickHandler);
+        }
+        window.__schedulerDocumentClickHandler = (event) => {
             const openButton = event.target.closest('[data-scheduler-open]');
             if (openButton) {
                 event.preventDefault();
@@ -1580,39 +1873,58 @@
                 event.preventDefault();
                 event.stopPropagation();
                 const id = toggle.dataset.schedulerTaskToggle;
-                const menu = document.querySelector(`[data-scheduler-task-menu="${id}"]`);
-                const willOpen = menu?.classList.contains('hidden');
+                const menu = document.getElementById('scheduler-floating-action-menu');
+                const willOpen = !menu || menu.classList.contains('hidden') || menu.dataset.taskId !== String(id);
                 closeSchedulerTaskMenus();
-                if (menu && willOpen) {
-                    menu.classList.remove('hidden');
+                if (willOpen) {
+                    openSchedulerTaskMenu(toggle, id);
                 }
                 return;
             }
 
-            const editButton = event.target.closest('[data-scheduler-task-edit]');
+            const editButton = event.target.closest('[data-scheduler-task-edit-action]');
             if (editButton) {
                 event.preventDefault();
                 event.stopPropagation();
+                const taskId = document.getElementById('scheduler-floating-action-menu')?.dataset.taskId;
                 closeSchedulerTaskMenus();
-                window.edit_task(null, editButton.dataset.schedulerTaskEdit);
+                if (taskId) {
+                    window.edit_task(null, taskId);
+                }
                 return;
             }
 
-            const deleteButton = event.target.closest('[data-scheduler-task-delete]');
+            const deleteButton = event.target.closest('[data-scheduler-task-delete-action]');
             if (deleteButton) {
                 event.preventDefault();
                 event.stopPropagation();
+                const taskId = document.getElementById('scheduler-floating-action-menu')?.dataset.taskId;
                 closeSchedulerTaskMenus();
-                window.openTaskDeleteConfirm?.({
-                    onConfirm: () => deleteSchedulerTask(deleteButton.dataset.schedulerTaskDelete)
-                });
+                if (taskId) {
+                    window.openTaskDeleteConfirm?.({
+                        onConfirm: () => deleteSchedulerTask(taskId)
+                    });
+                }
                 return;
             }
 
-            if (!event.target.closest('[data-scheduler-task-menu]')) {
+            if (!event.target.closest('#scheduler-floating-action-menu')) {
                 closeSchedulerTaskMenus();
             }
-        });
+        };
+        document.addEventListener('click', window.__schedulerDocumentClickHandler);
+
+        if (window.__schedulerResizeHandler) {
+            window.removeEventListener('resize', window.__schedulerResizeHandler);
+        }
+        window.__schedulerResizeHandler = closeSchedulerTaskMenus;
+        window.addEventListener('resize', window.__schedulerResizeHandler);
+
+        if (window.__schedulerScrollHandler) {
+            document.getElementById('desktop-scroll-area')?.removeEventListener('scroll', window.__schedulerScrollHandler);
+        }
+        window.__schedulerScrollHandler = closeSchedulerTaskMenus;
+        document.getElementById('desktop-scroll-area')?.addEventListener('scroll', window.__schedulerScrollHandler, { passive: true });
 
         if (window.__schedulerTaskSavedHandler) {
             window.removeEventListener('task-saved', window.__schedulerTaskSavedHandler);
@@ -1620,19 +1932,34 @@
         window.__schedulerTaskSavedHandler = reloadSchedulerGrid;
         window.addEventListener('task-saved', window.__schedulerTaskSavedHandler);
 
-        window.schedulerPageMount = function () {
-            const body = document.getElementById('scheduler-tasks-body');
-            if (body) {
-                delete body.dataset.schedulerInitialized;
+        let schedulerInitQueued = false;
+        function queueSchedulerInit() {
+            if (schedulerInitQueued) {
+                return;
             }
-            init();
+
+            schedulerInitQueued = true;
+            const raf = window.requestAnimationFrame || ((callback) => window.setTimeout(callback, 16));
+            raf(() => {
+                window.setTimeout(() => {
+                    schedulerInitQueued = false;
+                    init();
+                }, 0);
+            });
+        }
+
+        window.schedulerPageMount = function () {
+            ensureSchedulerDesktopMenuState();
+            queueSchedulerInit();
+            window.dispatchEvent(new Event('scheduler-page-mounted'));
         };
 
         document.readyState === 'loading'
-            ? document.addEventListener('DOMContentLoaded', init)
-            : init();
+            ? document.addEventListener('DOMContentLoaded', queueSchedulerInit)
+            : queueSchedulerInit();
     })();
 </script>
+
 
 @include('tasks.schedule_task_modal')
 @include('tasks.delete_task_confirm_modal')

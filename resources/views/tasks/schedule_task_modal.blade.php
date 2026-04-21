@@ -1,6 +1,6 @@
 @once
-    <div id="task-editor-overlay" class="fixed inset-0 z-[9290] hidden bg-slate-950/40 backdrop-blur-sm"></div>
-    <div id="task-editor-panel" class="fixed inset-x-0 bottom-0 z-[9300] hidden max-h-[92vh] overflow-y-auto rounded-t-[1.75rem] border border-slate-200 bg-white shadow-2xl md:inset-y-0 md:right-0 md:left-auto md:max-h-none md:w-full md:max-w-2xl md:rounded-none md:border-y-0 md:border-r-0 md:border-l md:rounded-l-[1.75rem]">
+    <div id="task-editor-overlay" class="fixed inset-0 hidden bg-slate-950/40 backdrop-blur-sm" style="z-index: 2147483600;"></div>
+    <div id="task-editor-panel" class="fixed inset-x-0 bottom-0 hidden max-h-[92vh] overflow-y-auto rounded-t-[1.75rem] border border-slate-200 bg-white shadow-2xl md:inset-y-0 md:right-0 md:left-auto md:max-h-none md:w-full md:max-w-2xl md:rounded-none md:border-y-0 md:border-r-0 md:border-l md:rounded-l-[1.75rem]" style="z-index: 2147483610;">
         <div class="sticky top-0 z-10 border-b border-slate-200 bg-white/96 backdrop-blur">
             <div class="flex justify-center pt-3 md:hidden">
                 <span class="h-1.5 w-14 rounded-full bg-slate-200"></span>
@@ -38,6 +38,63 @@
             const defaultTitle = @json(__('Schedule Task'));
             const defaultSubtitle = @json(__('Edit or create task without Bootstrap modal dependency.'));
 
+            if (overlay && overlay.parentElement !== document.body) {
+                document.body.appendChild(overlay);
+            }
+
+            if (panel && panel.parentElement !== document.body) {
+                document.body.appendChild(panel);
+            }
+
+            if (!window.PerfectlumModalLock) {
+                window.PerfectlumModalLock = {
+                    count: 0,
+                    previousHtmlOverflow: '',
+                    previousBodyOverflow: '',
+                    previousScrollAreaOverflowY: '',
+                    previousPageStageOverflow: '',
+                    lock() {
+                        this.count += 1;
+                        if (this.count > 1) {
+                            return;
+                        }
+
+                        const scrollArea = document.getElementById('desktop-scroll-area');
+                        const pageStage = document.getElementById('desktop-page-stage');
+                        this.previousHtmlOverflow = document.documentElement.style.overflow || '';
+                        this.previousBodyOverflow = document.body.style.overflow || '';
+                        this.previousScrollAreaOverflowY = scrollArea?.style.overflowY || '';
+                        this.previousPageStageOverflow = pageStage?.style.overflow || '';
+
+                        document.documentElement.style.overflow = 'hidden';
+                        document.body.style.overflow = 'hidden';
+                        if (scrollArea) {
+                            scrollArea.style.overflowY = 'hidden';
+                        }
+                        if (pageStage) {
+                            pageStage.style.overflow = 'hidden';
+                        }
+                    },
+                    unlock() {
+                        this.count = Math.max(0, this.count - 1);
+                        if (this.count !== 0) {
+                            return;
+                        }
+
+                        const scrollArea = document.getElementById('desktop-scroll-area');
+                        const pageStage = document.getElementById('desktop-page-stage');
+                        document.documentElement.style.overflow = this.previousHtmlOverflow;
+                        document.body.style.overflow = this.previousBodyOverflow;
+                        if (scrollArea) {
+                            scrollArea.style.overflowY = this.previousScrollAreaOverflowY;
+                        }
+                        if (pageStage) {
+                            pageStage.style.overflow = this.previousPageStageOverflow;
+                        }
+                    },
+                };
+            }
+
             function flash(type, message) {
                 if (typeof window.notify === 'function') {
                     window.notify(type, message);
@@ -50,13 +107,13 @@
             function openPanel() {
                 overlay.classList.remove('hidden');
                 panel.classList.remove('hidden');
-                document.body.classList.add('overflow-hidden');
+                window.PerfectlumModalLock?.lock();
             }
 
             function closePanel() {
                 overlay.classList.add('hidden');
                 panel.classList.add('hidden');
-                document.body.classList.remove('overflow-hidden');
+                window.PerfectlumModalLock?.unlock();
                 box.innerHTML = loadingMarkup;
                 if (titleEl) titleEl.textContent = defaultTitle;
                 if (subtitleEl) subtitleEl.textContent = defaultSubtitle;
@@ -140,7 +197,14 @@
                     });
 
                     if (!response.ok) {
-                        flash('failed', @js(__('Failed to save task.')));
+                        let errorMessage = @js(__('Failed to save task.'));
+                        try {
+                            const payload = await response.json();
+                            errorMessage = payload.message || payload.msg || errorMessage;
+                        } catch (error) {
+                            // Keep the generic fallback when the server response is not JSON.
+                        }
+                        flash('failed', errorMessage);
                         return;
                     }
 

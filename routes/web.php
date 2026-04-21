@@ -13,6 +13,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\QualityAssuranceController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\ScopeExplorerController;
 use App\Http\Controllers\ApplicationSettingsController;
 use App\Http\Controllers\TasksController;
 use App\Http\Controllers\TreeController;
@@ -40,12 +41,22 @@ Route::get('login', [AccountController::class, 'login'])->name('login');
 Route::post('login', [AccountController::class, 'login']);
 Route::get('signup', [AccountController::class, 'signup']);
 Route::post('create-account', [AccountController::class, 'create_account']);
+Route::post('check-username', [AccountController::class, 'check_username']);
+Route::post('check-email', [AccountController::class, 'check_email']);
 Route::get('forgot-password', [AccountController::class, 'forgot_password']);
 Route::post('reset-password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
 Route::get('logout', [AccountController::class, 'logout']);
 Route::post('locale', [LocaleController::class, 'update'])->name('locale.update');
 Route::get('choose-platform', [AccountController::class, 'choose_platform']);
 Route::get('select-platform/{platform}', [AccountController::class, 'select_platform']);
+
+Route::redirect('facilities', 'facilities-management', 301);
+Route::redirect('workgroups', 'workgroups-management', 301);
+Route::redirect('workstations', 'workstations-management', 301);
+Route::redirect('displays', 'displays-management', 301);
+Route::redirect('display-calibration', 'displays-calibration', 301);
+Route::redirect('scheduler', 'displays-scheduler', 301);
+Route::redirect('histories-reports', 'history-reports', 301);
 
 // Password reset form
 Route::get('password/reset/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
@@ -90,6 +101,7 @@ Route::group(['middleware' => 'auth'], function(){
       ]);
   });
   Route::get('dashboard', [DashboardController::class, 'dashboard']);
+  Route::get('partials/hierarchy-modal', [DashboardController::class, 'hierarchy_modal_partial']);
   Route::get('search', [DashboardController::class, 'search']);
   Route::get('d-fail', [DashboardController::class, 'd_fail']);
   Route::get('d-ok', [DashboardController::class, 'd_ok']);
@@ -135,14 +147,12 @@ Route::group(['middleware' => 'auth'], function(){
   Route::get('load-tree/{WORKSTATION}/{LEAF}', [TreeController::class, 'load_tree']);
   Route::post('load-tree/{WORKSTATION}/{LEAF}', [TreeController::class, 'load_tree']);
     
-  Route::get('displays', [DisplaysController::class, 'displays']);
-  Route::post('displays', [DisplaysController::class, 'displays']);
+  Route::match(['get', 'post'], 'displays-management', [DisplaysController::class, 'displays'])->name('displays.management');
   Route::post('displaysettings/{id}', [DisplaysController::class, 'load_display_settings']);
   Route::post('displaysettings/save/{id}', [DisplaysController::class, 'save_display_settings']);
   Route::post('displaysettings/save/finance/{id}', [DisplaysController::class, 'save_display_fn']);
   
-  Route::get('display-calibration', [DisplaysController::class, 'display_calibration']);
-  Route::post('display-calibration', [DisplaysController::class, 'display_calibration']);
+  Route::match(['get', 'post'], 'displays-calibration', [DisplaysController::class, 'display_calibration'])->name('displays.calibration');
 
   Route::post('create-task', [TasksController::class, 'edit_task']);
   Route::post('edit-task', [TasksController::class, 'edit_task']);
@@ -172,6 +182,9 @@ Route::group(['middleware' => 'auth'], function(){
   
   Route::get('alert-settings', [SettingsController::class, 'alert_settings']);
   Route::post('alert-settings', [SettingsController::class, 'alert_settings']);
+  Route::get('scope-explorer', [ScopeExplorerController::class, 'index']);
+  Route::get('api/scope-explorer/facilities', [ScopeExplorerController::class, 'facilities']);
+  Route::get('api/scope-explorer/{type}/{id}/children', [ScopeExplorerController::class, 'children']);
 
   Route::get('build-version', [SettingsController::class, 'build_version']);
   Route::post('build-version', [SettingsController::class, 'build_version']);
@@ -200,26 +213,22 @@ Route::group(['middleware' => 'auth'], function(){
   Route::post('fetch-description', [FacilityController::class, 'fetch_description'] );
   Route::post('fetch-location', [FacilityController::class, 'fetch_location']);
   Route::post('fetch-timezone', [FacilityController::class, 'fetch_timezone']);
-  Route::get('facilities-management', [FacilityController::class, 'facilities_management']);
-  Route::post('facilities-management', [FacilityController::class, 'facilities_management']);
+  Route::match(['get', 'post'], 'facilities-management', [FacilityController::class, 'facilities_management'])->name('facilities.management');
   Route::post('facility-form', [FacilityController::class, 'form']);
   Route::post('delete-facility', [FacilityController::class, 'delete']);
   Route::get('api/facility-modal/{id}', [FacilityController::class, 'api_facility_modal']);
   Route::post('api/facility-modal/{id}/save', [FacilityController::class, 'save_facility_modal']);
   
-  Route::get('workgroups', [WorkgroupController::class, 'workgroups']);
-  Route::post('workgroups', [WorkgroupController::class, 'workgroups']);
+  Route::match(['get', 'post'], 'workgroups-management', [WorkgroupController::class, 'workgroups'])->name('workgroups.management');
   Route::post('workgroup-form', [WorkgroupController::class, 'form']);
   Route::post('delete-workgroup', [WorkgroupController::class, 'delete_workgroup']);
   Route::get('workgroups-info/{ID}', [WorkgroupController::class, 'workgroups_info']);
-  Route::get('workstations', [WorkstationController::class, 'workstations']);
-  Route::post('workstations', [WorkstationController::class, 'workstations']);
+  Route::match(['get', 'post'], 'workstations-management', [WorkstationController::class, 'workstations'])->name('workstations.management');
   Route::post('workstation-form', [WorkstationController::class, 'form']);
   Route::post('delete-workstation', [WorkstationController::class, 'delete_workstation']);
   Route::get('workstations-info/{ID}', [WorkstationController::class, 'workstations_info']);
   
-  Route::get('scheduler', [QualityAssuranceController::class, 'quality_assuarance']);
-  Route::post('scheduler', [QualityAssuranceController::class, 'quality_assuarance']);
+  Route::match(['get', 'post'], 'displays-scheduler', [QualityAssuranceController::class, 'quality_assuarance'])->name('displays.scheduler');
   Route::post('fetch-groups2', [QualityAssuranceController::class, 'fetch_workgroups2']);
   Route::post('fetch-workstations2', [QualityAssuranceController::class, 'fetch_workstations2']);
   Route::post('fetch-displays-checklist2', [QualityAssuranceController::class, 'fetch_displays_checklist2']);
@@ -232,8 +241,7 @@ Route::group(['middleware' => 'auth'], function(){
   Route::get('/graph/spect/{history_id}/{step_id}/{graph_id}', [ExportController::class, 'generateSpectralGraph']);
   Route::get('/graph/image/{history_id}/{step_id}/{graph_id}', [ExportController::class, 'convertGraphToImage']);
 
-  Route::get('histories-reports', [HistoriesController::class, 'histories']);
-  Route::post('histories-reports', [HistoriesController::class, 'histories']);
+  Route::match(['get', 'post'], 'history-reports', [HistoriesController::class, 'histories'])->name('history.reports');
   Route::post('histories/export/pdf', [ExportController::class, 'exportPDF']);
 
   Route::get('reports/display-calibration', [ReportsController::class, 'exportDisplayCalibration']);

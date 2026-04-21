@@ -1,5 +1,5 @@
-<div id="task-delete-confirm-overlay" class="fixed inset-0 z-[120] hidden bg-slate-950/45 backdrop-blur-[2px]"></div>
-<div id="task-delete-confirm-modal" class="fixed inset-0 z-[121] hidden items-center justify-center px-4 py-8">
+<div id="task-delete-confirm-overlay" class="fixed inset-0 hidden bg-slate-950/45 backdrop-blur-[2px]" style="z-index: 2147483700;"></div>
+<div id="task-delete-confirm-modal" class="fixed inset-0 hidden items-center justify-center px-4 py-8" style="z-index: 2147483710;">
     <div class="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white shadow-2xl">
         <div class="flex items-start gap-4 px-6 py-5">
             <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 shadow-sm">
@@ -36,6 +36,63 @@
         const title = document.getElementById('task-delete-confirm-title');
         const description = document.getElementById('task-delete-confirm-description');
 
+        if (overlay && overlay.parentElement !== document.body) {
+            document.body.appendChild(overlay);
+        }
+
+        if (modal && modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+
+        if (!window.PerfectlumModalLock) {
+            window.PerfectlumModalLock = {
+                count: 0,
+                previousHtmlOverflow: '',
+                previousBodyOverflow: '',
+                previousScrollAreaOverflowY: '',
+                previousPageStageOverflow: '',
+                lock() {
+                    this.count += 1;
+                    if (this.count > 1) {
+                        return;
+                    }
+
+                    const scrollArea = document.getElementById('desktop-scroll-area');
+                    const pageStage = document.getElementById('desktop-page-stage');
+                    this.previousHtmlOverflow = document.documentElement.style.overflow || '';
+                    this.previousBodyOverflow = document.body.style.overflow || '';
+                    this.previousScrollAreaOverflowY = scrollArea?.style.overflowY || '';
+                    this.previousPageStageOverflow = pageStage?.style.overflow || '';
+
+                    document.documentElement.style.overflow = 'hidden';
+                    document.body.style.overflow = 'hidden';
+                    if (scrollArea) {
+                        scrollArea.style.overflowY = 'hidden';
+                    }
+                    if (pageStage) {
+                        pageStage.style.overflow = 'hidden';
+                    }
+                },
+                unlock() {
+                    this.count = Math.max(0, this.count - 1);
+                    if (this.count !== 0) {
+                        return;
+                    }
+
+                    const scrollArea = document.getElementById('desktop-scroll-area');
+                    const pageStage = document.getElementById('desktop-page-stage');
+                    document.documentElement.style.overflow = this.previousHtmlOverflow;
+                    document.body.style.overflow = this.previousBodyOverflow;
+                    if (scrollArea) {
+                        scrollArea.style.overflowY = this.previousScrollAreaOverflowY;
+                    }
+                    if (pageStage) {
+                        pageStage.style.overflow = this.previousPageStageOverflow;
+                    }
+                },
+            };
+        }
+
         let onConfirm = null;
 
         function closeTaskDeleteConfirm() {
@@ -43,6 +100,7 @@
             overlay?.classList.add('hidden');
             modal?.classList.add('hidden');
             modal?.classList.remove('flex');
+            window.PerfectlumModalLock?.unlock();
         }
 
         window.openTaskDeleteConfirm = function (options = {}) {
@@ -58,6 +116,7 @@
             overlay?.classList.remove('hidden');
             modal?.classList.remove('hidden');
             modal?.classList.add('flex');
+            window.PerfectlumModalLock?.lock();
 
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();

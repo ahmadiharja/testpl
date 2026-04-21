@@ -7,6 +7,42 @@ use DB;
 
 class DashboardController extends Controller
 {
+    protected function applyCompletedOneShotTaskVisibilityGuard($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNotIn('tasks.schtype', [
+                    \App\Models\ScheduleType::STARTUP,
+                    \App\Models\ScheduleType::ONCE,
+                ])
+                ->orWhereNull('tasks.lastrun')
+                ->orWhere('tasks.lastrun', '<=', 0)
+                ->orWhere(function ($activeOneShot) {
+                    $activeOneShot->whereIn('tasks.schtype', [
+                            \App\Models\ScheduleType::STARTUP,
+                            \App\Models\ScheduleType::ONCE,
+                        ])
+                        ->where('tasks.nextrun', '>', 0);
+                });
+        });
+    }
+
+    protected function staleQaTaskCutoff(): string
+    {
+        return now()->subDays(60)->toDateTimeString();
+    }
+
+    protected function applyQaTaskVisibilityGuard($query)
+    {
+        $cutoff = $this->staleQaTaskCutoff();
+
+        return $query->where(function ($q) use ($cutoff) {
+            $q->where(function ($recentWorkstation) use ($cutoff) {
+                $recentWorkstation->whereNotNull('workstations.last_connected')
+                    ->where('workstations.last_connected', '>=', $cutoff);
+            })->orWhere('qa_tasks.updated_at', '>=', $cutoff);
+        });
+    }
+
     protected function resolveRecordDueTimestamp($record): int
     {
         $rawDueAt = (int) ($record->due_at ?? 0);
@@ -46,6 +82,242 @@ class DashboardController extends Controller
             ->format('d M Y H:i');
     }
 
+    protected function shouldShowSchedulerLastExecution($record): bool
+    {
+        if (($record->record_type ?? null) !== 'task') {
+            return false;
+        }
+
+        $scheduleTypeId = (int) ($record->schedule_type_id ?? 0);
+
+        return in_array($scheduleTypeId, [
+            \App\Models\ScheduleType::DAILY,
+            \App\Models\ScheduleType::WEEKLY,
+            \App\Models\ScheduleType::MONTHLY,
+            \App\Models\ScheduleType::QUARTERLY,
+            \App\Models\ScheduleType::SEMIANNUAL,
+            \App\Models\ScheduleType::ANNUAL,
+        ], true);
+    }
+
+    protected function formatSchedulerLastExecutionAt($record): ?string
+    {
+        if (!$this->shouldShowSchedulerLastExecution($record)) {
+            return null;
+        }
+
+        $lastRun = (int) ($record->lastrun ?? 0);
+        if ($lastRun <= 0) {
+            return 'Never';
+        }
+
+        return \Carbon\Carbon::createFromTimestampUTC($lastRun)
+            ->setTimezone($record->fac_timezone ?: config('app.timezone', 'UTC'))
+            ->format('d M Y H:i');
+    }
+
+    protected function resolveTaskTypeLabel(?string $taskTypeKey, ?string $taskName, ?string $recordType = null): string
+    {
+        $resolvedName = trim((string) ($taskName ?? ''));
+        if ($resolvedName !== '') {
+            return $resolvedName;
+        }
+
+        $fallbackMap = [
+            'cal' => 'Calibration',
+            'con' => 'Display Conformance',
+            'awl' => 'Display Luminance Calibration',
+            'vwl' => 'Display Luminance Conformance',
+            'vun' => 'Display Verify Uniformity',
+            'dtp' => 'Display Test Pattern',
+            'ovt' => 'Online Visual Display Test',
+            'mmi' => 'MQSA Monitor Inspection',
+            'fbs' => 'Full Black Surface Test',
+            'ela' => 'Everlight ANZ QA',
+            'sur' => 'SMPTE US Rad',
+            'icc' => 'Create ICC Profile',
+        ];
+
+        $key = trim((string) ($taskTypeKey ?? ''));
+        if ($key !== '' && isset($fallbackMap[$key])) {
+            return $fallbackMap[$key];
+        }
+
+        return trim((string) ($recordType ?? '')) !== '' ? (string) $recordType : 'Task';
+    }
+
+    protected function resolveReschedulableTaskTypeKey(?string $taskTypeKey, ?string $taskName): ?string
+    {
+        $key = trim((string) ($taskTypeKey ?? ''));
+        if ($key !== '') {
+            return $key;
+        }
+
+        $value = strtolower(trim((string) ($taskName ?? '')));
+        if ($value === '') {
+            return null;
+        }
+
+        if (str_contains($value, 'display test pattern')) return 'dtp';
+        if (str_contains($value, 'mqsa')) return 'mmi';
+        if (str_contains($value, 'everlight')) return 'ela';
+        if (str_contains($value, 'full black surface')) return 'fbs';
+        if (str_contains($value, 'smpte')) return 'sur';
+        if (str_contains($value, 'create icc')) return 'icc';
+        if (str_contains($value, 'calibration conformance') || str_contains($value, 'display conformance')) return 'con';
+        if (str_contains($value, 'luminance calibration')) return 'awl';
+        if (str_contains($value, 'luminance conformance')) return 'vwl';
+        if (str_contains($value, 'uniformity')) return 'vun';
+        if (str_contains($value, 'calibration')) return 'cal';
+
+        return null;
+    }
+
+    protected function resolveSchedulerStatus($record, int $timestamp, bool $isPast): array
+    {
+        $statusMap = [0 => 'OK', 1 => 'Failed', 2 => 'Run Error'];
+        $rawStatus = (int) ($record->status ?? 0);
+        $lastRun = (int) ($record->lastrun ?? 0);
+
+        if (($record->record_type ?? null) === 'task' && $rawStatus === 2 && $lastRun <= 0 && $timestamp > 0 && $isPast) {
+            return ['label' => 'Due', 'tone' => 'danger'];
+        }
+
+        if ($rawStatus === 0 && $timestamp > 0 && $isPast) {
+            return ['label' => 'Due', 'tone' => 'danger'];
+        }
+
+        return [
+            'label' => $statusMap[$rawStatus] ?? 'Unknown',
+            'tone' => $rawStatus === 0 ? 'success' : 'danger',
+        ];
+    }
+
+    protected function unresolvedFailedDisplaySummaries(array $displayRows): array
+    {
+        if (empty($displayRows)) {
+            return [];
+        }
+
+        $displayIds = collect($displayRows)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($displayIds)) {
+            return [];
+        }
+
+        $summaries = [];
+        $seenTests = [];
+
+        $historyRows = DB::table('histories')
+            ->select(['id', 'display_id', 'name', 'regulation', 'result', 'time'])
+            ->whereIn('display_id', $displayIds)
+            ->whereNull('deleted_at')
+            ->orderBy('display_id')
+            ->orderByDesc('time')
+            ->orderByDesc('id')
+            ->get();
+
+        foreach ($historyRows as $history) {
+            $displayId = (int) $history->display_id;
+            $testKey = trim((string) ($history->regulation ?? ''));
+            if ($testKey === '') {
+                $testKey = trim((string) ($history->name ?? ''));
+            }
+            if ($testKey === '') {
+                $testKey = 'history:' . (int) $history->id;
+            }
+
+            $compoundKey = $displayId . '|' . mb_strtolower($testKey);
+            if (isset($seenTests[$compoundKey])) {
+                continue;
+            }
+            $seenTests[$compoundKey] = true;
+
+            if ((int) $history->result === 2) {
+                continue;
+            }
+
+            if (!isset($summaries[$displayId])) {
+                $summaries[$displayId] = [
+                    'display_id' => $displayId,
+                    'unresolved_tests_count' => 0,
+                    'latest_failed_history_name' => trim((string) ($history->name ?? '')) ?: $testKey,
+                    'latest_failed_test_key' => $testKey,
+                    'latest_failed_history_time' => (int) $history->time,
+                    'latest_failed_history_id' => (int) $history->id,
+                ];
+            }
+
+            $summaries[$displayId]['unresolved_tests_count']++;
+
+            if ((int) $history->time > (int) $summaries[$displayId]['latest_failed_history_time']) {
+                $summaries[$displayId]['latest_failed_history_name'] = trim((string) ($history->name ?? '')) ?: $testKey;
+                $summaries[$displayId]['latest_failed_test_key'] = $testKey;
+                $summaries[$displayId]['latest_failed_history_time'] = (int) $history->time;
+                $summaries[$displayId]['latest_failed_history_id'] = (int) $history->id;
+            }
+        }
+
+        return $summaries;
+    }
+
+    protected function scopedDisplayRowsForDashboard(?int $facilityId = null): array
+    {
+        return DB::table('displays')
+            ->join('workstations', 'workstations.id', '=', 'displays.workstation_id')
+            ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+            ->join('facilities', 'facilities.id', '=', 'workgroups.facility_id')
+            ->join('display_preferences', function ($join) {
+                $join->on('display_preferences.display_id', '=', 'displays.id')
+                    ->where('display_preferences.name', '=', 'exclude')
+                    ->where('display_preferences.value', '=', '0');
+            })
+            ->when($facilityId, fn($q) => $q->where('workgroups.facility_id', $facilityId))
+            ->select([
+                'displays.id',
+                'displays.manufacturer',
+                'displays.model',
+                'displays.serial',
+                'displays.status',
+                'displays.errors',
+                'displays.updated_at',
+                'displays.workstation_id',
+                'workstations.name as ws_name',
+                'workstations.workgroup_id as wg_id',
+                'workgroups.name as wg_name',
+                'workgroups.facility_id as fac_id',
+                'facilities.name as fac_name',
+                'facilities.timezone as fac_timezone',
+            ])
+            ->get()
+            ->map(fn ($row) => (array) $row)
+            ->all();
+    }
+
+    protected function applyDashboardFailedDisplayMode(array $displayRows): array
+    {
+        $summaries = $this->unresolvedFailedDisplaySummaries($displayRows);
+
+        return collect($displayRows)
+            ->map(function (array $row) use ($summaries) {
+                $summary = $summaries[(int) $row['id']] ?? null;
+                $row['has_unresolved_failure'] = $summary !== null;
+                $row['latest_failed_history_name'] = $summary['latest_failed_history_name'] ?? null;
+                $row['latest_failed_history_time'] = $summary['latest_failed_history_time'] ?? null;
+                $row['latest_failed_history_id'] = $summary['latest_failed_history_id'] ?? null;
+                $row['unresolved_tests_count'] = $summary['unresolved_tests_count'] ?? 0;
+
+                return $row;
+            })
+            ->all();
+    }
+
     public function dashboard(Request $request){
 
         //$request->session()->put('id', '32');
@@ -65,16 +337,20 @@ class DashboardController extends Controller
             ? ($requestedFacilityId !== null && $requestedFacilityId !== '' ? $requestedFacilityId : null)
             : $user->facility_id;
 
-        $baseDisplays = \App\Models\Display::when($facility_id, function ($q) use ($facility_id) {
-            return $q->join('workstations', 'workstations.id', '=', 'displays.workstation_id')
-                ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
-                ->where('workgroups.facility_id', '=', $facility_id);
-        })
-            ->join('display_preferences', 'display_preferences.display_id', '=', 'displays.id')
-            ->where(['display_preferences.name' => 'exclude', 'display_preferences.value' => '0']);
-        
-        $d_ok = (clone $baseDisplays)->where('displays.status', 1)->count();
-        $d_fail = (clone $baseDisplays)->where('displays.status', 2)->count();
+        $dashboardDisplayRows = \Illuminate\Support\Facades\Cache::remember(
+            'dashboard.display_rows.v2.' . md5(implode('|', [
+                $user_id,
+                $role ?: 'guest',
+                $facility_id ?: 'all',
+            ])),
+            now()->addSeconds(20),
+            fn () => $this->applyDashboardFailedDisplayMode(
+                $this->scopedDisplayRowsForDashboard($facility_id ? (int) $facility_id : null)
+            )
+        );
+        $totalVisibleDisplays = count($dashboardDisplayRows);
+        $d_fail = collect($dashboardDisplayRows)->where('has_unresolved_failure', true)->count();
+        $d_ok = max($totalVisibleDisplays - $d_fail, 0);
         
         $d_fail_recent=array(); $i=0;
             
@@ -100,11 +376,21 @@ class DashboardController extends Controller
         
         //total due tasks
         $ids = request()->input('id') ? explode(',', request()->input('id')) : [];
+        $nowTimestamp = now()->timestamp;
+
+        $taskFallbackDueExpression = "COALESCE(
+            UNIX_TIMESTAMP(CONVERT_TZ(
+                STR_TO_DATE(CONCAT(REPLACE(tasks.startdate, '.', '-'), ' ', LEFT(tasks.starttime, 5)), '%Y-%m-%d %H:%i'),
+                COALESCE(facilities.timezone, 'UTC'),
+                '+00:00'
+            )),
+            UNIX_TIMESTAMP(STR_TO_DATE(CONCAT(REPLACE(tasks.startdate, '.', '-'), ' ', LEFT(tasks.starttime, 5)), '%Y-%m-%d %H:%i'))
+        )";
 
         
         // Calculate due tasks count using direct joins so shared hosting does not
         // spend time on nested EXISTS chains for every dashboard hit.
-        $tasksCount = DB::table('tasks')
+        $tasksBase = DB::table('tasks')
             ->join('displays', 'displays.id', '=', 'tasks.display_id')
             ->join('display_preferences', function ($join) {
                 $join->on('display_preferences.display_id', '=', 'displays.id')
@@ -113,15 +399,29 @@ class DashboardController extends Controller
             })
             ->leftJoin('workstations', 'workstations.id', '=', 'displays.workstation_id')
             ->leftJoin('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+            ->leftJoin('facilities', 'facilities.id', '=', 'workgroups.facility_id')
             ->where('tasks.deleted', 0)
             ->where('tasks.disabled', 0)
-            ->where(function ($q) {
-                $q->where('tasks.nextrun', '>', 0)
-                    ->orWhere('tasks.nextrun', 0);
-            })
             ->when($facility_id, function ($q) use ($facility_id) {
                 return $q->where('workgroups.facility_id', '=', $facility_id);
-            })
+            });
+
+        $tasksBase = $this->applyCompletedOneShotTaskVisibilityGuard($tasksBase);
+
+        $taskCountFast = (clone $tasksBase)
+            ->where('tasks.nextrun', '>', 0)
+            ->where('tasks.nextrun', '<=', $nowTimestamp)
+            ->distinct('tasks.id')
+            ->count('tasks.id');
+
+        $taskCountFallback = (clone $tasksBase)
+            ->where('tasks.nextrun', 0)
+            ->whereNotNull('tasks.startdate')
+            ->whereNotNull('tasks.starttime')
+            ->where('tasks.startdate', '!=', '')
+            ->where('tasks.starttime', '!=', '')
+            ->whereRaw($taskFallbackDueExpression . ' > 0')
+            ->whereRaw($taskFallbackDueExpression . ' <= ?', [$nowTimestamp])
             ->distinct('tasks.id')
             ->count('tasks.id');
 
@@ -136,13 +436,16 @@ class DashboardController extends Controller
             ->leftJoin('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
             ->where('qa_tasks.deleted', 0)
             ->where('qa_tasks.nextdate', '>', 0)
+            ->where('qa_tasks.nextdate', '<=', $nowTimestamp)
             ->when($facility_id, function ($q) use ($facility_id) {
                 return $q->where('workgroups.facility_id', '=', $facility_id);
-            })
+            });
+
+        $qaTasksCount = $this->applyQaTaskVisibilityGuard($qaTasksCount)
             ->distinct('qa_tasks.id')
             ->count('qa_tasks.id');
 
-        $due_tasks = $tasksCount + $qaTasksCount;
+        $due_tasks = $taskCountFast + $taskCountFallback + $qaTasksCount;
         $due_tasks_recents = $due_tasks;
             
         $greetingName = explode(' ', trim($user->name ?? 'Administrator'))[0] ?: 'Administrator';
@@ -159,6 +462,13 @@ class DashboardController extends Controller
             'd_fail_recent' => $d_fail_recent,
             'due_tasks_recents' => $due_tasks_recents,
         ]);
+    }
+
+    public function hierarchy_modal_partial(Request $request)
+    {
+        return response()
+            ->view('common.modals.hierarchical-location-modal')
+            ->header('Cache-Control', 'private, max-age=120');
     }
 
     public function search(Request $request)
@@ -749,6 +1059,21 @@ class DashboardController extends Controller
         $page = max(1, (int) $request->get('page', 1));
         $offset = ($page - 1) * $limit;
         $nowTimestamp = now()->timestamp;
+        $withoutTotal = $request->boolean('without_total');
+        $cacheKey = null;
+
+        if ($withoutTotal && $page === 1 && $limit <= 10 && !$display_id && $search === '') {
+            $cacheKey = 'dashboard.api_due_tasks.v1.' . md5(implode('|', [
+                $user_id,
+                $role ?: 'guest',
+                $facility_id ?: 'all',
+                $limit,
+            ]));
+
+            if ($cachedPayload = \Illuminate\Support\Facades\Cache::get($cacheKey)) {
+                return response()->json($cachedPayload);
+            }
+        }
 
         $taskFallbackDueExpression = "COALESCE(
             UNIX_TIMESTAMP(CONVERT_TZ(
@@ -787,6 +1112,8 @@ class DashboardController extends Controller
                 });
             });
 
+        $taskBase = $this->applyCompletedOneShotTaskVisibilityGuard($taskBase);
+
         $qaBase = DB::table('qa_tasks')
             ->join('displays', 'qa_tasks.display_id', '=', 'displays.id')
             ->join('workstations', 'displays.workstation_id', '=', 'workstations.id')
@@ -811,12 +1138,16 @@ class DashboardController extends Controller
                 });
             });
 
+        $qaBase = $this->applyQaTaskVisibilityGuard($qaBase);
+
         $taskDueFast = (clone $taskBase)
             ->where('tasks.nextrun', '>', 0)
             ->where('tasks.nextrun', '<=', $nowTimestamp)
             ->select([
                 DB::raw("'task' as record_type"),
                 'tasks.id', 'tasks.display_id',
+                'tasks.type as task_type_key',
+                'tasks.lastrun',
                 'task_types.title as task_name',
                 'schedule_types.title as schedule_name',
                 DB::raw('NULL as startdate1'),
@@ -844,6 +1175,8 @@ class DashboardController extends Controller
             ->select([
                 DB::raw("'task' as record_type"),
                 'tasks.id', 'tasks.display_id',
+                'tasks.type as task_type_key',
+                'tasks.lastrun',
                 'task_types.title as task_name',
                 'schedule_types.title as schedule_name',
                 DB::raw('NULL as startdate1'),
@@ -866,6 +1199,8 @@ class DashboardController extends Controller
             ->select([
                 DB::raw("'qa_task' as record_type"),
                 'qa_tasks.id', 'qa_tasks.display_id',
+                DB::raw('NULL as task_type_key'),
+                DB::raw('0 as lastrun'),
                 'qa_tasks.name as task_name',
                 'qa_tasks.freq as schedule_name',
                 DB::raw("'2019-08-27 00:00' as startdate1"),
@@ -926,7 +1261,6 @@ class DashboardController extends Controller
             ->fromSub($taskCountFast->unionAll($taskCountFallback), 'task_due_count_rows')
             ->unionAll($qaCountRows);
 
-        $withoutTotal = $request->boolean('without_total');
         $total = $withoutTotal
             ? null
             : DB::query()->fromSub($allDueCountRows, 'all_due_count_rows')->count();
@@ -987,6 +1321,11 @@ class DashboardController extends Controller
                 $diffForHumans = $isPast ? $dueObj->diffForHumans() : 'Not overdue';
             }
 
+            $rescheduleTaskTypeKey = $this->resolveReschedulableTaskTypeKey(
+                $record->task_type_key ?? null,
+                $record->task_name ?? null
+            );
+
             $dueColor = $isPast ? 'danger' : ($isToday ? 'warning' : 'success');
             $status = $isPast ? 'Overdue' : ($isToday ? 'Today' : 'Upcoming');
 
@@ -1001,8 +1340,8 @@ class DashboardController extends Controller
                 'wsName'     => $record->ws_name ?? '-',
                 'wgName'     => $record->wg_name ?? '-',
                 'facName'    => $record->fac_name ?? '-',
-                'task'       => $record->task_name ?? $record->record_type,
-                'taskName'   => $record->task_name ?? $record->record_type,
+                'task'       => $this->resolveTaskTypeLabel($record->task_type_key ?? null, $record->task_name ?? null, $record->record_type ?? null),
+                'taskName'   => $this->resolveTaskTypeLabel($record->task_type_key ?? null, $record->task_name ?? null, $record->record_type ?? null),
                 'schedule'   => $record->schedule_name ?? '-',
                 'scheduleName' => $record->schedule_name ?? '-',
                 'dueAt'      => $dueAtFormatted,
@@ -1013,13 +1352,33 @@ class DashboardController extends Controller
                 'dueColor'   => $dueColor,
                 'status'     => $status,
                 'statusColor' => $dueColor,
+                'reschedule' => ($rescheduleTaskTypeKey && $dueAtTimestamp)
+                    ? [
+                        'taskTypeKey' => $rescheduleTaskTypeKey,
+                        'displayId' => (int) ($record->display_id ?? 0),
+                        'facilityId' => (int) ($record->fac_id ?? 0),
+                        'workgroupId' => (int) ($record->wg_id ?? 0),
+                        'workstationId' => (int) ($record->ws_id ?? $record->workstation_id ?? 0),
+                        'startDate' => $dueObj?->format('Y-m-d') ?? '',
+                        'startTime' => $dueObj?->format('H:i') ?? '',
+                        'dayOfMonth' => $dueObj ? max(1, (int) $dueObj->format('j')) : 1,
+                        'monthNumber' => $dueObj ? max(1, (int) $dueObj->format('n')) : 1,
+                        'dayOfWeek' => $dueObj ? max(1, (int) $dueObj->isoWeekday()) : 1,
+                    ]
+                    : null,
             ];
         })->values();
 
-        return response()->json([
+        $payload = [
             'data' => $formattedData,
             'total' => $total ?? $formattedData->count(),
-        ]);
+        ];
+
+        if ($cacheKey) {
+            \Illuminate\Support\Facades\Cache::put($cacheKey, $payload, now()->addSeconds(20));
+        }
+
+        return response()->json($payload);
     }
 
     public function api_displays_failed(Request $request)
@@ -1264,6 +1623,32 @@ class DashboardController extends Controller
         $limit   = (int)$request->get('limit', 25);
         $page    = (int)$request->get('page', 1);
         $offset  = ($page - 1) * $limit;
+        $cacheKey = null;
+
+        if (
+            $page === 1 &&
+            $limit <= 10 &&
+            in_array($type, ['failed', 'ok'], true) &&
+            !$workstation_id &&
+            !$workgroup_id &&
+            empty($display_ids) &&
+            ($status === null || $status === '') &&
+            trim((string) $search) === ''
+        ) {
+            $cacheKey = 'dashboard.api_displays.v1.' . md5(implode('|', [
+                $user_id,
+                $role ?: 'guest',
+                $facility_id ?: 'all',
+                $type,
+                $sort,
+                $order,
+                $limit,
+            ]));
+
+            if ($cachedPayload = \Illuminate\Support\Facades\Cache::get($cacheKey)) {
+                return response()->json($cachedPayload);
+            }
+        }
 
         $baseQuery = DB::table('displays')
             ->join('workstations', 'workstations.id', '=', 'displays.workstation_id')
@@ -1279,8 +1664,6 @@ class DashboardController extends Controller
             ->when($workstation_id, fn($q) => $q->where('displays.workstation_id', $workstation_id))
             ->when($workgroup_id,   fn($q) => $q->where('workstations.workgroup_id', $workgroup_id))
             ->when(!empty($display_ids), fn($q) => $q->whereIn('displays.id', $display_ids))
-            ->when($type === 'ok', fn($q) => $q->where('displays.status', 1))
-            ->when($type === 'failed', fn($q) => $q->where('displays.status', 2))
             ->when($status !== null && $status !== '', fn($q) => $q->where('displays.status', $status))
             ->when($search, fn($q) => $q->where(function($q2) use ($search) {
                 $q2->where('displays.manufacturer', 'like', "%$search%")
@@ -1290,8 +1673,6 @@ class DashboardController extends Controller
                    ->orWhere('workgroups.name',     'like', "%$search%")
                    ->orWhere('facilities.name',     'like', "%$search%");
             }));
-
-        $total = (clone $baseQuery)->distinct()->count('displays.id');
 
         $baseSelect = [
             'displays.id', 'displays.manufacturer', 'displays.model', 'displays.serial',
@@ -1303,190 +1684,155 @@ class DashboardController extends Controller
             'facilities.name as fac_name', 'facilities.timezone as fac_timezone',
         ];
 
-        $sqlSortableModes = ['updated_at', 'id', 'manufacturer', 'status', 'display_name'];
-        $useSqlPaging = in_array($sort, $sqlSortableModes, true);
+        $requiresGlobalFailureMode = in_array($type, ['failed', 'ok'], true);
 
-        if ($useSqlPaging) {
-            $rows = (clone $baseQuery)->select($baseSelect);
+        if (!$requiresGlobalFailureMode) {
+            $latestHistorySubquery = DB::table('histories')
+                ->selectRaw('display_id, MAX(updated_at) as latest_history_at')
+                ->whereNull('deleted_at')
+                ->groupBy('display_id');
+
+            $fastRowsQuery = (clone $baseQuery)
+                ->leftJoinSub($latestHistorySubquery, 'latest_history', function ($join) {
+                    $join->on('latest_history.display_id', '=', 'displays.id');
+                })
+                ->select(array_merge($baseSelect, ['latest_history.latest_history_at']));
 
             switch ($sort) {
                 case 'id':
-                    $rows->orderBy('displays.id', $order);
+                    $fastRowsQuery->orderBy('displays.id', $order);
                     break;
                 case 'manufacturer':
-                    $rows->orderBy('displays.manufacturer', $order)
-                        ->orderBy('displays.model', $order)
-                        ->orderBy('displays.serial', $order);
+                case 'display_name':
+                    $fastRowsQuery->orderByRaw(
+                        "LOWER(CONCAT(COALESCE(displays.manufacturer,''), ' ', COALESCE(displays.model,''), ' ', COALESCE(displays.serial,''))) {$order}"
+                    );
                     break;
                 case 'status':
-                    $rows->orderBy('displays.status', $order)
-                        ->orderBy('displays.updated_at', 'desc');
-                    break;
-                case 'display_name':
-                    $rows->orderByRaw(
-                        "LOWER(CONCAT(COALESCE(displays.manufacturer, ''), ' ', COALESCE(displays.model, ''), ' ', COALESCE(displays.serial, ''))) {$order}"
-                    )->orderBy('displays.id', 'asc');
+                    $fastRowsQuery->orderBy('displays.status', $order);
                     break;
                 case 'updated_at':
                 default:
-                    $rows->orderBy('displays.updated_at', $order)
-                        ->orderBy('displays.id', 'desc');
+                    $fastRowsQuery->orderByRaw(
+                        "COALESCE(latest_history.latest_history_at, displays.updated_at, workstations.last_connected, displays.created_at) {$order}"
+                    );
                     break;
             }
 
-            $rows = $rows->offset($offset)->limit($limit)->get();
+            $total = (clone $baseQuery)->count();
+            $rows = $fastRowsQuery
+                ->orderBy('displays.id', $order === 'asc' ? 'asc' : 'desc')
+                ->offset($offset)
+                ->limit($limit)
+                ->get()
+                ->map(function ($row) {
+                    $row->latest_history_at = $row->latest_history_at ?? null;
+                    $row->latest_hours_at = null;
+                    $row->latest_hours_duration = null;
+                    $row->latest_hours_synced_at = null;
+                    $row->latest_activity_at = $row->latest_history_at ?: ($row->updated_at ?: ($row->ws_last_connected ?: $row->created_at));
+                    $row->latest_activity_source = $row->latest_history_at ? 'history' : ($row->updated_at ? 'sync' : ($row->ws_last_connected ? 'workstation' : 'created'));
+                    $row->latest_failed_history_name = null;
+                    $row->latest_failed_history_at = null;
+                    $row->latest_failed_history_time = null;
+                    $row->has_unresolved_failure = false;
+                    $row->unresolved_tests_count = 0;
+
+                    return $row;
+                });
+
+            $rows = collect($this->applyDashboardFailedDisplayMode(
+                $rows->map(fn ($row) => (array) $row)->all()
+            ))->map(function (array $row) {
+                return (object) $row;
+            })->values();
         } else {
             $rows = (clone $baseQuery)
                 ->select($baseSelect)
                 ->get();
-        }
 
-        $displayIds = $rows->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->filter()
-            ->unique()
-            ->values();
-
-        $historyActivityMap = $displayIds->isEmpty()
-            ? []
-            : DB::table('histories')
-                ->selectRaw('display_id, MAX(updated_at) as latest_history_at')
-                ->whereNull('deleted_at')
-                ->whereIn('display_id', $displayIds->all())
-                ->groupBy('display_id')
-                ->pluck('latest_history_at', 'display_id')
-                ->map(fn ($value) => $value ? (string) $value : null)
-                ->all();
-
-        $hoursSummaryMap = [];
-
-        if ($displayIds->isNotEmpty()) {
-            $expectedDisplayCount = $displayIds->count();
-
-            foreach (
-                DB::table('display_hours')
-                    ->select(['id', 'display_id', 'start', 'duration', 'updated_at'])
-                    ->whereIn('display_id', $displayIds->all())
-                    ->orderBy('display_id')
-                    ->orderByDesc('start')
-                    ->orderByDesc('id')
-                    ->cursor() as $row
-            ) {
-                $displayId = (int) $row->display_id;
-
-                if (isset($hoursSummaryMap[$displayId])) {
-                    continue;
-                }
-
-                $hoursSummaryMap[$displayId] = [
-                    'latest_hours_at' => $row->start ? (string) $row->start : null,
-                    'latest_hours_duration' => $row->duration !== null ? (float) $row->duration : null,
-                    'latest_hours_synced_at' => $row->updated_at ? (string) $row->updated_at : null,
-                ];
-
-                if (count($hoursSummaryMap) >= $expectedDisplayCount) {
-                    break;
-                }
-            }
-        }
-
-        $rows = $rows->map(function ($row) use ($historyActivityMap, $hoursSummaryMap) {
-            $historyAt = $historyActivityMap[$row->id] ?? null;
-            $hoursMeta = $hoursSummaryMap[$row->id] ?? [
-                'latest_hours_at' => null,
-                'latest_hours_duration' => null,
-                'latest_hours_synced_at' => null,
-            ];
-            $hoursAt = $hoursMeta['latest_hours_at'] ?? null;
-            $hoursSyncedAt = $hoursMeta['latest_hours_synced_at'] ?? null;
-            $displayUpdatedAt = $row->updated_at ? (string) $row->updated_at : null;
-            $workstationLastConnected = $row->ws_last_connected ? (string) $row->ws_last_connected : null;
-            $createdAt = $row->created_at ? (string) $row->created_at : null;
-
-            $activityCandidates = collect([
-                ['source' => 'history', 'value' => $historyAt],
-                ['source' => 'hours', 'value' => $hoursSyncedAt],
-                ['source' => 'sync', 'value' => $displayUpdatedAt],
-                ['source' => 'workstation', 'value' => $workstationLastConnected],
-            ])->filter(fn ($item) => !empty($item['value']))
-                ->sortByDesc('value')
+            $displayIds = $rows->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->filter()
+                ->unique()
                 ->values();
 
-            $latestActivity = $activityCandidates->first();
-            $latestActivityAt = $latestActivity['value'] ?? $createdAt;
-            $latestActivitySource = $latestActivity['source'] ?? ($createdAt ? 'created' : 'none');
+            $historyActivityMap = $displayIds->isEmpty()
+                ? []
+                : DB::table('histories')
+                    ->selectRaw('display_id, MAX(updated_at) as latest_history_at')
+                    ->whereNull('deleted_at')
+                    ->whereIn('display_id', $displayIds->all())
+                    ->groupBy('display_id')
+                    ->pluck('latest_history_at', 'display_id')
+                    ->map(fn ($value) => $value ? (string) $value : null)
+                    ->all();
 
-            $row->latest_history_at = $historyAt;
-            $row->latest_hours_at = $hoursAt;
-            $row->latest_hours_duration = $hoursMeta['latest_hours_duration'] ?? null;
-            $row->latest_hours_synced_at = $hoursSyncedAt;
-            $row->latest_activity_at = $latestActivityAt;
-            $row->latest_activity_source = $latestActivitySource;
-            $row->latest_failed_history_name = null;
-            $row->latest_failed_history_at = null;
-            $row->latest_failed_history_time = null;
+            $rows = $rows->map(function ($row) use ($historyActivityMap) {
+                $historyAt = $historyActivityMap[$row->id] ?? null;
+                $displayUpdatedAt = $row->updated_at ? (string) $row->updated_at : null;
+                $workstationLastConnected = $row->ws_last_connected ? (string) $row->ws_last_connected : null;
+                $createdAt = $row->created_at ? (string) $row->created_at : null;
 
-            return $row;
-        })->values();
+                $activityCandidates = collect([
+                    ['source' => 'history', 'value' => $historyAt],
+                    ['source' => 'sync', 'value' => $displayUpdatedAt],
+                    ['source' => 'workstation', 'value' => $workstationLastConnected],
+                ])->filter(fn ($item) => !empty($item['value']))
+                    ->sortByDesc('value')
+                    ->values();
 
-        if (!$useSqlPaging) {
-            $rows = $rows->sort(function ($a, $b) use ($sort, $order) {
-                $direction = $order === 'asc' ? 1 : -1;
+                $latestActivity = $activityCandidates->first();
+                $latestActivityAt = $latestActivity['value'] ?? $createdAt;
+                $latestActivitySource = $latestActivity['source'] ?? ($createdAt ? 'created' : 'none');
 
-                $normalizeString = function ($value) {
-                    return mb_strtolower(trim((string) ($value ?? '')));
-                };
+                $row->latest_history_at = $historyAt;
+                $row->latest_hours_at = null;
+                $row->latest_hours_duration = null;
+                $row->latest_hours_synced_at = null;
+                $row->latest_activity_at = $latestActivityAt;
+                $row->latest_activity_source = $latestActivitySource;
+                $row->latest_failed_history_name = null;
+                $row->latest_failed_history_at = null;
+                $row->latest_failed_history_time = null;
+                $row->has_unresolved_failure = false;
+                $row->unresolved_tests_count = 0;
 
-                $compare = function ($left, $right) use ($direction) {
-                    if ($left === $right) {
-                        return 0;
-                    }
-
-                    if ($left === null || $left === '') {
-                        return 1;
-                    }
-
-                    if ($right === null || $right === '') {
-                        return -1;
-                    }
-
-                    return $left <=> $right;
-                };
-
-                switch ($sort) {
-                    case 'display_name':
-                        $left = $normalizeString(($a->manufacturer ?? '') . ' ' . ($a->model ?? '') . ' ' . ($a->serial ?? ''));
-                        $right = $normalizeString(($b->manufacturer ?? '') . ' ' . ($b->model ?? '') . ' ' . ($b->serial ?? ''));
-                        return $compare($left, $right) * $direction;
-
-                    case 'status':
-                        return $compare((int) ($a->status ?? 0), (int) ($b->status ?? 0)) * $direction;
-
-                    case 'display_hours':
-                        $hoursCompare = $compare(
-                            $a->latest_hours_duration !== null ? (float) $a->latest_hours_duration : null,
-                            $b->latest_hours_duration !== null ? (float) $b->latest_hours_duration : null
-                        );
-
-                        if ($hoursCompare !== 0) {
-                            return $hoursCompare * $direction;
-                        }
-
-                        return $compare($a->latest_hours_synced_at, $b->latest_hours_synced_at) * $direction;
-
-                    case 'manufacturer':
-                        return $compare($normalizeString($a->manufacturer), $normalizeString($b->manufacturer)) * $direction;
-
-                    case 'id':
-                        return $compare((int) $a->id, (int) $b->id) * $direction;
-
-                    case 'latest_activity':
-                    case 'updated_at':
-                    default:
-                        return $compare($a->latest_activity_at, $b->latest_activity_at) * $direction;
-                }
+                return $row;
             })->values();
 
+            $rows = collect($this->applyDashboardFailedDisplayMode(
+                $rows->map(fn ($row) => (array) $row)->all()
+            ))->map(function (array $row) {
+                return (object) $row;
+            })->values();
+
+            if ($type === 'failed') {
+                $rows = $rows->filter(fn ($row) => !empty($row->has_unresolved_failure))->values();
+            } elseif ($type === 'ok') {
+                $rows = $rows->filter(fn ($row) => empty($row->has_unresolved_failure))->values();
+            }
+
+            switch ($sort) {
+                case 'id':
+                    $rows = $rows->sortBy('id', SORT_NATURAL, $order === 'desc')->values();
+                    break;
+                case 'manufacturer':
+                    $rows = $rows->sortBy(fn ($row) => mb_strtolower(trim(($row->manufacturer ?? '') . ' ' . ($row->model ?? '') . ' ' . ($row->serial ?? ''))), SORT_NATURAL, $order === 'desc')->values();
+                    break;
+                case 'status':
+                    $rows = $rows->sortBy('status', SORT_NATURAL, $order === 'desc')->values();
+                    break;
+                case 'display_name':
+                    $rows = $rows->sortBy(fn ($row) => mb_strtolower(trim(($row->manufacturer ?? '') . ' ' . ($row->model ?? '') . ' ' . ($row->serial ?? ''))), SORT_NATURAL, $order === 'desc')->values();
+                    break;
+                case 'updated_at':
+                default:
+                    $rows = $rows->sortBy(fn ($row) => $row->latest_failed_history_time ?: ($row->updated_at ?? ''), SORT_NATURAL, $order === 'desc')->values();
+                    break;
+            }
+
+            $total = $rows->count();
             $rows = $rows->slice($offset, $limit)->values();
         }
 
@@ -1496,6 +1842,38 @@ class DashboardController extends Controller
             ->filter()
             ->unique()
             ->values();
+
+        $pageHoursSummaryMap = [];
+
+        if ($pageDisplayIds->isNotEmpty()) {
+            $expectedDisplayCount = $pageDisplayIds->count();
+
+            foreach (
+                DB::table('display_hours')
+                    ->select(['id', 'display_id', 'start', 'duration', 'updated_at'])
+                    ->whereIn('display_id', $pageDisplayIds->all())
+                    ->orderBy('display_id')
+                    ->orderByDesc('start')
+                    ->orderByDesc('id')
+                    ->cursor() as $row
+            ) {
+                $displayId = (int) $row->display_id;
+
+                if (isset($pageHoursSummaryMap[$displayId])) {
+                    continue;
+                }
+
+                $pageHoursSummaryMap[$displayId] = [
+                    'latest_hours_at' => $row->start ? (string) $row->start : null,
+                    'latest_hours_duration' => $row->duration !== null ? (float) $row->duration : null,
+                    'latest_hours_synced_at' => $row->updated_at ? (string) $row->updated_at : null,
+                ];
+
+                if (count($pageHoursSummaryMap) >= $expectedDisplayCount) {
+                    break;
+                }
+            }
+        }
 
         if ($pageDisplayIds->isNotEmpty()) {
             $failedHistories = \App\Models\History::query()
@@ -1569,12 +1947,18 @@ class DashboardController extends Controller
             return '';
         };
 
-        $data = $rows->map(function ($r) use ($role, $formatHours, $failedHistorySummaryMap, $extractLatestErrorText) {
+        $data = $rows->map(function ($r) use ($role, $formatHours, $failedHistorySummaryMap, $extractLatestErrorText, $pageHoursSummaryMap) {
             $parts = array_filter([$r->wg_address, $r->wg_city, $r->wg_state]);
             $errors = json_decode($r->errors ?? '[]', true);
-            $syncAt = $r->latest_hours_synced_at ?: $r->updated_at ?: $r->ws_last_connected;
-            $hoursAt = $r->latest_hours_at;
-            $hoursSyncedAt = $r->latest_hours_synced_at;
+            $hoursMeta = $pageHoursSummaryMap[(int) $r->id] ?? [
+                'latest_hours_at' => null,
+                'latest_hours_duration' => null,
+                'latest_hours_synced_at' => null,
+            ];
+            $hoursAt = $hoursMeta['latest_hours_at'] ?? null;
+            $hoursSyncedAt = $hoursMeta['latest_hours_synced_at'] ?? null;
+            $hoursDuration = $hoursMeta['latest_hours_duration'] ?? null;
+            $syncAt = $hoursSyncedAt ?: $r->updated_at ?: $r->ws_last_connected;
             $displayTimezone = $r->fac_timezone ?: config('app.timezone', 'UTC');
             $syncFormatted = $syncAt ? \Carbon\Carbon::parse($syncAt)->setTimezone($displayTimezone)->format('d M Y H:i') : '-';
             $createdFormatted = $r->created_at ? \Carbon\Carbon::parse($r->created_at)->setTimezone($displayTimezone)->format('d M Y H:i') : '-';
@@ -1582,11 +1966,18 @@ class DashboardController extends Controller
             $issueText = $extractLatestErrorText($errors);
             $failedCheckText = trim((string) ($failedSummary['latest_failed_check_text'] ?? ''));
             $failedHistoryText = trim((string) ($failedSummary['latest_failed_history_name'] ?? ($r->latest_failed_history_name ?: '')));
-            $healthy = (int) $r->status === 1;
+            $unresolvedTestsCount = (int) ($failedSummary['unresolved_tests_count'] ?? ($r->unresolved_tests_count ?? 0));
+            $healthy = (int) $r->status === 1 && empty($r->has_unresolved_failure);
 
             if ($healthy) {
                 $attentionText = __('No active alert');
                 $attentionMode = 'healthy';
+            } elseif (!empty($r->has_unresolved_failure) && $failedHistoryText !== '') {
+                $attentionText = __('Unresolved failed test: :test', ['test' => $failedHistoryText]);
+                if ($unresolvedTestsCount > 1) {
+                    $attentionText .= ' ' . __('(+:count more)', ['count' => $unresolvedTestsCount - 1]);
+                }
+                $attentionMode = 'failed_history';
             } elseif ($issueText !== '') {
                 $attentionText = $issueText;
                 $attentionMode = 'live';
@@ -1618,18 +2009,19 @@ class DashboardController extends Controller
                 'latestHistoryAt' => $r->latest_history_at ? \Carbon\Carbon::parse($r->latest_history_at)->setTimezone($displayTimezone)->format('d M Y H:i') : '-',
                 'latestHoursAt' => $hoursAt ? \Carbon\Carbon::parse($hoursAt)->setTimezone($displayTimezone)->format('d M Y H:i') : '-',
                 'latestHoursSyncedAt' => $hoursSyncedAt ? \Carbon\Carbon::parse($hoursSyncedAt)->setTimezone($displayTimezone)->format('d M Y H:i') : '-',
-                'latestHoursDuration' => $r->latest_hours_duration !== null ? (float) $r->latest_hours_duration : null,
-                'latestHoursFormatted' => $formatHours($r->latest_hours_duration),
+                'latestHoursDuration' => $hoursDuration !== null ? (float) $hoursDuration : null,
+                'latestHoursFormatted' => $formatHours($hoursDuration),
                 'latestActivityMode' => 'sync',
                 'latestActivitySource' => 'sync',
                 'attentionText' => $attentionText,
                 'attentionMode' => $attentionMode,
                 'latestFailedHistoryName' => $failedSummary['latest_failed_history_name'] ?? ($r->latest_failed_history_name ?: null),
                 'latestFailedCheckText' => $failedSummary['latest_failed_check_text'] ?? null,
+                'unresolvedTestsCount' => $unresolvedTestsCount,
                 'latestFailedHistoryAt' => $r->latest_failed_history_at
-                    ? \Carbon\Carbon::parse($r->latest_failed_history_at)->format('d M Y H:i')
+                    ? \Carbon\Carbon::parse($r->latest_failed_history_at)->setTimezone($displayTimezone)->format('d M Y H:i')
                     : ($r->latest_failed_history_time
-                        ? \Carbon\Carbon::createFromTimestamp($r->latest_failed_history_time)->format('d M Y H:i')
+                        ? \Carbon\Carbon::createFromTimestamp($r->latest_failed_history_time, 'UTC')->setTimezone($displayTimezone)->format('d M Y H:i')
                         : '-'),
                 'errors'      => is_array($errors) ? $errors : [],
                 'canManage'   => in_array($role, ['super', 'admin'], true),
@@ -1637,7 +2029,13 @@ class DashboardController extends Controller
             ];
         });
 
-        return response()->json(['data' => $data, 'total' => $total]);
+        $payload = ['data' => $data, 'total' => $total];
+
+        if ($cacheKey) {
+            \Illuminate\Support\Facades\Cache::put($cacheKey, $payload, now()->addSeconds(20));
+        }
+
+        return response()->json($payload);
     }
 
     // ─── API: WORKSTATIONS ───────────────────────────────────────────────────
@@ -1723,11 +2121,52 @@ class DashboardController extends Controller
 
         $rows = $rowsQuery->offset($offset)->limit($limit)->get();
 
-        $data = $rows->map(function($r) use ($role) {
-            $lc = $r->last_connected ? \Carbon\Carbon::parse($r->last_connected) : null;
+        $attentionCounts = [];
+        $pageWorkstationIds = $rows->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if (!empty($pageWorkstationIds)) {
+            $attentionDisplayRows = DB::table('displays')
+                ->join('workstations', 'workstations.id', '=', 'displays.workstation_id')
+                ->join('workgroups', 'workgroups.id', '=', 'workstations.workgroup_id')
+                ->join('facilities', 'facilities.id', '=', 'workgroups.facility_id')
+                ->leftJoin('display_preferences as excluded_pref', function ($join) {
+                    $join->on('excluded_pref.display_id', '=', 'displays.id')
+                        ->where('excluded_pref.name', '=', 'exclude')
+                        ->where('excluded_pref.value', '=', '1');
+                })
+                ->whereNull('excluded_pref.id')
+                ->whereIn('workstations.id', $pageWorkstationIds)
+                ->select([
+                    'displays.id',
+                    'displays.workstation_id',
+                    'displays.status',
+                    'displays.errors',
+                    'displays.updated_at',
+                ])
+                ->get()
+                ->map(fn ($row) => (array) $row)
+                ->all();
+
+            $attentionDisplayRows = $this->applyDashboardFailedDisplayMode($attentionDisplayRows);
+
+            $attentionCounts = collect($attentionDisplayRows)
+                ->filter(fn ($row) => !empty($row['has_unresolved_failure']))
+                ->groupBy(fn ($row) => (int) ($row['workstation_id'] ?? 0))
+                ->map(fn ($group) => $group->count())
+                ->all();
+        }
+
+        $data = $rows->map(function($r) use ($role, $attentionCounts) {
+            $lc = $r->last_connected ? \Carbon\Carbon::parse($r->last_connected, config('app.timezone', 'UTC')) : null;
             $lcFormatted = $lc ? $lc->format('d M Y H:i') : '-';
             $daysSince = $lc ? $lc->diffInDays(\Carbon\Carbon::now()) : 999;
             $lcColor = $daysSince > 15 ? 'danger' : ($daysSince > 7 ? 'warning' : 'success');
+            $attentionCount = (int) ($attentionCounts[(int) $r->id] ?? 0);
             return [
                 'id'            => $r->id,
                 'name'          => $r->name,
@@ -1737,11 +2176,13 @@ class DashboardController extends Controller
                 'facName'       => $r->fac_name ?? '-',
                 'sleepTime'     => $r->sleep_time ?: 'Off',
                 'lastConnected' => $lcFormatted,
+                'lastConnectedAt' => $lc ? $lc->copy()->utc()->toIso8601String() : null,
                 'lastSeenRelative' => $lc ? $lc->diffForHumans() : 'No sync data',
                 'lcColor'       => $lcColor,
                 'displaysCount' => (int)$r->displays_count,
                 'okDisplaysCount' => (int)$r->ok_displays_count,
                 'failedDisplaysCount' => (int)$r->failed_displays_count,
+                'attentionCount' => $attentionCount,
                 'displayHealth' => (int)$r->failed_displays_count > 0
                     ? 'failed'
                     : (((int)$r->displays_count > 0) && ((int)$r->ok_displays_count === (int)$r->displays_count) ? 'ok' : 'unknown'),
@@ -1888,10 +2329,13 @@ class DashboardController extends Controller
             ->when($workstation_id, fn($q) => $q->where('displays.workstation_id', $workstation_id))
             ->when($display_id,     fn($q) => $q->where('histories.display_id', $display_id))
             ->when($search, fn($q) => $q->where(function($q2) use ($search) {
-                $q2->where('displays.manufacturer', 'like', "%$search%")
+                $q2->where('histories.name',        'like', "%$search%")
+                   ->orWhere('histories.regulation','like', "%$search%")
+                   ->orWhere('displays.manufacturer', 'like', "%$search%")
                    ->orWhere('displays.model',      'like', "%$search%")
                    ->orWhere('displays.serial',     'like', "%$search%")
                    ->orWhere('workstations.name',   'like', "%$search%")
+                   ->orWhere('workgroups.name',     'like', "%$search%")
                    ->orWhere('facilities.name',     'like', "%$search%");
             }));
 
@@ -1937,7 +2381,9 @@ class DashboardController extends Controller
             'wgName'      => $r->wg_name  ?? '-',
             'facName'     => $r->fac_name ?? '-',
             'result'      => $r->result == 2 ? 'passed' : 'failed',
-            'time'        => $r->time ? \Carbon\Carbon::createFromTimestamp($r->time)->format('Y-m-d H:i') : '-',
+            'timeTs'      => $r->time ? (int) $r->time : null,
+            'timeIso'     => $r->time ? \Carbon\Carbon::createFromTimestampUTC((int) $r->time)->format('Y-m-d\TH:i:s') : null,
+            'time'        => $r->time ? \Carbon\Carbon::createFromTimestampUTC((int) $r->time)->format('Y-m-d H:i') : '-',
         ]);
 
         return response()->json(['data' => $data, 'total' => $total]);
@@ -1990,6 +2436,7 @@ class DashboardController extends Controller
             ->where('tasks.deleted', 0)
             ->whereNotNull('tasks.type')
             ->whereNotNull('tasks.schtype')
+            ->tap(fn ($q) => $this->applyCompletedOneShotTaskVisibilityGuard($q))
             ->whereRaw($taskDueExpression . ' > 0')
             ->when($dueScope === 'due', fn($q) => $q->whereRaw($taskDueExpression . ' <= ?', [$nowTimestamp]))
             ->when($facility_id, fn($q) => $q->where('workgroups.facility_id', $facility_id))
@@ -2011,13 +2458,18 @@ class DashboardController extends Controller
                 DB::raw("'task' as record_type"),
                 'tasks.id',
                 'tasks.display_id',
+                'tasks.type as task_type_key',
+                'tasks.schtype as schedule_type_id',
                 'tasks.status',
+                'tasks.lastrun',
                 'tasks.disabled',
                 'tasks.deleted',
                 'task_types.title as task_name',
                 'schedule_types.title as schedule_name',
                 DB::raw($taskDueExpression . ' as due_at'),
                 DB::raw($taskDueExpression . ' as computed_due_at'),
+                'tasks.startdate',
+                'tasks.starttime',
                 'tasks.created_at as created_at',
                 'displays.manufacturer',
                 'displays.model',
@@ -2054,18 +2506,25 @@ class DashboardController extends Controller
                     ->orWhere('workgroups.name', 'like', "%$search%")
                     ->orWhere('facilities.name', 'like', "%$search%")
                     ->orWhere('qa_tasks.name', 'like', "%$search%");
-            }))
+            }));
+
+        $qaRows = $this->applyQaTaskVisibilityGuard($qaRows)
             ->select([
                 DB::raw("'qa_task' as record_type"),
                 'qa_tasks.id',
                 'qa_tasks.display_id',
+                DB::raw('NULL as task_type_key'),
+                DB::raw('0 as schedule_type_id'),
                 DB::raw('0 as status'),
+                DB::raw('0 as lastrun'),
                 DB::raw('0 as disabled'),
                 DB::raw('0 as deleted'),
                 'qa_tasks.name as task_name',
                 'qa_tasks.freq as schedule_name',
                 'qa_tasks.nextdate as due_at',
                 'qa_tasks.nextdate as computed_due_at',
+                DB::raw('NULL as startdate'),
+                DB::raw('NULL as starttime'),
                 'qa_tasks.created_at as created_at',
                 'displays.manufacturer',
                 'displays.model',
@@ -2145,22 +2604,33 @@ class DashboardController extends Controller
 
         $data = $rows->map(function($r) {
             $ts = (int) ($r->computed_due_at ?? 0);
+            $displayTimezone = $r->fac_timezone ?: config('app.timezone', 'UTC');
             $dueFormatted = $this->formatRecordDueAt($r, $ts);
+            if (
+                ($r->record_type ?? null) === 'task'
+                && (int) ($r->schedule_type_id ?? -1) === \App\Models\ScheduleType::STARTUP
+                && !empty($r->startdate)
+            ) {
+                try {
+                    $dueFormatted = \Carbon\Carbon::createFromFormat(
+                        'Y-m-d',
+                        str_replace('.', '-', (string) $r->startdate),
+                        $displayTimezone
+                    )->format('d M Y');
+                } catch (\Throwable $e) {
+                    $dueFormatted = $this->formatRecordDueAt($r, $ts);
+                }
+            }
             $createdFormatted = $r->created_at
-                ? \Carbon\Carbon::parse($r->created_at)->format('d M Y H:i')
+                ? \Carbon\Carbon::parse($r->created_at, config('app.timezone', 'UTC'))->setTimezone($displayTimezone)->format('d M Y H:i')
                 : 'Not recorded';
+            $lastExecutionFormatted = $this->formatSchedulerLastExecutionAt($r);
             $dueObj = $ts
-                ? \Carbon\Carbon::createFromTimestampUTC($ts)->setTimezone($r->fac_timezone ?: config('app.timezone', 'UTC'))
+                ? \Carbon\Carbon::createFromTimestampUTC($ts)->setTimezone($displayTimezone)
                 : null;
             $isPast = $dueObj ? $dueObj->isPast() : false;
             $isSoon = $dueObj ? (!$isPast && $dueObj->diffInDays(\Carbon\Carbon::now($r->fac_timezone ?: config('app.timezone', 'UTC'))) <= 7) : false;
-            $statusMap = [0 => 'OK', 1 => 'Failed', 2 => 'Run Error'];
-            $derivedStatus = ($r->status ?? 0) == 0 && $ts && $isPast
-                ? 'Due'
-                : ($statusMap[$r->status] ?? 'Unknown');
-            $derivedStatusColor = ($r->status ?? 0) == 0 && $ts && $isPast
-                ? 'danger'
-                : (($r->status ?? 0) == 0 ? 'success' : 'danger');
+            $derivedStatus = $this->resolveSchedulerStatus($r, $ts, $isPast);
             $enabled = ((int) ($r->disabled ?? 0) !== 1) && ((int) ($r->deleted ?? 0) !== 1);
             return [
                 'id'          => $r->id,
@@ -2173,13 +2643,14 @@ class DashboardController extends Controller
                 'wsName'      => $r->ws_name  ?? '-',
                 'wgName'      => $r->wg_name  ?? '-',
                 'facName'     => $r->fac_name ?? '-',
-                'taskName'    => $r->task_name ?? $r->record_type,
+                'taskName'    => $this->resolveTaskTypeLabel($r->task_type_key ?? null, $r->task_name ?? null, $r->record_type ?? null),
                 'scheduleName'=> $r->schedule_name ?? '-',
+                'lastExecutionAt' => $lastExecutionFormatted,
                 'createdAt'   => $createdFormatted,
                 'dueAt'       => $dueFormatted,
                 'dueColor'    => $isPast ? 'danger' : ($isSoon ? 'warning' : 'success'),
-                'status'      => $derivedStatus,
-                'statusColor' => $derivedStatusColor,
+                'status'      => $derivedStatus['label'],
+                'statusColor' => $derivedStatus['tone'],
                 'enabledLabel'=> $enabled ? 'Enabled' : 'Disabled',
                 'enabledColor'=> $enabled ? 'success' : 'slate',
             ];
@@ -2247,6 +2718,7 @@ class DashboardController extends Controller
                   'tasks.status',
                   'tasks.disabled',
                   'tasks.deleted',
+                  'tasks.schtype',
                   'tasks.user_id',
                   'tasks.startdate',
                   'tasks.starttime',
@@ -2258,6 +2730,7 @@ class DashboardController extends Controller
                   'workstations.name as ws_name',
                   'workgroups.name as wg_name',
                   'facilities.name as fac_name',
+                  'facilities.timezone as fac_timezone',
                   'users.fullname as created_by_fullname',
                   'users.name as created_by_name',
                   'users.email as created_by_email',
@@ -2295,7 +2768,20 @@ class DashboardController extends Controller
 
         $data = $rows->map(function ($r) {
             $ts = (int) $r->due_at;
-            $due = $ts ? \Carbon\Carbon::createFromTimestamp($ts) : null;
+            $displayTimezone = $r->fac_timezone ?: config('app.timezone', 'UTC');
+            $due = $ts ? \Carbon\Carbon::createFromTimestampUTC($ts)->setTimezone($displayTimezone) : null;
+            $dueAt = $due ? $due->format('d M Y H:i') : '-';
+            if ((int) ($r->schtype ?? -1) === \App\Models\ScheduleType::STARTUP && !empty($r->startdate)) {
+                try {
+                    $dueAt = \Carbon\Carbon::createFromFormat(
+                        'Y-m-d',
+                        str_replace('.', '-', (string) $r->startdate),
+                        $displayTimezone
+                    )->format('d M Y');
+                } catch (\Throwable $e) {
+                    $dueAt = $due ? $due->format('d M Y H:i') : '-';
+                }
+            }
             return [
                   'id' => $r->id,
                   'displayId' => $r->display_id,
@@ -2308,10 +2794,10 @@ class DashboardController extends Controller
                   'facName' => $r->fac_name ?? '-',
                   'taskName' => $r->task_name ?: 'Calibration',
                   'scheduleName' => $r->schedule_name ?: 'Manual',
-                  'dueAt' => $due ? $due->format('d M Y H:i') : '-',
+                  'dueAt' => $dueAt,
                   'dueAtTs' => $ts ?: null,
                   'dueColor' => $due && $due->isPast() ? 'danger' : 'neutral',
-                  'createdAt' => $r->created_at ? \Carbon\Carbon::parse($r->created_at)->format('d M Y H:i') : 'Not recorded',
+                  'createdAt' => $r->created_at ? \Carbon\Carbon::parse($r->created_at, config('app.timezone'))->setTimezone($displayTimezone)->format('d M Y H:i') : 'Not recorded',
                   'createdBy' => $r->created_by_fullname ?: ($r->created_by_name ?: ($r->created_by_email ?: 'System')),
                   'statusLabel' => ((int) ($r->disabled ?? 0) === 1 || (int) ($r->deleted ?? 0) === 1) ? 'Inactive' : (((int) ($r->status ?? 0) === 1) ? 'Running' : 'Active'),
                   'statusTone' => ((int) ($r->disabled ?? 0) === 1 || (int) ($r->deleted ?? 0) === 1) ? 'slate' : (((int) ($r->status ?? 0) === 1) ? 'emerald' : 'sky'),
@@ -2430,6 +2916,7 @@ class DashboardController extends Controller
                 DB::raw('COALESCE(dc.ok_cnt, 0) as ok_displays_count'),
                 DB::raw('COALESCE(dc.failed_cnt, 0) as failed_displays_count'),
             ])
+            ->whereNull('facilities.deleted_at')
             ->when($role !== 'super', fn($q) => $q->where('facilities.id', $user->facility_id))
             ->when($type === 'ok', fn($q) => $q->whereRaw('COALESCE(dc.failed_cnt, 0) = 0 AND COALESCE(dc.ok_cnt, 0) = COALESCE(dc.cnt, 0) AND COALESCE(dc.cnt, 0) > 0'))
             ->when($type === 'failed', fn($q) => $q->whereRaw('COALESCE(dc.failed_cnt, 0) > 0'))

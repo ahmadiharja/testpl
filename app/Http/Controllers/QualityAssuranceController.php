@@ -83,7 +83,7 @@ class QualityAssuranceController extends Controller
             }
             
             $request->session()->flash('success', "Calibration task created successfully!");
-            return redirect('scheduler');
+            return redirect()->route('displays.scheduler');
         }
         //shedule task calibrate
         /*if($request->input('displays2')!='')
@@ -119,7 +119,7 @@ class QualityAssuranceController extends Controller
             }
             
             $request->session()->flash('success', "Schedule task created successfully!");
-            return redirect('scheduler');
+            return redirect()->route('displays.scheduler');
         }*/
         
         return view('scheduler.index', [
@@ -203,8 +203,8 @@ class QualityAssuranceController extends Controller
         $data['success']=0;
         
         $data['content']="<div class='form-check mb-0 py-1 px-4'>
-        <input class='form-check-input flex-shrink-0' type='checkbox' id='' name='displays2[]'>
-        <label class='form-check-label flex-grow-1' for='formCheck-7'>Select All</label>
+        <input class='form-check-input flex-shrink-0' type='checkbox' id='schedule-display-select-all' name='displays[]'>
+        <label class='form-check-label flex-grow-1' for='schedule-display-select-all'>Select All</label>
         </div>";
         
         $workstation_id=$request->input('id');
@@ -227,8 +227,8 @@ class QualityAssuranceController extends Controller
         foreach($row as $r)
         {
             $data['content'].="<div class='form-check mb-0 py-1 px-4'>
-        <input class='form-check-input flex-shrink-0' type='checkbox' id='".$r->id."' value='".$r->id."' name='displays2[]'>
-        <label class='form-check-label flex-grow-1' for='formCheck-7'>".$r->manufacturer." ".$r->model." (".$r->serial.")</label>
+        <input class='form-check-input flex-shrink-0' type='checkbox' id='schedule-display-".$r->id."' value='".$r->id."' name='displays[]'>
+        <label class='form-check-label flex-grow-1' for='schedule-display-".$r->id."'>".$r->manufacturer." ".$r->model." (".$r->serial.")</label>
         </div>";
         }
        

@@ -37,6 +37,9 @@
         'updateWorkgroupDetails' => __('Update workgroup details'),
         'unableToLoadWorkgroupForm' => __('Unable to load workgroup form.'),
         'unableToSaveWorkgroup' => __('Unable to save workgroup.'),
+        'workgroupCreated' => __('Workgroup created successfully.'),
+        'workgroupUpdated' => __('Workgroup updated successfully.'),
+        'workgroupDeleted' => __('Workgroup deleted successfully.'),
         'deleteWorkgroup' => __('Delete Workgroup'),
         'deleting' => __('Deleting...'),
         'unableToDeleteWorkgroup' => __('Unable to delete workgroup.'),
@@ -160,12 +163,16 @@
         border-bottom: 1px solid #e3ecf5;
         background: #f8fbff;
     }
-    .workgroup-table-search {
+    .workgroup-table-search-wrap {
+        position: relative;
         width: min(440px, 100%);
+    }
+    .workgroup-table-search {
+        width: 100%;
         height: 42px;
         border-radius: 999px;
         border: 1px solid #c9d8e8;
-        padding: 0 16px;
+        padding: 0 46px 0 16px;
         font-size: 14px;
         font-weight: 600;
         color: #12263a;
@@ -175,6 +182,31 @@
         outline: none;
         border-color: #1d9bf0;
         box-shadow: 0 0 0 3px rgba(29, 155, 240, 0.16);
+    }
+    .workgroup-table-search-clear {
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        display: inline-flex;
+        width: 28px;
+        height: 28px;
+        align-items: center;
+        justify-content: center;
+        transform: translateY(-50%);
+        border: 0;
+        border-radius: 999px;
+        color: #64748b;
+        background: transparent;
+        transition: background .18s ease, color .18s ease;
+    }
+    .workgroup-table-search-clear:hover,
+    .workgroup-table-search-clear:focus {
+        color: #0f172a;
+        background: #e8f2fb;
+        outline: none;
+    }
+    .workgroup-table-search-clear[hidden] {
+        display: none;
     }
     .workgroup-table-wrap {
         overflow-x: auto;
@@ -213,6 +245,78 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+    .workgroup-table td:nth-child(2),
+    .workgroup-table td:nth-child(3),
+    .workgroup-table td:nth-child(4) {
+        overflow: visible;
+    }
+    .workgroup-tooltip-cell {
+        position: relative;
+        display: inline-block;
+        max-width: 100%;
+        vertical-align: middle;
+    }
+    .workgroup-tooltip-text {
+        display: block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .workgroup-tooltip-bubble {
+        position: absolute;
+        left: 0;
+        bottom: calc(100% + 10px);
+        z-index: 80;
+        min-width: 220px;
+        max-width: min(420px, 70vw);
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: #0f172a;
+        color: #fff;
+        box-shadow: 0 18px 38px rgba(15, 23, 42, 0.22);
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.45;
+        letter-spacing: 0;
+        white-space: pre-line;
+        overflow-wrap: anywhere;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(4px);
+        transition: opacity .16s ease, transform .16s ease;
+    }
+    .workgroup-tooltip-bubble::after {
+        content: '';
+        position: absolute;
+        left: 18px;
+        top: 100%;
+        border: 6px solid transparent;
+        border-top-color: #0f172a;
+    }
+    .workgroup-tooltip-cell:hover .workgroup-tooltip-bubble,
+    .workgroup-tooltip-cell:focus .workgroup-tooltip-bubble {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .workgroup-field-invalid {
+        border-color: #fda4af !important;
+        background: #fff7f8 !important;
+        box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.08) !important;
+        outline: none !important;
+    }
+    .workgroup-field-invalid:focus {
+        border-color: #fb7185 !important;
+        box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.14) !important;
+        outline: none !important;
+    }
+    .workgroup-field-message {
+        margin-top: 6px;
+        color: #e11d48;
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1.35;
     }
     .workgroup-facility-cell {
         display: inline-flex;
@@ -393,7 +497,7 @@
         .workgroup-table-toolbar {
             flex-wrap: wrap;
         }
-        .workgroup-table-search {
+        .workgroup-table-search-wrap {
             width: 100%;
         }
         .workgroup-table-footer {
@@ -472,7 +576,12 @@
         </div>
 
         <div class="workgroup-table-toolbar">
-            <input id="workgroup-table-search" type="text" class="workgroup-table-search" placeholder="{{ __('Search workgroups...') }}">
+            <div class="workgroup-table-search-wrap">
+                <input id="workgroup-table-search" type="text" class="workgroup-table-search" placeholder="{{ __('Search workgroups...') }}">
+                <button id="workgroup-table-search-clear" type="button" class="workgroup-table-search-clear" aria-label="{{ __('Clear search') }}" hidden>
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
             <div class="text-[12px] font-semibold text-slate-500" id="workgroup-table-meta"></div>
         </div>
 
@@ -536,9 +645,9 @@
     </div>
 </div>
 
-<div id="workgroup-edit-modal" class="fixed inset-0 z-[1300] hidden items-center justify-center bg-slate-950/40 p-6">
-    <div class="w-full max-w-2xl rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]">
-        <div class="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+<div id="workgroup-edit-modal" class="fixed inset-0 z-[1300] hidden items-center justify-center bg-slate-950/40 p-4 sm:p-6">
+    <div class="flex w-full max-w-2xl flex-col overflow-hidden border border-slate-200 bg-white shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]" style="max-height: min(760px, calc(100vh - 3rem)); border-radius: 2rem;">
+        <div class="z-30 shrink-0 flex items-start justify-between border-b border-slate-200 bg-white px-6 py-5">
             <div>
                 <p id="workgroup-edit-kicker" class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{{ __('Edit Workgroup') }}</p>
                 <h3 id="workgroup-edit-title" class="mt-2 text-2xl font-semibold text-slate-900">{{ __('Update workgroup details') }}</h3>
@@ -548,7 +657,7 @@
             </button>
         </div>
 
-        <div class="px-6 py-6">
+        <div data-workgroup-modal-scroll class="min-h-0 flex-1 overflow-y-auto px-6 py-6 overscroll-contain">
             <div id="workgroup-edit-loading" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
                 {{ __('Loading workgroup form...') }}
             </div>
@@ -642,6 +751,8 @@
 </div>
 
 <script id="workgroup-filters-data" type="application/json">@json($filters)</script>
+@include('workgroups.form_ui_script')
+
 <script>
 (function () {
     const text = @json($workgroupText);
@@ -695,10 +806,12 @@
         state.selectedFacilityId = state.config.selectedFacilityId || '';
 
         bindElements();
+        portalWorkgroupLayersToBody();
         bindEvents();
         renderFilters();
         updateWorkgroupSortIndicators();
         updateAttentionSortIndicators();
+        updateSearchClearButton();
         loadWorkgroups();
         window.workgroupsPage = { toggleActionMenu, openEditModal, openDeleteModal };
         window.lucide?.createIcons();
@@ -715,6 +828,7 @@
         els.statusButtons = Array.from(document.querySelectorAll('[data-status]'));
         els.resetFilters = document.getElementById('reset-workgroup-filters');
         els.tableSearch = document.getElementById('workgroup-table-search');
+        els.tableSearchClear = document.getElementById('workgroup-table-search-clear');
         els.tableMeta = document.getElementById('workgroup-table-meta');
         els.tableBody = document.getElementById('workgroups-table-body');
         els.tableSummary = document.getElementById('workgroup-table-summary');
@@ -754,6 +868,21 @@
         els.attentionSortButtons = Array.from(document.querySelectorAll('[data-attention-sort]'));
     }
 
+    function portalWorkgroupLayersToBody() {
+        const nodes = [
+            els.actionOverlay,
+            els.editModal,
+            els.deleteModal,
+            els.attentionModal,
+        ].filter(Boolean);
+
+        nodes.forEach((node) => {
+            if (node.parentElement !== document.body) {
+                document.body.appendChild(node);
+            }
+        });
+    }
+
     function bindEvents() {
         els.createButton?.addEventListener('click', () => openEditModal(0));
         els.facilityTrigger?.addEventListener('click', () => toggleDropdown('facility'));
@@ -773,6 +902,7 @@
 
         els.tableSearch?.addEventListener('input', (event) => {
             const value = String(event.target.value || '').trim();
+            updateSearchClearButton();
             if (state.workgroupSearchTimer) {
                 window.clearTimeout(state.workgroupSearchTimer);
             }
@@ -781,6 +911,26 @@
                 state.workgroupPage = 1;
                 loadWorkgroups();
             }, 260);
+        });
+
+        els.tableSearchClear?.addEventListener('click', () => {
+            if (!els.tableSearch) return;
+
+            if (state.workgroupSearchTimer) {
+                window.clearTimeout(state.workgroupSearchTimer);
+                state.workgroupSearchTimer = null;
+            }
+
+            const hadSearch = els.tableSearch.value.length > 0 || state.workgroupSearch.length > 0;
+            els.tableSearch.value = '';
+            state.workgroupSearch = '';
+            state.workgroupPage = 1;
+            updateSearchClearButton();
+            els.tableSearch.focus();
+
+            if (hadSearch) {
+                loadWorkgroups();
+            }
         });
 
         els.sortButtons.forEach((button) => {
@@ -907,6 +1057,22 @@
         return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     }
 
+    function showSuccessBalloon(message) {
+        if (typeof window.notify === 'function') {
+            window.notify('success', message);
+        }
+    }
+
+    function updateSearchClearButton() {
+        if (!els.tableSearchClear || !els.tableSearch) return;
+
+        if (String(els.tableSearch.value || '').length > 0) {
+            els.tableSearchClear.removeAttribute('hidden');
+        } else {
+            els.tableSearchClear.setAttribute('hidden', 'hidden');
+        }
+    }
+
     function getFacilityOptions() {
         return Array.isArray(state.config.facilities) ? state.config.facilities : [];
     }
@@ -1005,6 +1171,11 @@
         state.workgroupPage = 1;
         if (els.tableSearch) els.tableSearch.value = '';
         if (els.facilitySearch) els.facilitySearch.value = '';
+        if (state.workgroupSearchTimer) {
+            window.clearTimeout(state.workgroupSearchTimer);
+            state.workgroupSearchTimer = null;
+        }
+        updateSearchClearButton();
         closeDropdown();
         renderFilters();
         loadWorkgroups();
@@ -1101,6 +1272,17 @@
             const name = String(item.name || '-');
             const encodedName = encodeURIComponent(name);
             const facName = String(item.facName || '-');
+            const address = String(item.address || '-');
+            const addressTooltip = address.trim() && address !== '-'
+                ? `<span class="workgroup-tooltip-bubble" role="tooltip">${Perfectlum.escapeHtml(address)}</span>`
+                : '';
+            const phone = String(item.phone || '-');
+            const phoneTooltip = phone.trim() && phone !== '-'
+                ? `<span class="workgroup-tooltip-bubble" role="tooltip">${Perfectlum.escapeHtml(phone)}</span>`
+                : '';
+            const facilityTooltip = facName.trim() && facName !== '-'
+                ? `<span class="workgroup-tooltip-bubble" role="tooltip">${Perfectlum.escapeHtml(facName)}</span>`
+                : '';
             return `
                 <tr class="workgroup-row-clickable" data-action="open-workgroup-row" data-workgroup-id="${Number(item.id || 0)}">
                     <td>
@@ -1112,9 +1294,9 @@
                             </div>
                         </div>
                     </td>
-                    <td>${Perfectlum.escapeHtml(String(item.address || '-'))}</td>
-                    <td>${Perfectlum.escapeHtml(String(item.phone || '-'))}</td>
-                    <td>${!item.facId || facName === '-' ? '-' : `<span class="workgroup-facility-cell"><span class="workgroup-facility-badge">F</span><button type="button" data-action="open-facility" data-facility-id="${Number(item.facId || 0)}" class="workgroup-facility-link cursor-pointer text-slate-600 transition hover:text-sky-600 hover:underline">${Perfectlum.escapeHtml(facName)}</button></span>`}</td>
+                    <td><span class="workgroup-tooltip-cell" tabindex="0" aria-label="${Perfectlum.escapeHtml(address)}"><span class="workgroup-tooltip-text">${Perfectlum.escapeHtml(address)}</span>${addressTooltip}</span></td>
+                    <td><span class="workgroup-tooltip-cell" tabindex="0" aria-label="${Perfectlum.escapeHtml(phone)}"><span class="workgroup-tooltip-text">${Perfectlum.escapeHtml(phone)}</span>${phoneTooltip}</span></td>
+                    <td>${!item.facId || facName === '-' ? '-' : `<span class="workgroup-facility-cell"><span class="workgroup-facility-badge">F</span><span class="workgroup-tooltip-cell min-w-0" tabindex="0" aria-label="${Perfectlum.escapeHtml(facName)}"><button type="button" data-action="open-facility" data-facility-id="${Number(item.facId || 0)}" class="workgroup-facility-link cursor-pointer text-slate-600 transition hover:text-sky-600 hover:underline">${Perfectlum.escapeHtml(facName)}</button>${facilityTooltip}</span></span>`}</td>
                     <td><span class="font-semibold text-slate-700">${Perfectlum.escapeHtml(String(item.workstationsCount ?? 0))}</span></td>
                     <td><span class="font-semibold text-slate-700">${Perfectlum.escapeHtml(String(item.displaysCount ?? 0))}</span></td>
                     <td class="text-center">${!canManageWorkgroups ? '' : `<button type="button" data-action="menu" data-workgroup-id="${Number(item.id || 0)}" data-workgroup-name="${encodedName}" class="workgroup-row-action mx-auto transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2"></circle><circle cx="12" cy="5" r="2"></circle><circle cx="12" cy="19" r="2"></circle></svg></button>`}</td>
@@ -1201,9 +1383,13 @@
             const formData = new FormData();
             formData.append('_token', csrfToken());
             formData.append('id', id);
+            if (Number(id) === 0 && state.selectedFacilityId) {
+                formData.append('facility_id', state.selectedFacilityId);
+            }
             const payload = await Perfectlum.postForm('/workgroup-form', formData);
             els.editForm.innerHTML = payload.content || '';
             bindEditForm();
+            window.WorkgroupFormUI?.init(els.editForm);
             window.lucide?.createIcons();
         } catch (error) {
             els.editError.textContent = error.message || text.unableToLoadWorkgroupForm;
@@ -1216,22 +1402,44 @@
     function bindEditForm() {
         const form = els.editForm.querySelector('form');
         if (!form) return;
+        window.WorkgroupFormUI?.init(form);
+        const showInlineNameError = (message) => {
+            const nameInput = form.querySelector('[data-workgroup-name]');
+            const nameMessage = form.querySelector('[data-workgroup-name-message]');
+            if (!nameInput || !nameMessage) return false;
+
+            nameMessage.textContent = message || text.unableToSaveWorkgroup;
+            nameMessage.classList.remove('hidden');
+            nameInput.classList.add('workgroup-field-invalid');
+            nameInput.focus();
+            return true;
+        };
+
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
             if (form.dataset.submitting === '1') return;
             form.dataset.submitting = '1';
+            els.editError.classList.add('hidden');
+            els.editError.textContent = '';
 
             try {
                 const formData = new FormData(form);
                 if (!formData.get('_token')) {
                     formData.append('_token', csrfToken());
                 }
-                await Perfectlum.postForm(form.getAttribute('action') || window.location.pathname, formData);
+                const isCreate = String(formData.get('id') || '0') === '0';
+                const payload = await Perfectlum.postForm(form.getAttribute('action') || window.location.pathname, formData);
                 closeEditModal();
                 loadWorkgroups();
+                showSuccessBalloon(payload?.message || (isCreate ? text.workgroupCreated : text.workgroupUpdated));
             } catch (error) {
-                els.editError.textContent = error.message || text.unableToSaveWorkgroup;
-                els.editError.classList.remove('hidden');
+                const nameErrors = error?.errors?.name || error?.data?.errors?.name || null;
+                const inlineMessage = Array.isArray(nameErrors) ? nameErrors[0] : (typeof nameErrors === 'string' ? nameErrors : '');
+                const message = inlineMessage || error.message || text.unableToSaveWorkgroup;
+                if (!showInlineNameError(message)) {
+                    els.editError.textContent = message;
+                    els.editError.classList.remove('hidden');
+                }
             } finally {
                 form.dataset.submitting = '0';
             }
@@ -1312,7 +1520,7 @@
                 <td class="px-4 py-3 text-[13px] text-slate-600">${Perfectlum.escapeHtml(item.updatedAt || '-')}</td>
                 <td class="px-4 py-3 text-[12px] text-rose-600">${Perfectlum.escapeHtml(item.attentionText || 'No alert detail')}</td>
                 <td class="px-4 py-3 text-center">
-                    <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'display',id:${Number(item.displayId || 0)}}}))" class="mx-auto rounded-lg border border-slate-200 px-2.5 py-1.5 text-[12px] font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+                    <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy',{detail:{type:'display',id:${Number(item.id || item.displayId || 0)}}}))" class="mx-auto rounded-lg border border-slate-200 px-2.5 py-1.5 text-[12px] font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
                         ${Perfectlum.escapeHtml(text.openDisplay)}
                     </button>
                 </td>
@@ -1446,6 +1654,7 @@
             }
             closeDeleteModal();
             loadWorkgroups();
+            showSuccessBalloon(payload.msg || text.workgroupDeleted);
         } catch (error) {
             window.alert(error.message || text.unableToDeleteWorkgroup);
             els.deleteConfirm.disabled = false;

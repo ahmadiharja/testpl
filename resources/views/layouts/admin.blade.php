@@ -56,7 +56,7 @@
       data-idle-heartbeat-seconds="{{ config('session.idle_heartbeat_seconds', 60) }}"
       data-idle-heartbeat-url="{{ url('session/heartbeat') }}"
       data-idle-logout-url="{{ url('logout?reason=inactive') }}"
-      data-idle-login-url="{{ url('login?surface=desktop') }}"
+      data-idle-login-url="{{ route('login') }}"
       :class="theme === 'perfectlum' ? 'bg-[#F4F5F8] text-[#1B1B1D]' : 'bg-[#0A0A0C] text-[#E2E1E6]'">
 
     {{-- ===================== --}}

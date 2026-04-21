@@ -12,12 +12,31 @@
         box-shadow: 0 26px 64px -46px rgba(15, 23, 42, 0.34);
     }
     .calibration-create-shell {
+        position: relative;
+        overflow: visible;
+        isolation: isolate;
+        z-index: 60;
         border-radius: 1.5rem;
         border: 1px solid #dce8f4;
         background: linear-gradient(180deg, #f9fcff 0%, #ffffff 100%);
         box-shadow: 0 14px 38px -28px rgba(15, 23, 42, 0.22);
     }
+
+    .calibration-hierarchy-field {
+        position: relative;
+        z-index: 10;
+    }
+
+    .calibration-hierarchy-field:focus-within {
+        z-index: 120;
+    }
+
+    .calibration-hierarchy-panel {
+        z-index: 140;
+    }
     .calibration-jobs-shell {
+        position: relative;
+        z-index: 1;
         border-radius: 2rem;
         border: 1px solid #d5e0ec;
         background: linear-gradient(180deg, #f7fbff 0%, #ffffff 100%);
@@ -37,12 +56,16 @@
         border-bottom: 1px solid #e3ecf5;
         background: #f8fbff;
     }
-    .calibration-table-search {
+    .calibration-table-search-wrap {
+        position: relative;
         width: min(440px, 100%);
+    }
+    .calibration-table-search {
+        width: 100%;
         height: 42px;
         border-radius: 999px;
         border: 1px solid #c9d8e8;
-        padding: 0 16px;
+        padding: 0 44px 0 16px;
         font-size: 14px;
         font-weight: 600;
         color: #12263a;
@@ -53,9 +76,34 @@
         border-color: #1d9bf0;
         box-shadow: 0 0 0 3px rgba(29, 155, 240, 0.16);
     }
+    .calibration-table-search-clear {
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        display: inline-flex;
+        width: 26px;
+        height: 26px;
+        transform: translateY(-50%);
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        color: #64748b;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+    .calibration-table-search-clear:hover {
+        background: #e8f2fb;
+        color: #0f172a;
+    }
+    .calibration-table-search-clear[hidden] {
+        display: none;
+    }
     .calibration-table-wrap {
         overflow-x: auto;
         background: #fff;
+    }
+    [data-calibration-task-menu].is-floating {
+        position: fixed !important;
+        z-index: 2147483647 !important;
     }
     .calibration-table {
         width: 100%;
@@ -104,6 +152,16 @@
         text-transform: uppercase;
         color: #4d647d;
         white-space: nowrap;
+    }
+    .calibration-table th:nth-child(4),
+    .calibration-table th:nth-child(5) {
+        text-align: center;
+    }
+    .calibration-table th:nth-child(4) [data-calibration-sort],
+    .calibration-table th:nth-child(5) [data-calibration-sort] {
+        width: 100%;
+        justify-content: center;
+        margin-left: 0;
     }
     .calibration-table td {
         padding: 12px 16px;
@@ -450,7 +508,7 @@
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
             
             {{-- 1. Facility --}}
-            <div class="flex flex-col gap-1.5">
+            <div class="flex flex-col gap-1.5 calibration-hierarchy-field">
                 <label class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Facility') }}</label>
                 <div class="relative">
                     <select name="facility" id="calibrate-facility-native" required class="hidden" onchange="fetch_workgroups(this);">
@@ -465,12 +523,12 @@
                             @endforeach
                         @endif
                     </select>
-                    <button type="button" id="calibrate-facility-trigger"
+                    <button type="button" id="calibrate-facility-trigger" onclick="window.openCalibrateHierarchyDropdown && window.openCalibrateHierarchyDropdown('facility')"
                             class="flex w-full h-[42px] items-center justify-between rounded-lg border border-gray-200 bg-white px-4 text-[13px] text-gray-700 shadow-sm transition-all hover:border-gray-300 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 cursor-pointer">
                         <span id="calibrate-facility-label" class="truncate">{{ __('Please select') }}</span>
                         <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
                     </button>
-                    <div id="calibrate-facility-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-2xl border border-gray-200 bg-white p-3 shadow-xl">
+                    <div id="calibrate-facility-panel" class="calibration-hierarchy-panel absolute left-0 right-0 top-[calc(100%+0.5rem)] hidden rounded-2xl border border-gray-200 bg-white p-3 shadow-xl">
                         <input id="calibrate-facility-search" type="text" placeholder="{{ __('Search facilities...') }}" class="mb-2 h-10 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         <p id="calibrate-facility-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="calibrate-facility-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
@@ -479,18 +537,18 @@
             </div>
 
             {{-- 2. Workgroup --}}
-            <div class="flex flex-col gap-1.5">
+            <div class="flex flex-col gap-1.5 calibration-hierarchy-field">
                 <label class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Workgroup') }}</label>
                 <div class="relative">
                     <select name="workgroup" id="workgroups_field" onchange="fetch_workstations(this)" class="hidden">
                         <option value="">{{ __('Select Facility first') }}</option>
                     </select>
-                    <button type="button" id="calibrate-workgroup-trigger"
+                    <button type="button" id="calibrate-workgroup-trigger" onclick="window.openCalibrateHierarchyDropdown && window.openCalibrateHierarchyDropdown('workgroup')"
                             class="flex w-full h-[42px] items-center justify-between rounded-lg border border-gray-200 bg-white px-4 text-[13px] text-gray-700 shadow-sm transition-all hover:border-gray-300 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400">
                         <span id="calibrate-workgroup-label" class="truncate">{{ __('Select Facility first') }}</span>
                         <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
                     </button>
-                    <div id="calibrate-workgroup-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-2xl border border-gray-200 bg-white p-3 shadow-xl">
+                    <div id="calibrate-workgroup-panel" class="calibration-hierarchy-panel absolute left-0 right-0 top-[calc(100%+0.5rem)] hidden rounded-2xl border border-gray-200 bg-white p-3 shadow-xl">
                         <input id="calibrate-workgroup-search" type="text" placeholder="{{ __('Search workgroups...') }}" class="mb-2 h-10 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         <p id="calibrate-workgroup-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="calibrate-workgroup-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
@@ -499,18 +557,18 @@
             </div>
 
             {{-- 3. Workstation --}}
-            <div class="flex flex-col gap-1.5">
+            <div class="flex flex-col gap-1.5 calibration-hierarchy-field">
                 <label class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Workstation') }}</label>
                 <div class="relative">
                     <select name="workstation" id="workstations_field" onchange="fetch_displays_checklist(this)" class="hidden">
                         <option value="">{{ __('Select Workgroup first') }}</option>
                     </select>
-                    <button type="button" id="calibrate-workstation-trigger"
+                    <button type="button" id="calibrate-workstation-trigger" onclick="window.openCalibrateHierarchyDropdown && window.openCalibrateHierarchyDropdown('workstation')"
                             class="flex w-full h-[42px] items-center justify-between rounded-lg border border-gray-200 bg-white px-4 text-[13px] text-gray-700 shadow-sm transition-all hover:border-gray-300 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400">
                         <span id="calibrate-workstation-label" class="truncate">{{ __('Select Workgroup first') }}</span>
                         <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
                     </button>
-                    <div id="calibrate-workstation-panel" class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 hidden rounded-2xl border border-gray-200 bg-white p-3 shadow-xl">
+                    <div id="calibrate-workstation-panel" class="calibration-hierarchy-panel absolute left-0 right-0 top-[calc(100%+0.5rem)] hidden rounded-2xl border border-gray-200 bg-white p-3 shadow-xl">
                         <input id="calibrate-workstation-search" type="text" placeholder="{{ __('Search workstations...') }}" class="mb-2 h-10 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                         <p id="calibrate-workstation-hint" class="mb-2 text-[11px] font-medium text-slate-400"></p>
                         <div id="calibrate-workstation-options" class="max-h-56 space-y-1 overflow-y-auto"></div>
@@ -519,14 +577,14 @@
             </div>
 
             {{-- 4. Display (Checklist Dropdown) --}}
-            <div class="flex flex-col gap-1.5 relative">
+            <div class="flex flex-col gap-1.5 relative calibration-hierarchy-field">
                 <label class="mb-2 block text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">{{ __('Displays') }}</label>
-                <button type="button" id="displays-dropdown"
+                <button type="button" id="displays-dropdown" onclick="window.openCalibrateHierarchyDropdown && window.openCalibrateHierarchyDropdown('displays')"
                         class="w-full h-[42px] px-4 flex items-center justify-between rounded-lg text-[13px] outline-none border border-gray-200 bg-white text-gray-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 shadow-sm transition-all cursor-pointer">
                     <span id="calibrate-displays-label">{{ __('Select Workstation first') }}</span>
                     <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
                 </button>
-                <div class="absolute z-50 top-[66px] left-0 w-full bg-white border border-gray-200 rounded-2xl shadow-xl hidden"
+                <div class="calibration-hierarchy-panel absolute top-[66px] left-0 w-full bg-white border border-gray-200 rounded-2xl shadow-xl hidden"
                      id="displays_field">
                     <div class="p-3 border-b border-gray-100">
                         <input id="calibrate-displays-search" type="text" placeholder="{{ __('Search displays...') }}" class="h-10 w-full rounded-xl border border-gray-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
@@ -538,8 +596,8 @@
             </div>
 
             <div class="flex items-end">
-                <button type="submit" id="submit_btn"
-                        class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-sky-500 px-6 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(14,165,233,0.24)] transition hover:bg-sky-400">
+                <button type="submit" id="submit_btn" disabled
+                        class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-sky-500 px-6 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(14,165,233,0.24)] transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-white/80 disabled:shadow-none">
                     <i data-lucide="play" class="h-4 w-4"></i>
                     {{ __('Calibrate') }}
                 </button>
@@ -559,7 +617,12 @@
         </div>
 
         <div class="calibration-table-toolbar">
-            <input type="text" id="gridjs-custom-search" placeholder="{{ __('Search calibration jobs...') }}" class="calibration-table-search transition-all placeholder-gray-400">
+            <div class="calibration-table-search-wrap">
+                <input type="text" id="gridjs-custom-search" placeholder="{{ __('Search calibration jobs...') }}" class="calibration-table-search transition-all placeholder-gray-400">
+                <button type="button" id="calibration-table-search-clear" class="calibration-table-search-clear" aria-label="{{ __('Clear search') }}" hidden>
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
             <div id="calibration-table-meta" class="text-[12px] font-semibold text-slate-500"></div>
         </div>
 
@@ -689,9 +752,11 @@
 </div>
 
 {{-- ── MODAL: DELETE CONFIRM (Alpine Version) ── --}}
-<div x-data="{ open: false, taskId: null }" 
+<div x-data="{ open: false, taskId: null }"
+     x-init="$nextTick(() => { if ($el.parentElement !== document.body) document.body.appendChild($el); })"
      @delete-task.window="open = true; taskId = $event.detail.id"
-     class="relative z-[9999]">
+     class="fixed inset-0 pointer-events-none"
+     style="z-index: 2147483647;">
     <div x-show="open" x-cloak
          x-transition:enter="ease-out duration-300"
          x-transition:enter-start="opacity-0"
@@ -699,11 +764,13 @@
          x-transition:leave="ease-in duration-200"
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
-         class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity"></div>
+         class="fixed inset-0 pointer-events-auto bg-slate-950/45 backdrop-blur-[2px] transition-opacity"
+         style="z-index: 2147483647;"></div>
     
     <div x-show="open" x-cloak
-         class="fixed inset-0 z-10 w-screen overflow-y-auto">
-        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+         class="fixed inset-0 pointer-events-auto flex min-h-screen w-screen items-center justify-center overflow-y-auto px-4 py-8"
+         style="z-index: 2147483647;">
+        <div class="flex min-h-full w-full items-center justify-center text-center">
             <div x-show="open"
                  x-transition:enter="ease-out duration-300"
                  x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
@@ -712,10 +779,10 @@
                  x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                  x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                  @click.away="open = false"
-                 class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-sm">
+                 class="relative w-full max-w-md transform overflow-hidden rounded-[2rem] border border-slate-200 bg-white text-left shadow-2xl transition-all">
                 
-                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4 text-center">
-                    <div class="mx-auto flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-red-50 mb-4">
+                <div class="bg-white px-6 py-6 text-center">
+                    <div class="mx-auto mb-4 flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-500 shadow-sm">
                         <i data-lucide="trash-2" class="h-6 w-6 text-red-500"></i>
                     </div>
                     <h3 class="text-base font-semibold leading-6 text-gray-900">{{ __('Delete Task') }}</h3>
@@ -724,9 +791,9 @@
                     </div>
                 </div>
                 
-                <div class="bg-gray-50 px-4 py-3 flex items-center justify-center gap-3 sm:px-6">
-                    <button type="button" @click="open = false" class="inline-flex w-full justify-center rounded-full bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:w-auto min-w-[100px]">{{ __('Cancel') }}</button>
-                    <button type="button" @click="confirmDelete(taskId); open = false;" class="inline-flex w-full justify-center rounded-full bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:w-auto min-w-[100px]">{{ __('Delete') }}</button>
+                <div class="flex items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4">
+                    <button type="button" @click="open = false" class="inline-flex min-w-[100px] justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">{{ __('Cancel') }}</button>
+                    <button type="button" @click="confirmDelete(taskId); open = false;" class="inline-flex min-w-[100px] justify-center rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700">{{ __('Delete') }}</button>
                 </div>
             </div>
         </div>
@@ -898,6 +965,36 @@
             .forEach((id) => document.getElementById(id)?.classList.add('hidden'));
     }
 
+    window.openCalibrateHierarchyDropdown = function (type) {
+        if (type === 'facility') {
+            renderCalibrateNativeOptions('calibrate-facility-native', 'calibrate-facility-options', 'calibrate-facility-hint', calibrateHierarchyState.facilitySearch, (value) => {
+                const select = document.getElementById('calibrate-facility-native');
+                select.value = value;
+                document.getElementById('calibrate-facility-label').textContent = select.options[select.selectedIndex]?.textContent || 'Please select';
+                fetch_workgroups(select);
+                closeCalibrateDropdowns();
+            }, 'No facilities found');
+        } else if (type === 'workgroup') {
+            renderCalibrateNativeOptions('workgroups_field', 'calibrate-workgroup-options', 'calibrate-workgroup-hint', calibrateHierarchyState.workgroupSearch, (value) => {
+                const select = document.getElementById('workgroups_field');
+                select.value = value;
+                document.getElementById('calibrate-workgroup-label').textContent = select.options[select.selectedIndex]?.textContent || 'Select Workgroup';
+                fetch_workstations(select);
+                closeCalibrateDropdowns();
+            }, 'No workgroups found');
+        } else if (type === 'workstation') {
+            renderCalibrateNativeOptions('workstations_field', 'calibrate-workstation-options', 'calibrate-workstation-hint', calibrateHierarchyState.workstationSearch, (value) => {
+                const select = document.getElementById('workstations_field');
+                select.value = value;
+                document.getElementById('calibrate-workstation-label').textContent = select.options[select.selectedIndex]?.textContent || 'Select Workstation';
+                fetch_displays_checklist(select);
+                closeCalibrateDropdowns();
+            }, 'No workstations found');
+        }
+
+        toggleCalibrateDropdown(type);
+    };
+
     function renderCalibrationTaskActions(taskId) {
         if (!canManageCalibrationTasks) {
             return '<span class="text-xs text-slate-400">No actions</span>';
@@ -925,7 +1022,72 @@
     }
 
     function closeCalibrationTaskMenus() {
-        document.querySelectorAll('[data-calibration-task-menu]').forEach((menu) => menu.classList.add('hidden'));
+        document.querySelectorAll('[data-calibration-task-menu]').forEach((menu) => {
+            menu.classList.add('hidden');
+            menu.classList.remove('is-floating');
+            menu.style.top = '';
+            menu.style.left = '';
+            menu.style.right = '';
+        });
+    }
+
+    function positionCalibrationTaskMenu(toggle, menu) {
+        if (!toggle || !menu) return;
+
+        if (menu.parentElement !== document.body) {
+            document.body.appendChild(menu);
+        }
+
+        const rect = toggle.getBoundingClientRect();
+        const menuWidth = 176;
+        const gap = 8;
+        const viewportPadding = 12;
+        const left = Math.max(
+            viewportPadding,
+            Math.min(window.innerWidth - menuWidth - viewportPadding, rect.right - menuWidth)
+        );
+        const menuHeight = 104;
+        const preferredTop = rect.bottom + gap;
+        const top = preferredTop + menuHeight > window.innerHeight - viewportPadding
+            ? Math.max(viewportPadding, rect.top - menuHeight - gap)
+            : preferredTop;
+
+        menu.classList.add('is-floating');
+        menu.style.left = `${left}px`;
+        menu.style.top = `${top}px`;
+        menu.style.right = 'auto';
+    }
+
+    function resetCalibrationQuickForm() {
+        const facility = document.getElementById('calibrate-facility-native');
+        const workgroup = document.getElementById('workgroups_field');
+        const workstation = document.getElementById('workstations_field');
+        const displaysBox = document.getElementById('calibrate-displays-options');
+
+        if (facility) facility.value = '';
+        if (workgroup) workgroup.innerHTML = '<option value="">Select Facility first</option>';
+        if (workstation) workstation.innerHTML = '<option value="">Select Workgroup first</option>';
+
+        document.getElementById('calibrate-facility-label').textContent = calibrationText.pleaseSelect;
+        document.getElementById('calibrate-workgroup-label').textContent = calibrationText.selectWorkgroupFirst ? 'Select Facility first' : 'Select Facility first';
+        document.getElementById('calibrate-workstation-label').textContent = calibrationText.selectWorkgroupFirst;
+        document.getElementById('calibrate-displays-label').textContent = calibrationText.selectWorkstationFirst;
+        if (displaysBox) {
+            displaysBox.innerHTML = `<div class="px-4 py-3 text-[13px] text-gray-500">${calibrationText.selectWorkstationFirst}</div>`;
+        }
+
+        calibrateHierarchyState.facilitySearch = '';
+        calibrateHierarchyState.workgroupSearch = '';
+        calibrateHierarchyState.workstationSearch = '';
+        calibrateHierarchyState.displaysSearch = '';
+        ['calibrate-facility-search', 'calibrate-workgroup-search', 'calibrate-workstation-search', 'calibrate-displays-search']
+            .forEach((id) => {
+                const input = document.getElementById(id);
+                if (input) input.value = '';
+            });
+
+        closeCalibrateDropdowns();
+        updateCalibrateSubmitState();
     }
 
     function renderCalibrateNativeOptions(selectId, optionsId, hintId, query, onPick, emptyText = calibrationText.noOptionsFound) {
@@ -944,6 +1106,23 @@
         });
     }
 
+    function updateCalibrateSubmitState() {
+        const button = document.getElementById('submit_btn');
+        if (!button) return;
+        const facility = document.getElementById('calibrate-facility-native')?.value || '';
+        const workgroup = document.getElementById('workgroups_field')?.value || '';
+        const workstation = document.getElementById('workstations_field')?.value || '';
+        const box = document.getElementById('calibrate-displays-options');
+        let hasDisplay = false;
+        if (box) {
+            const regular = Array.from(box.querySelectorAll('input[name="displays[]"]:not([data-select-all="1"])'));
+            const selected = regular.filter((item) => item.checked);
+            const selectAll = box.querySelector('input[name="displays[]"][data-select-all="1"]');
+            hasDisplay = selected.length > 0 || (selectAll && selectAll.checked && regular.length > 0);
+        }
+        button.disabled = !(facility && workgroup && workstation && hasDisplay);
+    }
+
     function updateCalibrateDisplaysLabel() {
         const list = Array.from(document.querySelectorAll('#calibrate-displays-options input[name="displays[]"]:not([data-select-all="1"])'));
         const checked = list.filter((item) => item.checked);
@@ -960,6 +1139,7 @@
         label.textContent = checked.length === 1
             ? (checked[0].dataset.label || '1 display selected')
             : `${checked.length} displays selected`;
+        updateCalibrateSubmitState();
     }
 
     function fetch_workgroups(th) {
@@ -981,6 +1161,7 @@
                     document.getElementById('calibrate-workstation-label').textContent = 'Select Workgroup first';
                     document.getElementById('calibrate-displays-options').innerHTML = '<div class="px-4 py-3 text-[13px] text-gray-500">Select Workstation first</div>';
                     document.getElementById('calibrate-displays-label').textContent = 'Select Workstation first';
+                    updateCalibrateSubmitState();
                     renderCalibrateNativeOptions('workgroups_field', 'calibrate-workgroup-options', 'calibrate-workgroup-hint', calibrateHierarchyState.workgroupSearch, (value) => {
                         const select = document.getElementById('workgroups_field');
                         select.value = value;
@@ -1009,6 +1190,7 @@
                     document.getElementById('calibrate-workstation-label').textContent = 'Select Workstation';
                     document.getElementById('calibrate-displays-options').innerHTML = '<div class="px-4 py-3 text-[13px] text-gray-500">Select Workstation first</div>';
                     document.getElementById('calibrate-displays-label').textContent = 'Select Workstation first';
+                    updateCalibrateSubmitState();
                     renderCalibrateNativeOptions('workstations_field', 'calibrate-workstation-options', 'calibrate-workstation-hint', calibrateHierarchyState.workstationSearch, (value) => {
                         const select = document.getElementById('workstations_field');
                         select.value = value;
@@ -1063,6 +1245,7 @@
                     });
 
                     updateCalibrateDisplaysLabel();
+                    updateCalibrateSubmitState();
                 }
             });
     }
@@ -1081,38 +1264,6 @@
         const workgroupTrigger = document.getElementById('calibrate-workgroup-trigger');
         const workstationTrigger = document.getElementById('calibrate-workstation-trigger');
         const displaysTrigger = document.getElementById('displays-dropdown');
-
-        facilityTrigger?.addEventListener('click', () => {
-            renderCalibrateNativeOptions('calibrate-facility-native', 'calibrate-facility-options', 'calibrate-facility-hint', calibrateHierarchyState.facilitySearch, (value) => {
-                const select = document.getElementById('calibrate-facility-native');
-                select.value = value;
-                document.getElementById('calibrate-facility-label').textContent = select.options[select.selectedIndex]?.textContent || 'Please select';
-                fetch_workgroups(select);
-                closeCalibrateDropdowns();
-            }, 'No facilities found');
-            toggleCalibrateDropdown('facility');
-        });
-        workgroupTrigger?.addEventListener('click', () => {
-            renderCalibrateNativeOptions('workgroups_field', 'calibrate-workgroup-options', 'calibrate-workgroup-hint', calibrateHierarchyState.workgroupSearch, (value) => {
-                const select = document.getElementById('workgroups_field');
-                select.value = value;
-                document.getElementById('calibrate-workgroup-label').textContent = select.options[select.selectedIndex]?.textContent || 'Select Workgroup';
-                fetch_workstations(select);
-                closeCalibrateDropdowns();
-            }, 'No workgroups found');
-            toggleCalibrateDropdown('workgroup');
-        });
-        workstationTrigger?.addEventListener('click', () => {
-            renderCalibrateNativeOptions('workstations_field', 'calibrate-workstation-options', 'calibrate-workstation-hint', calibrateHierarchyState.workstationSearch, (value) => {
-                const select = document.getElementById('workstations_field');
-                select.value = value;
-                document.getElementById('calibrate-workstation-label').textContent = select.options[select.selectedIndex]?.textContent || 'Select Workstation';
-                fetch_displays_checklist(select);
-                closeCalibrateDropdowns();
-            }, 'No workstations found');
-            toggleCalibrateDropdown('workstation');
-        });
-        displaysTrigger?.addEventListener('click', () => toggleCalibrateDropdown('displays'));
 
         document.getElementById('calibrate-facility-search')?.addEventListener('input', (e) => {
             calibrateHierarchyState.facilitySearch = e.target.value || '';
@@ -1166,6 +1317,7 @@
     if (false) {
     document.addEventListener("DOMContentLoaded", function () {
         initCalibrateSearchableDropdowns();
+        updateCalibrateSubmitState();
         const quickCalibrationForm = document.getElementById('display-calibration-quick-form');
         const customSearchParams = new URLSearchParams(window.location.search);
         const searchInput = document.getElementById('gridjs-custom-search');
@@ -1475,14 +1627,36 @@
                     <td>${renderCalibrationDisplayCell(item)}</td>
                     <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">${Perfectlum.escapeHtml(item.taskName || '-')}</span></div></td>
                     <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">${Perfectlum.escapeHtml(item.scheduleName || '-')}</span></div></td>
-                    <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="text-sm font-semibold text-slate-900 whitespace-nowrap">${Perfectlum.escapeHtml(item.dueAt || '-')}</span></div></td>
-                    <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="${createdClass}">${Perfectlum.escapeHtml(createdValue)}</span></div></td>
+                    <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50">${renderCalibrationDateTimeCell(item.dueAt || '-', 'text-sm font-semibold text-slate-900 whitespace-nowrap')}</div></td>
+                    <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50">${renderCalibrationDateTimeCell(createdValue, createdClass)}</div></td>
                     <td>${renderCalibrationTaskActions(item.id)}</td>
                 </tr>
             `;
         }).join('');
 
         window.lucide?.createIcons();
+    }
+
+    function renderCalibrationDateTimeCell(value, primaryClass, secondaryClass = 'text-[11px] font-medium text-slate-400 whitespace-nowrap') {
+        const raw = String(value || '').trim();
+        if (!raw || raw === '-') {
+            return `<span class="${primaryClass}">-</span>`;
+        }
+
+        const match = raw.match(/^(.*?)(?:\s+(\d{1,2}:\d{2}(?::\d{2})?))$/);
+        if (!match) {
+            return `<span class="${primaryClass}">${Perfectlum.escapeHtml(raw)}</span>`;
+        }
+
+        const datePart = (match[1] || '').trim();
+        const timePart = (match[2] || '').trim();
+
+        return `
+            <span class="flex flex-col items-center text-center leading-tight">
+                <span class="${primaryClass}">${Perfectlum.escapeHtml(datePart || raw)}</span>
+                <span class="${secondaryClass}">${Perfectlum.escapeHtml(timePart)}</span>
+            </span>
+        `;
     }
 
     function renderCalibrationMetaButton(type, id, label, badge) {
@@ -1533,17 +1707,21 @@
 
         body.innerHTML = items.map((item) => {
             const createdValue = String(item.createdAt || calibrationText.notRecorded);
-            const createdMuted = createdValue === calibrationText.notRecorded || createdValue === 'Not recorded';
-            const dueValue = String(item.dueAt || '-');
             const dueOverdue = item.dueColor === 'danger';
+            const createdClass = (createdValue === calibrationText.notRecorded || createdValue === 'Not recorded')
+                ? 'text-sm text-slate-400 whitespace-nowrap'
+                : 'text-sm font-semibold text-slate-900 whitespace-nowrap';
+            const dueClass = dueOverdue
+                ? 'text-sm font-semibold text-rose-600 whitespace-nowrap'
+                : 'text-sm font-semibold text-slate-900 whitespace-nowrap';
 
             return `
                 <tr>
                     <td>${renderCalibrationDisplayCell(item)}</td>
                     <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="calibration-cell-center cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">${Perfectlum.escapeHtml(item.taskName || '-')}</span></div></td>
                     <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="calibration-cell-center cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">${Perfectlum.escapeHtml(item.scheduleName || '-')}</span></div></td>
-                    <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="calibration-cell-center cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="calibration-date-text ${dueOverdue ? 'is-overdue' : ''}">${Perfectlum.escapeHtml(dueValue)}</span></div></td>
-                    <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="calibration-cell-center cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50"><span class="calibration-created-text ${createdMuted ? 'is-muted' : ''}">${Perfectlum.escapeHtml(createdValue)}</span></div></td>
+                    <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="calibration-cell-center cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50">${renderCalibrationDateTimeCell(item.dueAt || '-', dueClass, dueOverdue ? 'text-[11px] font-semibold text-rose-300 whitespace-nowrap' : undefined)}</div></td>
+                    <td><div data-calibration-row-trigger="${Perfectlum.escapeHtml(item.id)}" class="calibration-cell-center cursor-pointer rounded-2xl px-1 py-1 transition hover:bg-slate-50">${renderCalibrationDateTimeCell(createdValue, createdClass)}</div></td>
                     <td>${renderCalibrationTaskActions(item.id)}</td>
                 </tr>
             `;
@@ -1589,6 +1767,13 @@
         }
     }
 
+    function updateCalibrationSearchClearButton() {
+        const searchInput = document.getElementById('gridjs-custom-search');
+        const clearButton = document.getElementById('calibration-table-search-clear');
+        if (!searchInput || !clearButton) return;
+        clearButton.hidden = !String(searchInput.value || '').trim();
+    }
+
     function initCalibrationPage() {
         const body = document.getElementById('calibration-tasks-body');
         if (!body || body.dataset.calibrationInitialized === '1') {
@@ -1617,6 +1802,7 @@
             searchInput.value = initialKeyword;
         }
         calibrationTableState.search = initialKeyword;
+        updateCalibrationSearchClearButton();
 
         quickCalibrationForm?.addEventListener('submit', function (event) {
             event.preventDefault();
@@ -1673,6 +1859,7 @@
 
         let searchTimeout;
         searchInput?.addEventListener('input', function (e) {
+            updateCalibrationSearchClearButton();
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 const keyword = String(e.target.value || '').trim();
@@ -1687,6 +1874,20 @@
                 calibrationTableState.page = 1;
                 loadCalibrationTasks();
             }, 400);
+        });
+
+        document.getElementById('calibration-table-search-clear')?.addEventListener('click', () => {
+            if (!searchInput) return;
+            clearTimeout(searchTimeout);
+            searchInput.value = '';
+            updateCalibrationSearchClearButton();
+            const url = new URL(window.location);
+            url.searchParams.delete('keywords');
+            window.history.replaceState({}, '', url);
+            calibrationTableState.search = '';
+            calibrationTableState.page = 1;
+            loadCalibrationTasks();
+            searchInput.focus();
         });
 
         document.getElementById('calibration-page-prev')?.addEventListener('click', () => {
@@ -1757,6 +1958,7 @@
             const willOpen = menu?.classList.contains('hidden');
             closeCalibrationTaskMenus();
             if (menu && willOpen) {
+                positionCalibrationTaskMenu(toggle, menu);
                 menu.classList.remove('hidden');
             }
             return;
@@ -1787,11 +1989,16 @@
 
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
+            closeCalibrationTaskMenus();
             closeCalibrationJobModal();
         }
     });
 
+    window.addEventListener('resize', closeCalibrationTaskMenus);
+    window.addEventListener('scroll', closeCalibrationTaskMenus, true);
+
     window.addEventListener('task-saved', () => {
+        resetCalibrationQuickForm();
         loadCalibrationTasks();
     });
 

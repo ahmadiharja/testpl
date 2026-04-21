@@ -1,5 +1,6 @@
 <!-- HIERARCHICAL LOCATION MODAL SYSTEM (Alpine.js) -->
-<div x-data="hierarchyModal()" 
+<div x-data="hierarchyModal()"
+     data-hierarchy-modal-root
      @open-hierarchy.window="open($event.detail)"
      class="font-inter">
      
@@ -331,40 +332,52 @@
                                                 </div>
 
                                                 <div class="space-y-6">
-                                                    <div class="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)]">
-                                                        <div class="flex items-center justify-between gap-4">
+                                                    <div class="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
+                                                        <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-5">
                                                             <div>
                                                                 <p class="text-[11px] font-extrabold uppercase tracking-[0.22em] text-slate-400">{{ __('Registered Workstations') }}</p>
-                                                                <h3 class="mt-3 text-[2rem] leading-[1.05] font-black tracking-tight text-slate-900">{{ __('All workstations in this workgroup') }}</h3>
+                                                                <h3 class="mt-2 text-lg font-extrabold text-slate-900">{{ __('All workstations in this workgroup') }}</h3>
                                                             </div>
                                                             <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500" x-text="`${workgroupDetail.summary.workstationCount || 0} workstations`"></span>
                                                         </div>
-                                                        <div class="mt-6 overflow-hidden rounded-[1.5rem] border border-slate-200">
-                                                            <table class="min-w-full divide-y divide-slate-200">
-                                                                <thead class="bg-slate-50">
-                                                                    <tr>
-                                                                        <th class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Workstation') }}</th>
-                                                                        <th class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Displays') }}</th>
-                                                                        <th class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Status') }}</th>
-                                                                        <th class="px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Last Connected') }}</th>
+                                                        <div class="overflow-x-auto">
+                                                            <table class="w-full table-fixed border-collapse text-left">
+                                                                <colgroup>
+                                                                    <col class="w-[44%]">
+                                                                    <col class="w-[14%]">
+                                                                    <col class="w-[20%]">
+                                                                    <col class="w-[22%]">
+                                                                </colgroup>
+                                                                <thead>
+                                                                    <tr class="border-b border-slate-200 bg-slate-100/80">
+                                                                        <th class="px-5 py-3 text-[11px] font-extrabold uppercase tracking-[0.18em] text-slate-500">{{ __('Workstation') }}</th>
+                                                                        <th class="px-5 py-3 text-center text-[11px] font-extrabold uppercase tracking-[0.18em] text-slate-500">{{ __('Displays') }}</th>
+                                                                        <th class="px-5 py-3 text-[11px] font-extrabold uppercase tracking-[0.18em] text-slate-500">{{ __('Status') }}</th>
+                                                                        <th class="px-5 py-3 text-[11px] font-extrabold uppercase tracking-[0.18em] text-slate-500">{{ __('Last Connected') }}</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody class="divide-y divide-slate-100 bg-white">
                                                                     <template x-for="item in (workgroupDetail.workstations || [])" :key="`wg-workstation-${item.id}`">
-                                                                        <tr class="transition hover:bg-sky-50/50">
-                                                                            <td class="px-5 py-4">
-                                                                                <button type="button" class="text-left text-sm font-bold text-sky-600 transition hover:text-sky-700 hover:underline" @click="pushView('workstation', item.id)" x-text="item.name"></button>
+                                                                        <tr class="h-16 transition hover:bg-sky-50/60">
+                                                                            <td class="min-w-0 px-5 py-3">
+                                                                                <button type="button" class="flex max-w-full min-w-0 items-center gap-2.5 text-left text-[13px] font-bold text-sky-600 transition hover:text-sky-700 hover:underline" @click="pushView('workstation', item.id)" :title="item.name">
+                                                                                    <span class="h-2 w-2 shrink-0 rounded-full" :class="item.attentionCount > 0 ? 'bg-rose-500 shadow-[0_0_0_4px_rgba(244,63,94,0.12)]' : 'bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]'"></span>
+                                                                                    <span class="block min-w-0 truncate" x-text="item.name"></span>
+                                                                                </button>
                                                                             </td>
-                                                                            <td class="px-5 py-4 text-sm font-semibold text-slate-700" x-text="item.displayCount"></td>
-                                                                            <td class="px-5 py-4">
-                                                                                <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold" :class="item.attentionCount > 0 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'">
-                                                                                    <span class="inline-block h-2 w-2 rounded-full" :class="item.attentionCount > 0 ? 'bg-rose-500' : 'bg-emerald-500'"></span>
-                                                                                    <span x-text="item.attentionCount > 0 ? @js(__('Needs Attention')) : @js(__('Healthy'))"></span>
+                                                                            <td class="px-5 py-3 text-center text-[13px] font-bold text-slate-700" x-text="item.displayCount"></td>
+                                                                            <td class="min-w-0 px-5 py-3">
+                                                                                <span class="inline-flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] ring-1" :class="item.attentionCount > 0 ? 'bg-rose-50 text-rose-600 ring-rose-100' : 'bg-emerald-50 text-emerald-600 ring-emerald-100'">
+                                                                                    <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="item.attentionCount > 0 ? 'bg-rose-500' : 'bg-emerald-500'"></span>
+                                                                                    <span class="truncate" x-text="item.attentionCount > 0 ? @js(__('Needs Attention')) : @js(__('Healthy'))"></span>
                                                                                 </span>
                                                                             </td>
-                                                                            <td class="px-5 py-4 text-sm font-semibold text-slate-700" x-text="item.lastConnected"></td>
+                                                                            <td class="min-w-0 px-5 py-3 text-[13px] font-semibold text-slate-600">
+                                                                                <span class="block truncate" :title="item.lastConnected" x-text="item.lastConnected"></span>
+                                                                            </td>
                                                                         </tr>
                                                                     </template>
+                                                                    <tr x-show="!(workgroupDetail.workstations || []).length"><td colspan="4" class="px-6 py-8 text-center text-sm text-slate-500">{{ __('No workstations are registered in this workgroup.') }}</td></tr>
                                                                 </tbody>
                                                             </table>
                                                         </div>
@@ -516,31 +529,8 @@
                                     </div>
                                     <div x-show="showWorkstationHierarchyEdit" x-cloak class="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
                                         <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{{ __('Move Workstation') }}</p>
-                                        <p class="mt-2 text-[12px] leading-5 text-slate-500">Relocate this workstation by selecting a new facility and workgroup.</p>
+                                        <p class="mt-2 text-[12px] leading-5 text-slate-500">Relocate this workstation to another workgroup inside the same facility.</p>
                                         <div class="mt-4 space-y-3">
-                                            <div>
-                                                <label class="mb-1.5 block text-[10px] font-semibold text-slate-500">Facility</label>
-                                                <div class="relative" @click.outside="closeInlineSelect()">
-                                                    <button type="button" class="flex h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20" @click="toggleInlineSelect('workstation-move-facilities')">
-                                                        <span class="truncate" x-text="selectedWorkstationFacilityName() || @js(__('Select facility'))"></span>
-                                                        <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i>
-                                                    </button>
-                                                    <div x-show="isInlineSelectOpen('workstation-move-facilities')" x-cloak class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                                                        <input x-ref="search-workstation-move-facilities" x-model="workstationMoveSearch.facilities" type="text" placeholder="{{ __('Search facilities...') }}" class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-[12px] font-medium text-slate-700 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                                                        <p class="mb-2 text-[11px] font-medium text-slate-400" x-text="workstationMoveOptionHint('facilities')"></p>
-                                                        <div class="max-h-56 space-y-1 overflow-y-auto">
-                                                            <template x-for="facility in filteredWorkstationMoveOptions('facilities')" :key="`ws-move-facility-${facility.id}`">
-                                                                <button type="button" class="flex w-full items-center rounded-xl px-3 py-2 text-left text-[12px] font-medium text-slate-700 transition hover:bg-sky-50 hover:text-sky-700" @click="workstationMoveForm.facilityId = String(facility.id); closeInlineSelect(); changeWorkstationMoveFacility()">
-                                                                    <span class="truncate" x-text="facility.name"></span>
-                                                                </button>
-                                                            </template>
-                                                            <template x-if="!filteredWorkstationMoveOptions('facilities').length">
-                                                                <div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">{{ __('No options found') }}</div>
-                                                            </template>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
                                             <div>
                                                 <label class="mb-1.5 block text-[10px] font-semibold text-slate-500">Workgroup</label>
                                                 <div class="relative" @click.outside="closeInlineSelect()">
@@ -632,26 +622,43 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div class="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm">
-                                                    <div class="mb-5 flex items-center justify-between gap-4">
-                                                        <h3 class="text-lg font-extrabold text-gray-900 mb-0 flex items-center gap-2"><i data-lucide="layers" class="w-5 h-5 text-gray-400"></i> {{ __('Attached Displays') }}</h3>
-                                                        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500" x-text="`${workstationDetail.displays.length} displays`"></span>
+                                                <div class="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
+                                                    <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-5">
+                                                        <h3 class="mb-0 flex items-center gap-2 text-lg font-extrabold text-slate-900"><i data-lucide="layers" class="h-5 w-5 text-slate-400"></i> {{ __('Attached Displays') }}</h3>
+                                                        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500" x-text="`${workstationDetail.displays.length} ${workstationDetail.displays.length === 1 ? 'display' : 'displays'}`"></span>
                                                     </div>
-                                                    <div class="overflow-hidden rounded-[1.25rem] border border-gray-100">
-                                                        <table class="w-full text-left border-collapse">
+                                                    <div class="overflow-x-auto">
+                                                        <table class="w-full table-fixed border-collapse text-left">
+                                                            <colgroup>
+                                                                <col class="w-[52%]">
+                                                                <col class="w-[22%]">
+                                                                <col class="w-[26%]">
+                                                            </colgroup>
                                                             <thead>
-                                                                <tr class="bg-gray-50 border-b border-gray-100">
-                                                                    <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-400">Display Name</th>
-                                                                    <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-400">Model</th>
-                                                                    <th class="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-400">Status</th>
+                                                                <tr class="border-b border-slate-200 bg-slate-100/80">
+                                                                    <th class="px-5 py-3 text-[11px] font-extrabold uppercase tracking-[0.18em] text-slate-500">{{ __('Display Name') }}</th>
+                                                                    <th class="px-5 py-3 text-[11px] font-extrabold uppercase tracking-[0.18em] text-slate-500">{{ __('Model') }}</th>
+                                                                    <th class="px-5 py-3 text-[11px] font-extrabold uppercase tracking-[0.18em] text-slate-500">{{ __('Status') }}</th>
                                                                 </tr>
                                                             </thead>
-                                                            <tbody>
+                                                            <tbody class="divide-y divide-slate-100 bg-white">
                                                                 <template x-for="display in workstationDetail.displays" :key="`workstation-display-${display.id}`">
-                                                                    <tr @click="pushView('display', display.id)" class="border-b border-gray-50 hover:bg-sky-50/50 cursor-pointer group">
-                                                                        <td class="px-6 py-4"><span class="text-[13px] font-bold text-sky-500 group-hover:underline flex items-center gap-2"><i data-lucide="monitor" class="w-4 h-4"></i><span x-text="display.name"></span></span></td>
-                                                                        <td class="px-6 py-4 text-[13px] font-semibold text-gray-600" x-text="display.model"></td>
-                                                                        <td class="px-6 py-4"><span class="inline-flex py-1 px-2.5 rounded-md text-[11px] font-bold uppercase tracking-wider" :class="display.statusTone === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'"><i :data-lucide="display.statusTone === 'success' ? 'check' : 'triangle-alert'" class="w-3 h-3 mr-1"></i><span x-text="display.statusLabel"></span></span></td>
+                                                                    <tr @click="pushView('display', display.id)" class="h-16 cursor-pointer transition hover:bg-sky-50/60">
+                                                                        <td class="min-w-0 px-5 py-3">
+                                                                            <div class="flex min-w-0 items-center gap-2.5">
+                                                                                <span class="h-2 w-2 shrink-0 rounded-full" :class="display.statusTone === 'success' ? 'bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]' : 'bg-rose-500 shadow-[0_0_0_4px_rgba(244,63,94,0.12)]'"></span>
+                                                                                <span class="block min-w-0 truncate text-[13px] font-bold text-sky-600 hover:underline" :title="display.name" x-text="display.name"></span>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td class="min-w-0 px-5 py-3 text-[13px] font-semibold text-slate-600">
+                                                                            <span class="block truncate" :title="display.model" x-text="display.model"></span>
+                                                                        </td>
+                                                                        <td class="min-w-0 px-5 py-3">
+                                                                            <span class="inline-flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] ring-1" :class="display.statusTone === 'success' ? 'bg-emerald-50 text-emerald-600 ring-emerald-100' : 'bg-rose-50 text-rose-600 ring-rose-100'" :title="display.attentionText || display.statusLabel">
+                                                                                <span class="h-1.5 w-1.5 shrink-0 rounded-full" :class="display.statusTone === 'success' ? 'bg-emerald-500' : 'bg-rose-500'"></span>
+                                                                                <span class="truncate" x-text="display.statusLabel"></span>
+                                                                            </span>
+                                                                        </td>
                                                                     </tr>
                                                                 </template>
                                                                 <tr x-show="!workstationDetail.displays.length"><td colspan="3" class="px-6 py-8 text-center text-sm text-slate-500">{{ __('No displays are attached to this workstation.') }}</td></tr>
@@ -703,6 +710,50 @@
                                                                 </div>
                                                             </label>
                                                         </div>
+                                                        <div class="mb-5 grid gap-5 md:grid-cols-2">
+                                                            <label class="space-y-2">
+                                                                <span class="text-sm font-medium text-slate-700">Language</span>
+                                                                <select x-model="workstationSettingsForm.application.Language" class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm">
+                                                                    <option value="">Select language</option>
+                                                                    <template x-for="option in workstationOptionList('Language')" :key="`language-opt-${option.value}`">
+                                                                        <option :value="option.value" x-text="option.label"></option>
+                                                                    </template>
+                                                                </select>
+                                                            </label>
+                                                            <label class="space-y-2">
+                                                                <span class="text-sm font-medium text-slate-700">Database Synchronization Interval</span>
+                                                                <select x-model="workstationSettingsForm.application.DataBaseSynchronizationInterval" class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm">
+                                                                    <option value="">Select sync interval</option>
+                                                                    <template x-for="option in workstationOptionList('DataBaseSynchronizationInterval')" :key="`sync-interval-opt-${option.value}`">
+                                                                        <option :value="option.value" x-text="option.label"></option>
+                                                                    </template>
+                                                                </select>
+                                                            </label>
+                                                            <label class="space-y-2">
+                                                                <span class="text-sm font-medium text-slate-700">Reminder Interval</span>
+                                                                <select x-model="workstationSettingsForm.application.RemindMinutes" :disabled="!workstationSettingsForm.application.UseScheduler" :class="{ 'cursor-not-allowed bg-slate-100 text-slate-400': !workstationSettingsForm.application.UseScheduler }" class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm">
+                                                                    <option value="">Select reminder interval</option>
+                                                                    <template x-for="option in workstationOptionList('RemindMinutes')" :key="`remind-opt-${option.value}`">
+                                                                        <option :value="option.value" x-text="option.label"></option>
+                                                                    </template>
+                                                                </select>
+                                                                <p class="text-xs text-slate-500" x-text="workstationSettingsForm.application.UseScheduler ? 'Applied on the workstation after the next client sync.' : 'Enable Scheduler first to adjust reminder timing.'"></p>
+                                                            </label>
+                                                            <label class="space-y-2">
+                                                                <span class="text-sm font-medium text-slate-700">Backup Period</span>
+                                                                <select x-model="workstationSettingsForm.application.backupPeriod" class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm">
+                                                                    <option value="">Select backup period</option>
+                                                                    <template x-for="option in workstationOptionList('backupPeriod')" :key="`backup-period-opt-${option.value}`">
+                                                                        <option :value="option.value" x-text="option.label"></option>
+                                                                    </template>
+                                                                </select>
+                                                            </label>
+                                                        </div>
+                                                        <div class="mb-5 grid gap-3 md:grid-cols-2">
+                                                            <label class="flex items-start gap-3 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"><input x-model="workstationSettingsForm.application.UseScheduler" type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-sky-500"><span><span class="block font-medium text-slate-800">Enable Scheduler</span><span class="mt-1 block text-xs leading-5 text-slate-500">Allow the client application to run and remind scheduled tasks.</span></span></label>
+                                                            <label class="flex items-start gap-3 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"><input x-model="workstationSettingsForm.application.UpdateSoftwareAutomaticaly" type="checkbox" class="mt-1 h-4 w-4 rounded border-slate-300 text-sky-500"><span><span class="block font-medium text-slate-800">Update Software Automatically</span><span class="mt-1 block text-xs leading-5 text-slate-500">Let the workstation pull approved software updates automatically.</span></span></label>
+                                                        </div>
+                                                        <p class="mb-5 text-xs text-slate-500">Applied on the workstation after the next client sync.</p>
                                                         <div class="grid gap-5 md:grid-cols-2">
                                                             <label class="space-y-2"><span class="text-sm font-medium text-slate-700">Units of Length</span><div class="relative" @click.outside="closeInlineSelect()"><button type="button" class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition" @click="toggleInlineSelect('units')"><span class="truncate" x-text="dropdownDisplayLabel('units', workstationSettingsForm.application.units, null, 'Select unit')"></span><i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i></button><div x-show="isInlineSelectOpen('units')" x-cloak class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]"><input x-ref="search-units" x-model="workstationOptionSearch.units" type="text" placeholder="Search units..." class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"><p class="mb-2 text-[11px] font-medium text-slate-400" x-text="workstationOptionHint('units')"></p><div class="max-h-56 space-y-1 overflow-y-auto"><template x-for="option in filteredWorkstationOptionList('units')" :key="`units-opt-${option.value}`"><button type="button" class="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-sky-50 hover:text-sky-700" @click="workstationSettingsForm.application.units = option.value; closeInlineSelect()" x-text="option.label"></button></template><template x-if="!filteredWorkstationOptionList('units').length"><div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">No options found</div></template></div></div></div></label>
                                                             <label class="space-y-2"><span class="text-sm font-medium text-slate-700">Units of Luminance</span><div class="relative" @click.outside="closeInlineSelect()"><button type="button" class="flex h-12 w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 transition" @click="toggleInlineSelect('LumUnits')"><span class="truncate" x-text="dropdownDisplayLabel('LumUnits', workstationSettingsForm.application.LumUnits, null, 'Select luminance unit')"></span><i data-lucide="chevron-down" class="h-4 w-4 text-slate-400"></i></button><div x-show="isInlineSelectOpen('LumUnits')" x-cloak class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_rgba(15,23,42,0.14)]"><input x-ref="search-LumUnits" x-model="workstationOptionSearch.LumUnits" type="text" placeholder="Search luminance units..." class="mb-2 h-10 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"><p class="mb-2 text-[11px] font-medium text-slate-400" x-text="workstationOptionHint('LumUnits')"></p><div class="max-h-56 space-y-1 overflow-y-auto"><template x-for="option in filteredWorkstationOptionList('LumUnits')" :key="`lum-opt-${option.value}`"><button type="button" class="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-sky-50 hover:text-sky-700" @click="workstationSettingsForm.application.LumUnits = option.value; closeInlineSelect()" x-text="option.label"></button></template><template x-if="!filteredWorkstationOptionList('LumUnits').length"><div class="rounded-xl bg-slate-50 px-3 py-3 text-sm text-slate-500">No options found</div></template></div></div></div></label>
@@ -1168,6 +1219,10 @@
                                                         <p class="mt-2 text-sm font-bold text-slate-900" x-text="displayDetail.screenSize"></p>
                                                     </div>
                                                     <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Backlight Stabilization</p>
+                                                        <p class="mt-2 text-sm font-bold text-slate-900" x-text="displayDetail.backlightStabilization"></p>
+                                                    </div>
+                                                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                                                         <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Installed</p>
                                                         <p class="mt-2 text-sm font-bold text-slate-900" x-text="displayDetail.installationDate"></p>
                                                     </div>
@@ -1293,6 +1348,10 @@
                                                             <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Current LUT</p>
                                                             <p class="mt-2 text-sm font-bold text-slate-900" x-text="displayDetail.currentLut"></p>
                                                         </div>
+                                                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                                            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Backlight Stabilization</p>
+                                                            <p class="mt-2 text-sm font-bold text-slate-900" x-text="displayDetail.backlightStabilization"></p>
+                                                        </div>
                                                         <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 md:col-span-2 xl:col-span-4">
                                                             <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Installation Date</p>
                                                             <p class="mt-2 text-sm font-bold text-slate-900" x-text="displayDetail.installationDate"></p>
@@ -1391,7 +1450,21 @@
                                                         </label>
                                                         <label class="block">
                                                             <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Current LUT Index</span>
-                                                            <input type="text" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20" x-model="displayForm.currentLut">
+                                                            <select class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20" x-model="displayForm.currentLut">
+                                                                <option value=""></option>
+                                                                <template x-for="option in (displayDetail?.settingsOptions?.lut_names || [])" :key="`display-lut-${option.value}`">
+                                                                    <option :value="option.value" x-text="option.label"></option>
+                                                                </template>
+                                                            </select>
+                                                        </label>
+                                                        <label class="block">
+                                                            <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Backlight Stabilization</span>
+                                                            <select class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20" x-model="displayForm.backlightStabilization">
+                                                                <option value=""></option>
+                                                                <template x-for="option in (displayDetail?.settingsOptions?.BacklightStabilization || [])" :key="`display-backlight-${option.value}`">
+                                                                    <option :value="option.value" x-text="option.label"></option>
+                                                                </template>
+                                                            </select>
                                                         </label>
                                                         <label class="block">
                                                             <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Installation Date</span>
@@ -1420,15 +1493,30 @@
                                                         </label>
                                                         <label class="block">
                                                             <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Type Of Display</span>
-                                                            <input type="text" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20" x-model="displayForm.typeOfDisplay">
+                                                            <select class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20" x-model="displayForm.typeOfDisplay">
+                                                                <option value=""></option>
+                                                                <template x-for="option in (displayDetail?.settingsOptions?.TypeOfDisplay || [])" :key="`display-type-${option.value}`">
+                                                                    <option :value="option.value" x-text="option.label"></option>
+                                                                </template>
+                                                            </select>
                                                         </label>
                                                         <label class="block">
                                                             <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Display Technology</span>
-                                                            <input type="text" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20" x-model="displayForm.displayTechnology">
+                                                            <select class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20" x-model="displayForm.displayTechnology">
+                                                                <option value=""></option>
+                                                                <template x-for="option in (displayDetail?.settingsOptions?.DisplayTechnology || [])" :key="`display-tech-${option.value}`">
+                                                                    <option :value="option.value" x-text="option.label"></option>
+                                                                </template>
+                                                            </select>
                                                         </label>
                                                         <label class="block">
                                                             <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Screen Size</span>
-                                                            <input type="text" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20" x-model="displayForm.screenSize">
+                                                            <select class="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20" x-model="displayForm.screenSize">
+                                                                <option value=""></option>
+                                                                <template x-for="option in (displayDetail?.settingsOptions?.ScreenSize || [])" :key="`display-screen-${option.value}`">
+                                                                    <option :value="option.value" x-text="option.label"></option>
+                                                                </template>
+                                                            </select>
                                                         </label>
                                                         <label class="block">
                                                             <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Resolution H</span>
@@ -1690,7 +1778,7 @@
                                                         </button>
                                                     </template>
                                                     <template x-if="!filteredRecentHistory().length">
-                                                        <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">No history records match the selected bucket.</div>
+                                                        <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">No history records match the selected time period.</div>
                                                     </template>
                                                 </div>
                                                 <div x-show="false && historyReportOpen" x-cloak class="space-y-6">
@@ -1794,8 +1882,13 @@
              @click.stop>
             <div class="flex items-center justify-between border-b border-slate-200 px-5 py-3.5">
                 <div>
-                                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('History Report') }}</p>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('History Report') }}</p>
                     <h3 class="mt-1 text-lg font-extrabold text-slate-900" x-text="historyReportTitle"></h3>
+                    <p x-show="historyReportDetail" class="mt-1 text-sm text-slate-500">
+                        <span x-text="historyReportDetail?.performedAt || '-'"></span>
+                        <span class="mx-1">&middot;</span>
+                        <span x-text="historyReportDetail?.display?.display || '-'"></span>
+                    </p>
                 </div>
                 <div class="flex items-center gap-3">
                     <a x-show="historyReportDetail?.printUrl" :href="historyReportDetail?.printUrl" target="_blank" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">
@@ -1817,52 +1910,23 @@
                     <div class="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-5 text-sm text-rose-700" x-text="historyReportError"></div>
                 </template>
                 <template x-if="!historyReportLoading && !historyReportError && historyReportDetail">
-                    <div class="space-y-4">
-                        <div class="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
-                            <div class="flex flex-wrap items-start justify-between gap-4">
-                                <div>
-                                    <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Performed At</p>
-                                    <h4 class="mt-2 text-lg font-extrabold text-slate-900" x-text="historyReportDetail.performedAt"></h4>
-                                </div>
-                                <span class="inline-flex rounded-full px-3 py-1 text-[11px] font-semibold" :class="historyBadgeClass(historyReportDetail.resultTone)" x-text="historyReportDetail.resultLabel"></span>
-                            </div>
-                            <div class="mt-4 grid gap-3 md:grid-cols-2">
-                                <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                    <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Facility</p>
-                                    <p class="mt-2 text-sm font-bold text-slate-900" x-text="historyReportDetail.display.facility"></p>
-                                </div>
-                                <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                    <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Workgroup</p>
-                                    <p class="mt-2 text-sm font-bold text-slate-900" x-text="historyReportDetail.display.workgroup"></p>
-                                </div>
-                                <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                    <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Workstation</p>
-                                    <p class="mt-2 text-sm font-bold text-slate-900" x-text="historyReportDetail.display.workstation"></p>
-                                </div>
-                                <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                    <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Display</p>
-                                    <p class="mt-2 text-sm font-bold text-slate-900" x-text="historyReportDetail.display.display"></p>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="space-y-5">
+                        <section class="flex flex-wrap items-center gap-3 rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 shadow-sm">
+                            <span class="inline-flex rounded-full px-3 py-1 text-[11px] font-semibold" :class="historyBadgeClass(historyReportDetail.resultTone)" x-text="historyReportDetail.resultLabel"></span>
+                            <span class="text-sm text-slate-500">{{ __('Detailed summary for the selected task execution.') }}</span>
+                        </section>
 
-                        <div class="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
-                            <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Header Details</p>
-                            <div class="mt-4 grid gap-3 md:grid-cols-2">
-                                <template x-for="item in historyReportDetail.header" :key="`history-header-${item.label}`">
-                                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                        <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400" x-text="item.label"></p>
-                                        <p class="mt-2 text-sm font-bold text-slate-900" x-text="item.value"></p>
-                                    </div>
-                                </template>
+                        <template x-if="!historyReportDetail.sections || !historyReportDetail.sections.length">
+                            <div class="rounded-[1.5rem] border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500 shadow-sm">
+                                {{ __('No structured summary is available for this history report.') }}
                             </div>
-                        </div>
+                        </template>
 
                         <template x-for="section in historyReportDetail.sections" :key="`history-section-${section.name}`">
-                            <div class="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
+                            <section class="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
                                 <div class="flex items-center justify-between gap-4">
                                     <div>
-                                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Step</p>
+                                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{{ __('Question Review') }}</p>
                                         <h4 class="mt-2 text-base font-extrabold text-slate-900" x-text="section.name"></h4>
                                     </div>
                                 </div>
@@ -1890,7 +1954,7 @@
                                 </x-history-questions>
 
                                 <div x-show="section.comment" class="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
-                                    <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Comment</p>
+                                    <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">{{ __('Comment') }}</p>
                                     <p class="mt-2 text-sm text-slate-700" x-text="section.comment"></p>
                                 </div>
 
@@ -1911,7 +1975,7 @@
                                         </div>
                                     </template>
                                 </x-history-graphs>
-                            </div>
+                            </section>
                         </template>
                     </div>
                 </template>
@@ -2446,6 +2510,7 @@
                 graphicboardOnly: false,
                 internalSensor: false,
                 currentLut: '',
+                backlightStabilization: '',
                 installationDate: '',
                 manufacturer: '',
                 model: '',
@@ -3041,6 +3106,12 @@
                         application: {
                             name: this.workstationDetail?.name || '',
                             workgroup_id: String(data.workgroup_id ?? this.workstationDetail?.workgroup?.id ?? ''),
+                            Language: data.Language ?? '',
+                            DataBaseSynchronizationInterval: data.DataBaseSynchronizationInterval ?? '',
+                            RemindMinutes: data.RemindMinutes ?? '',
+                            backupPeriod: data.backupPeriod ?? '',
+                            UseScheduler: data.UseScheduler === 'true' || data.UseScheduler === '1' || data.UseScheduler === true,
+                            UpdateSoftwareAutomaticaly: data.UpdateSoftwareAutomaticaly === 'true' || data.UpdateSoftwareAutomaticaly === '1' || data.UpdateSoftwareAutomaticaly === true,
                             units: data.units ?? '',
                             LumUnits: data.LumUnits ?? '',
                             AmbientLight: data.AmbientLight ?? '',
@@ -3248,6 +3319,12 @@
                     application: [
                         { label: 'Workstation Name', value: application.name || this.workstationDetail?.name || '-' },
                         { label: 'Workgroup', value: this.workstationOptionLabel('workgroup_id', application.workgroup_id) },
+                        { label: 'Language', value: this.workstationOptionLabel('Language', application.Language) },
+                        { label: 'Database Sync Interval', value: this.workstationOptionLabel('DataBaseSynchronizationInterval', application.DataBaseSynchronizationInterval) },
+                        { label: 'Reminder Interval', value: this.workstationOptionLabel('RemindMinutes', application.RemindMinutes) },
+                        { label: 'Backup Period', value: this.workstationOptionLabel('backupPeriod', application.backupPeriod) },
+                        { label: 'Scheduler', value: this.workstationBooleanLabel(application.UseScheduler) },
+                        { label: 'Software Updates', value: this.workstationBooleanLabel(application.UpdateSoftwareAutomaticaly, 'Automatic', 'Manual') },
                         { label: @js(__('Units of Length')), value: this.workstationOptionLabel('units', application.units) },
                         { label: @js(__('Units of Luminance')), value: this.workstationOptionLabel('LumUnits', application.LumUnits) },
                         { label: 'Veiling Luminance', value: application.AmbientLight || '-' },
@@ -3428,6 +3505,7 @@
                     graphicboardOnly: !!this.displayDetail.graphicboardOnly,
                     internalSensor: !!this.displayDetail.internalSensor,
                     currentLut: this.displayDetail.currentLut === '-' ? '' : (this.displayDetail.currentLut || ''),
+                    backlightStabilization: this.displayDetail.backlightStabilization === '-' ? '' : (this.displayDetail.backlightStabilization || ''),
                     installationDate: this.displayDetail.installationDate === '-' ? '' : (this.displayDetail.installationDate || ''),
                     manufacturer: this.displayDetail.manufacturer === '-' ? '' : (this.displayDetail.manufacturer || ''),
                     model: this.displayDetail.model === '-' ? '' : (this.displayDetail.model || ''),
@@ -4154,6 +4232,7 @@
                 formData.append('CommunicationType', this.displayForm.graphicboardOnly ? '1' : '3');
                 formData.append('InternalSensor', this.displayForm.internalSensor ? '1' : '0');
                 formData.append('CurrentLUTIndex', this.displayForm.currentLut || '');
+                formData.append('BacklightStabilization', this.displayForm.backlightStabilization || '');
                 formData.append('InstalationDate', this.displayForm.installationDate || '');
                 formData.append('Manufacturer', this.displayForm.manufacturer || '');
                 formData.append('Model', this.displayForm.model || '');

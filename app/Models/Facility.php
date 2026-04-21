@@ -17,6 +17,18 @@ class Facility extends Model
     protected $table='facilities';
     protected $guarded = [];
     public $timestamps = false;
+    public $incrementing = false;
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (!$model->getKey()) {
+                $model->id = ((int) static::withTrashed()->max('id')) + 1;
+            }
+        });
+    }
 
     public function workgroups(){
         return $this->hasMany('App\Models\Workgroup');

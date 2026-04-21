@@ -57,7 +57,7 @@
       data-idle-heartbeat-seconds="{{ config('session.idle_heartbeat_seconds', 60) }}"
       data-idle-heartbeat-url="{{ url('session/heartbeat') }}"
       data-idle-logout-url="{{ url('logout?reason=inactive') }}"
-      data-idle-login-url="{{ url('login?surface=desktop') }}">
+      data-idle-login-url="{{ route('login') }}">
 
     <!-- Main Modal Container -->
     <div class="modal-bg w-full max-w-[900px] min-h-[500px] rounded-3xl shadow-2xl flex flex-col relative overflow-hidden">

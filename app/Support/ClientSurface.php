@@ -59,7 +59,7 @@ class ClientSurface
     {
         return self::current($request) === self::MOBILE
             ? route('mobile.login', ['surface' => self::MOBILE])
-            : url('login?surface=' . self::DESKTOP);
+            : route('login');
     }
 
     public static function dashboardUrl(Request $request): string

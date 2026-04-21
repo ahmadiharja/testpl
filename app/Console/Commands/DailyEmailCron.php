@@ -45,7 +45,6 @@ class DailyEmailCron extends Command
     {
         $facility_cond = $facility == 0 || $facility == '' ? '1=1' : 'f.id=' . $facility;
 
-        // TODO temp remove exclude cond
         $results = DB::select("SELECT count(wd.id) AS di_amount FROM displays AS wd
         INNER JOIN workstations AS ws ON wd.workstation_id = ws.id 
         INNER JOIN workgroups AS wg ON ws.workgroup_id = wg.id 
@@ -298,7 +297,7 @@ class DailyEmailCron extends Command
                         'body' => $stats['overdue'] . ' scheduled item' . ($stats['overdue'] === 1 ? '' : 's') . ' ' . $overdueVerb . ' overdue in ' . $facilityName . '.',
                         'severity' => 'danger',
                         'icon' => 'calendar-clock',
-                        'url' => url('scheduler'),
+                        'url' => route('displays.scheduler'),
                         'scope' => $facilityName,
                         'meta' => [
                             'overdueCount' => $stats['overdue'],
@@ -314,7 +313,7 @@ class DailyEmailCron extends Command
                         'body' => $stats['dueToday'] . ' scheduled item' . ($stats['dueToday'] === 1 ? '' : 's') . ' ' . $dueTodayVerb . ' due today in ' . $facilityName . '.',
                         'severity' => 'warning',
                         'icon' => 'calendar-clock',
-                        'url' => url('scheduler'),
+                        'url' => route('displays.scheduler'),
                         'scope' => $facilityName,
                         'meta' => [
                             'dueTodayCount' => $stats['dueToday'],

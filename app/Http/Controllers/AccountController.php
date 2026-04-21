@@ -11,6 +11,7 @@ use App\Events\UserActivated;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use App\Support\ClientSurface;
 use App\Support\SessionActivity;
@@ -54,7 +55,7 @@ class AccountController extends Controller
         $user_id=$request->session()->get('id');
         //$request->session()->put('id', '64');
         //$request->session()->put('id', '32');
-        if($user_id!=NULL AND $user_id!='') return redirect(ClientSurface::dashboardUrl($request));
+        if($user_id!=NULL AND $user_id!='' AND $request->input('email')=='') return redirect(ClientSurface::dashboardUrl($request));
 
         if($request->input('email')!='')
         {
@@ -113,6 +114,15 @@ class AccountController extends Controller
         }
 
         if (
+            in_array($request->method(), ['GET', 'HEAD'], true) &&
+            !$request->ajax() &&
+            !$request->expectsJson() &&
+            $request->query('surface') === ClientSurface::DESKTOP
+        ) {
+            return redirect()->route('login');
+        }
+
+        if (
             $request->isMethod('get') &&
             !$request->ajax() &&
             !$request->expectsJson() &&
@@ -122,13 +132,21 @@ class AccountController extends Controller
         }
 
         $setting=$this->loadSettings();
-        return view('account.login', ['title'=>'Login', 'settings'=>$setting]);
+        return response()
+            ->view('account.login', ['title'=>'Login', 'settings'=>$setting, 'authMode' => 'login'])
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
     }
 
     public function signup(Request $request)
     {
         $setting=$this->loadSettings();
-        return view('account.signup', ['title'=>'Signup', 'settings'=>$setting]);
+        return response()
+            ->view('account.login', ['title'=>'Signup', 'settings'=>$setting, 'authMode' => 'register'])
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
     }
 
     public function choose_platform(Request $request)
@@ -152,11 +170,28 @@ class AccountController extends Controller
         return redirect(ClientSurface::dashboardUrl($request));
     }
 
-    protected function create_account(Request $request)
+    public function create_account(Request $request)
     {
         $data=array();
         $data['success']=0;
         $data['msg']='';
+        $surface = ClientSurface::current($request);
+
+        $validator = Validator::make($request->all(), [
+            'fullname' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:150'],
+            'username' => ['required', 'string', 'max:100'],
+            'password' => ['required', 'string', 'min:6'],
+            'password_confirmation' => ['required', 'string'],
+            'facility_name' => ['required', 'string', 'max:100'],
+            'workgroup_name' => ['required', 'string', 'max:100'],
+            'timezone' => ['required', 'string', 'max:100'],
+        ]);
+
+        if ($validator->fails()) {
+            $data['msg'] = $validator->errors()->first();
+            return response()->json($data, 422);
+        }
 
         $pass1=$request->input('password');
         $pass2=$request->input('password_confirmation');
@@ -174,6 +209,11 @@ class AccountController extends Controller
             return response()->json($data);
         }
 
+        if (!in_array((string) $request->input('timezone'), timezone_identifiers_list(), true)) {
+            $data['msg'] = "Selected timezone is invalid.";
+            return response()->json($data, 422);
+        }
+
         $username=$request->input('username');
         $check=\App\Models\User::where('name', $username)->exists();
         if($check)
@@ -186,18 +226,18 @@ class AccountController extends Controller
         try {
             $hashed_random_password = Str::random(8);
             $user = \App\Models\User::create([
-                'name' => $request->input('username'),
-                'email' => $request->input('email'),
+                'name' => trim((string) $request->input('username')),
+                'email' => trim((string) $request->input('email')),
                 'password' => $request->input('password'),
-                'fullname' => $request->input('fullname'),
-                'sync_user' => $request->input('username'),
+                'fullname' => trim((string) $request->input('fullname')),
+                'sync_user' => trim((string) $request->input('username')),
                 'sync_password' => md5($hashed_random_password),
                 'sync_password_raw' => $hashed_random_password,
                 'activation_code' => STR::random(30).time(),
                 'status' => 0,
-                'facility_name' => $request->input('facility_name'),
-                'timezone' => $request->input('timezone'),
-                'workgroup_name' => $request->input('workgroup_name'),
+                'facility_name' => trim((string) $request->input('facility_name')),
+                'timezone' => trim((string) $request->input('timezone')),
+                'workgroup_name' => trim((string) $request->input('workgroup_name')),
                 'last_password_changed' => \Carbon\Carbon::now()
             ]);
             $user->save();
@@ -214,10 +254,22 @@ class AccountController extends Controller
                 // if offline mode then autoa activate
                 $this->activateUser($user->activation_code);
             }
+
+            $request->session()->forget([
+                'id',
+                'role',
+                'platform',
+                SessionActivity::LAST_ACTIVITY_KEY,
+                'idle_logout_notice',
+            ]);
+            ClientSurface::remember($request, $surface);
+
             $data['success']=1;
-            $data['next']=url('login');
-            $request->session()->flash('success', 'We have sent you an activation link, please check your email and follow the link to activate your account.');
-            //$data['msg']="Account created successfully...";
+            $data['activation_required'] = !config('app.offline');
+            $data['email'] = $user->email;
+            $data['msg'] = !config('app.offline')
+                ? 'Account created successfully. Please check your email, including the spam folder, and follow the activation link before signing in.'
+                : 'Account created successfully. Your workspace is ready to use.';
         } catch (\Exception $exception) {
             DB::rollBack();
             logger()->error($exception);
@@ -230,6 +282,76 @@ class AccountController extends Controller
         //return $user;
     
     
+    }
+
+    public function check_username(Request $request)
+    {
+        $username = trim((string) $request->input('username', ''));
+
+        if ($username === '') {
+            return response()->json([
+                'success' => 0,
+                'available' => false,
+                'msg' => 'Username is required.',
+            ], 422);
+        }
+
+        if (mb_strlen($username) > 100) {
+            return response()->json([
+                'success' => 0,
+                'available' => false,
+                'msg' => 'Username must not exceed 100 characters.',
+            ], 422);
+        }
+
+        $taken = \App\Models\User::where('name', $username)->exists();
+
+        return response()->json([
+            'success' => 1,
+            'available' => !$taken,
+            'msg' => $taken
+                ? 'Username already taken! Please choose another one.'
+                : 'Username is available.',
+        ]);
+    }
+
+    public function check_email(Request $request)
+    {
+        $email = trim((string) $request->input('email', ''));
+
+        if ($email === '') {
+            return response()->json([
+                'success' => 0,
+                'available' => false,
+                'msg' => 'Email is required.',
+            ], 422);
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return response()->json([
+                'success' => 0,
+                'available' => false,
+                'msg' => 'Please enter a valid email address, e.g. example@mail.com.',
+            ], 422);
+        }
+
+        if (mb_strlen($email) > 150) {
+            return response()->json([
+                'success' => 0,
+                'available' => false,
+                'msg' => 'Email must not exceed 150 characters.',
+            ], 422);
+        }
+
+        $taken = \App\Models\User::where('email', $email)->exists();
+
+        return response()->json([
+            'success' => 1,
+            'available' => !$taken,
+            'msg' => $taken
+                ? 'Email already associated to another account.'
+                : 'Email is available.',
+        ]);
     }
 
     public function forgot_password(Request $request)

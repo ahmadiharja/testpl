@@ -76,7 +76,7 @@ class DisconnectedAlertCron extends Command
                         'body' => $count . ' workstation' . ($count === 1 ? '' : 's') . ' in ' . $facilityName . ' have not connected for ' . $daysNotConnected . '+ days.',
                         'severity' => 'warning',
                         'icon' => 'plug-zap',
-                        'url' => url('workstations'),
+                        'url' => route('workstations.management'),
                         'scope' => $facilityName,
                         'meta' => [
                             'daysNotConnected' => $daysNotConnected,

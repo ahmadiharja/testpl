@@ -49,19 +49,7 @@
   
 </style>
 
-@php
-$path = $site['Site logo'];
-        $type = pathinfo($path, PATHINFO_EXTENSION);
-        $img_data = file_get_contents($path);
-        $logo = 'data:image/' . $type . ';base64,' . base64_encode($img_data);
-
-$path = 'images/qubyx_logo.png';
-        $type = pathinfo($path, PATHINFO_EXTENSION);
-        $img_data = file_get_contents($path);
-        $logo_qubyx = 'data:image/' . $type . ';base64,' . base64_encode($img_data);
-@endphp
-<img src="{{$logo_qubyx}}" style="max-width:150px; margin-bottom:20px; margin-right:30px;">
-<img src="{{$logo}}" style="max-width:200px; margin-bottom:20px;">
+@include('reports.partials.pdf_logos')
 
 <table>
     <!-- <tr>

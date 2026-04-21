@@ -37,6 +37,9 @@
             'displayLabel' => __('Display'),
             'performedAt' => __('Performed At'),
             'result' => __('Result'),
+            'syncResolution' => __('Sync Resolution'),
+            'historyMatchedByServer' => __('This history was matched by the web server because the client reported a virtual or unmapped display id.'),
+            'resolutionConfidence' => __('Confidence'),
             'section' => __('Section'),
             'reviewScoredChecks' => __('Review scored checks, question answers, and comments captured for this task.'),
             'score' => __('Score'),
@@ -80,12 +83,16 @@
             border-bottom: 1px solid #e3ecf5;
             background: #f8fbff;
         }
-        .history-table-search {
+        .history-table-search-wrap {
+            position: relative;
             width: min(440px, 100%);
+        }
+        .history-table-search {
+            width: 100%;
             height: 42px;
             border-radius: 999px;
             border: 1px solid #c9d8e8;
-            padding: 0 16px;
+            padding: 0 46px 0 16px;
             font-size: 14px;
             font-weight: 600;
             color: #12263a;
@@ -95,6 +102,31 @@
             outline: none;
             border-color: #1d9bf0;
             box-shadow: 0 0 0 3px rgba(29, 155, 240, 0.16);
+        }
+        .history-table-search-clear {
+            position: absolute;
+            top: 50%;
+            right: 8px;
+            display: inline-flex;
+            width: 28px;
+            height: 28px;
+            align-items: center;
+            justify-content: center;
+            transform: translateY(-50%);
+            border: 0;
+            border-radius: 999px;
+            color: #64748b;
+            background: transparent;
+            transition: background .18s ease, color .18s ease;
+        }
+        .history-table-search-clear:hover,
+        .history-table-search-clear:focus {
+            color: #0f172a;
+            background: #e8f2fb;
+            outline: none;
+        }
+        .history-table-search-clear[hidden] {
+            display: none;
         }
         .history-table-wrap {
             overflow-x: auto;
@@ -355,7 +387,7 @@
                 flex-direction: column;
                 align-items: stretch;
             }
-            .history-table-search {
+            .history-table-search-wrap {
                 width: 100%;
             }
             .history-table-footer {
@@ -492,7 +524,12 @@
             </div>
         </div>
         <div class="history-table-toolbar">
-            <input id="history-table-search" type="text" class="history-table-search transition-all placeholder-gray-400" placeholder="{{ __('Search histories...') }}">
+            <div class="history-table-search-wrap">
+                <input id="history-table-search" type="text" class="history-table-search transition-all placeholder-gray-400" placeholder="{{ __('Search histories...') }}">
+                <button id="history-table-search-clear" type="button" class="history-table-search-clear" aria-label="{{ __('Clear search') }}" hidden>
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
             <div id="history-table-meta" class="text-right text-[12px] font-semibold text-slate-500"></div>
         </div>
 
@@ -559,6 +596,12 @@
 
 <script>
 (function(){
+    function formatHistoryDateTime(value, fallback = '-') {
+        if (!value) return fallback;
+        const date = value instanceof Date ? value : new Date(value);
+        return Number.isNaN(date.getTime()) ? fallback : date.toLocaleString();
+    }
+
     const text = @json($historyText);
     const isSuperHistoryRole = @json($role === 'super');
     const initialFacilityValue = isSuperHistoryRole ? '' : '{{ $facilities[0]['id'] ?? '' }}';
@@ -678,6 +721,10 @@
         searchTimer: null,
         sortKey: 'time',
         sortOrder: 'desc',
+        autoRefreshTimer: null,
+        autoRefreshIntervalVisibleMs: 15000,
+        autoRefreshIntervalHiddenMs: 45000,
+        autoRefreshTicks: 0,
     };
 
     function refreshHistoriesGrid() {
@@ -758,6 +805,41 @@
             const cls = map[tone] || map.neutral;
             return `<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${cls}">${Perfectlum.escapeHtml(label || '-')}</span>`;
         },
+        renderSyncResolution(resolution) {
+            if (!resolution || resolution.method === 'exact') {
+                return '';
+            }
+
+            const methodLabelMap = {
+                single_display_fallback: 'Single-display fallback',
+                stored_mapping: 'Stored workstation mapping',
+                signal_match: 'Signal match',
+                unresolved: 'Unresolved',
+            };
+
+            const confidenceTone = {
+                high: 'success',
+                medium: 'warning',
+                low: 'danger',
+            };
+
+            const methodLabel = methodLabelMap[resolution.method] || resolution.method || 'Fallback';
+            const confidenceLabel = resolution.confidence
+                ? `${text.resolutionConfidence}: ${resolution.confidence}`
+                : text.resolutionConfidence;
+
+            return `
+                <section class="rounded-[1.5rem] border border-amber-200 bg-amber-50 px-4 py-4">
+                    <div class="flex flex-wrap items-center gap-2">
+                        ${this.renderBadge(text.syncResolution, 'warning')}
+                        ${this.renderBadge(methodLabel, 'warning')}
+                        ${this.renderBadge(confidenceLabel, confidenceTone[resolution.confidence] || 'neutral')}
+                    </div>
+                    <p class="mt-3 text-sm leading-6 text-amber-900">${Perfectlum.escapeHtml(resolution.notes || text.historyMatchedByServer)}</p>
+                    ${resolution.requestedClientId ? `<p class="mt-2 text-xs font-medium text-amber-800">Client display id: ${Perfectlum.escapeHtml(String(resolution.requestedClientId))}</p>` : ''}
+                </section>
+            `;
+        },
         renderInfoGrid(items) {
             if (!items?.length) return '';
             return `<section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">${items.map((item) => `
@@ -765,6 +847,38 @@
                     <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">${Perfectlum.escapeHtml(item.label || '-')}</p>
                     <p class="mt-2 break-words text-sm font-medium text-slate-800">${Perfectlum.escapeHtml(item.value || '-')}</p>
                 </div>`).join('')}</section>`;
+        },
+        normalizeInfoLabel(value) {
+            return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+        },
+        filterHeaderInfo(items) {
+            if (!Array.isArray(items) || !items.length) return [];
+
+            const hiddenLabels = new Set([
+                text.facility,
+                text.workgroup,
+                text.workstation,
+                text.display,
+                text.displayLabel,
+                text.performedAt,
+                text.result,
+                'Report Name',
+                'Performed Date',
+            ].map((label) => this.normalizeInfoLabel(label)));
+            const seen = new Set();
+
+            return items.filter((item) => {
+                const labelKey = this.normalizeInfoLabel(item?.label);
+                const valueKey = String(item?.value || '').trim().toLowerCase();
+                const pairKey = `${labelKey}:${valueKey}`;
+
+                if (!labelKey || hiddenLabels.has(labelKey) || seen.has(pairKey)) {
+                    return false;
+                }
+
+                seen.add(pairKey);
+                return true;
+            });
         },
         renderSection(section) {
             const scores = Array.isArray(section.scores) ? section.scores : [];
@@ -811,25 +925,30 @@
                 </section>`;
         },
         render(payload) {
+            const performedAt = payload.performedAtIso
+                ? formatHistoryDateTime(payload.performedAtIso, payload.performedAt || '-')
+                : (payload.performedAt || '-');
             this.title.textContent = payload.name || text.historySummary;
-            this.subtitle.textContent = `${payload.performedAt || '-'} â€¢ ${payload.display?.display || '-'}`;
+            this.subtitle.textContent = `${performedAt} â€¢ ${payload.display?.display || '-'}`;
             this.printLink.setAttribute('href', payload.printUrl || '#');
             const displayInfo = [
                 { label: text.facility, value: payload.display?.facility || '-' },
                 { label: text.workgroup, value: payload.display?.workgroup || '-' },
                 { label: text.workstation, value: payload.display?.workstation || '-' },
                 { label: text.displayLabel, value: payload.display?.display || '-' },
-                { label: text.performedAt, value: payload.performedAt || '-' },
+                { label: text.performedAt, value: performedAt },
                 { label: text.result, value: payload.resultLabel || '-' },
             ];
+            const headerInfo = this.filterHeaderInfo(payload.header);
             this.body.innerHTML = `
                 <div class="space-y-5">
                     <section class="flex flex-wrap items-center gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4">
                         ${this.renderBadge(payload.resultLabel || 'Unknown', payload.resultTone || 'neutral')}
                         <span class="text-sm text-slate-500">${Perfectlum.escapeHtml(text.detailedSummaryForTask)}</span>
                     </section>
+                    ${this.renderSyncResolution(payload.syncResolution)}
                     ${this.renderInfoGrid(displayInfo)}
-                    ${payload.header?.length ? this.renderInfoGrid(payload.header) : ''}
+                    ${headerInfo.length ? this.renderInfoGrid(headerInfo) : ''}
                     ${payload.sections?.length ? payload.sections.map((section) => this.renderSection(section)).join('') : `<div class="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">${Perfectlum.escapeHtml(text.noStructuredSummary)}</div>`}
                 </div>`;
             if (window.lucide) window.lucide.createIcons();
@@ -939,7 +1058,7 @@
                             <div class="history-scope-meta">${scopeMeta}</div>
                         </div>
                     </td>
-                    <td><span class="text-xs font-semibold text-slate-600">${Perfectlum.escapeHtml(r.time || '-')}</span></td>
+                    <td><span class="text-xs font-semibold text-slate-600">${Perfectlum.escapeHtml(r.timeIso ? formatHistoryDateTime(r.timeIso, r.time || '-') : (r.time || '-'))}</span></td>
                     <td>${renderHistoryResultBadge(r.result)}</td>
                 </tr>
             `;
@@ -993,12 +1112,33 @@
         });
     }
 
-    async function loadHistoriesTable() {
+    function queueHistoriesAutoRefresh() {
+        if (historiesTableState.autoRefreshTimer) {
+            clearTimeout(historiesTableState.autoRefreshTimer);
+            historiesTableState.autoRefreshTimer = null;
+        }
+
+        const interval = document.visibilityState === 'visible'
+            ? historiesTableState.autoRefreshIntervalVisibleMs
+            : historiesTableState.autoRefreshIntervalHiddenMs;
+
+        historiesTableState.autoRefreshTimer = window.setTimeout(async () => {
+            if (!document.body?.contains(document.getElementById('history-table-body'))) return;
+            historiesTableState.autoRefreshTicks += 1;
+            await loadHistoriesTable({ silent: true });
+            queueHistoriesAutoRefresh();
+        }, interval);
+    }
+
+    async function loadHistoriesTable(options = {}) {
+        const silent = Boolean(options.silent);
         if (historiesTableState.fetching) return;
         historiesTableState.fetching = true;
-        historiesTableState.loading = true;
-        renderHistoriesPager();
-        renderHistoriesRows();
+        if (!silent) {
+            historiesTableState.loading = true;
+            renderHistoriesPager();
+            renderHistoriesRows();
+        }
         try {
             const payload = await Perfectlum.request(historiesApiUrl());
             historiesTableState.rows = Array.isArray(payload?.data) ? payload.data : [];
@@ -1120,6 +1260,18 @@
             });
     };
 
+    function updateHistorySearchClearButton() {
+        const input = document.getElementById('history-table-search');
+        const button = document.getElementById('history-table-search-clear');
+        if (!input || !button) return;
+
+        if (String(input.value || '').length > 0) {
+            button.removeAttribute('hidden');
+        } else {
+            button.setAttribute('hidden', 'hidden');
+        }
+    }
+
     function initHistoriesGrid() {
         const tableBody = document.getElementById('history-table-body');
         if (!tableBody || tableBody.dataset.historyInitialized === '1') return;
@@ -1183,12 +1335,34 @@
             filterDisplaysList();
         });
         document.getElementById('history-table-search')?.addEventListener('input', (event) => {
+            updateHistorySearchClearButton();
             clearTimeout(historiesTableState.searchTimer);
             historiesTableState.searchTimer = window.setTimeout(() => {
                 historiesTableState.search = String(event.target.value || '').trim();
                 historiesTableState.page = 1;
+                historiesTableState.autoRefreshTicks = 0;
                 loadHistoriesTable();
+                queueHistoriesAutoRefresh();
             }, 350);
+        });
+        document.getElementById('history-table-search-clear')?.addEventListener('click', () => {
+            const input = document.getElementById('history-table-search');
+            if (!input) return;
+
+            clearTimeout(historiesTableState.searchTimer);
+            historiesTableState.searchTimer = null;
+            const hadSearch = input.value.length > 0 || historiesTableState.search.length > 0;
+            input.value = '';
+            historiesTableState.search = '';
+            historiesTableState.page = 1;
+            historiesTableState.autoRefreshTicks = 0;
+            updateHistorySearchClearButton();
+            input.focus();
+
+            if (hadSearch) {
+                loadHistoriesTable();
+                queueHistoriesAutoRefresh();
+            }
         });
         document.querySelectorAll('[data-history-sort]').forEach((button) => {
             button.addEventListener('click', (event) => {
@@ -1202,20 +1376,26 @@
                     historiesTableState.sortOrder = key === 'time' ? 'desc' : 'asc';
                 }
                 historiesTableState.page = 1;
+                historiesTableState.autoRefreshTicks = 0;
                 updateHistorySortIndicatorsV2();
                 loadHistoriesTable();
+                queueHistoriesAutoRefresh();
             });
         });
         document.getElementById('history-page-prev')?.addEventListener('click', () => {
             if (historiesTableState.page <= 1 || historiesTableState.loading || historiesTableState.fetching) return;
             historiesTableState.page -= 1;
+            historiesTableState.autoRefreshTicks = 0;
             loadHistoriesTable();
+            queueHistoriesAutoRefresh();
         });
         document.getElementById('history-page-next')?.addEventListener('click', () => {
             const totalPages = Math.max(1, Math.ceil(historiesTableState.total / historiesTableState.limit));
             if (historiesTableState.page >= totalPages || historiesTableState.loading || historiesTableState.fetching) return;
             historiesTableState.page += 1;
+            historiesTableState.autoRefreshTicks = 0;
             loadHistoriesTable();
+            queueHistoriesAutoRefresh();
         });
 
         document.getElementById('reset-history-filters')?.addEventListener('click', () => {
@@ -1228,6 +1408,9 @@
             if (document.getElementById('history-workgroup-search')) document.getElementById('history-workgroup-search').value = '';
             if (document.getElementById('history-workstation-search')) document.getElementById('history-workstation-search').value = '';
             if (document.getElementById('history-displays-search')) document.getElementById('history-displays-search').value = '';
+            if (document.getElementById('history-table-search')) document.getElementById('history-table-search').value = '';
+            historiesTableState.search = '';
+            updateHistorySearchClearButton();
             fetch_workgroups(document.getElementById('facility_field'));
         });
 
@@ -1280,10 +1463,18 @@
         });
 
         updateHistorySortIndicatorsV2();
+        updateHistorySearchClearButton();
         loadHistoriesTable();
+        queueHistoriesAutoRefresh();
+        document.addEventListener('visibilitychange', queueHistoriesAutoRefresh);
+        window.addEventListener('focus', queueHistoriesAutoRefresh);
     }
 
     window.historyPageCleanup = function () {
+        if (historiesTableState.autoRefreshTimer) {
+            clearTimeout(historiesTableState.autoRefreshTimer);
+            historiesTableState.autoRefreshTimer = null;
+        }
         try {
             historySummaryModal.close();
         } catch (_) {}
@@ -1293,6 +1484,13 @@
             }
         } catch (_) {}
     };
+
+    window.addEventListener('beforeunload', () => {
+        if (historiesTableState.autoRefreshTimer) {
+            clearTimeout(historiesTableState.autoRefreshTimer);
+            historiesTableState.autoRefreshTimer = null;
+        }
+    });
 
     document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', initHistoriesGrid) : initHistoriesGrid();
 })();

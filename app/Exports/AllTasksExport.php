@@ -2,10 +2,7 @@
 
 namespace App\Exports;
 
-use Illuminate\Contracts\View\View;
-use Maatwebsite\Excel\Concerns\FromView;
-
-class AllTasksExport implements FromView
+class AllTasksExport extends StyledReportExport
 {
     private $_data, $_from, $_to, $_site;
 
@@ -15,15 +12,26 @@ class AllTasksExport implements FromView
         $this->_to = $to;
         $this->_site = $site;
     }
-    
-    public function view(): View
-    {
-        return view('reports.all_tasks_excel', [
-            'data' => $this->_data,
-            'from' => $this->_from,
-            'to' => $this->_to,
-            'site' => $this->_site
-        ]);
-    }
 
+    protected function report(): array
+    {
+        $rows = $this->collection($this->_data);
+
+        return [
+            'title' => 'All Calibration and QA Schedules',
+            'subtitle' => 'Scheduled task list exported from the current workspace scope.',
+            'generatedAt' => now()->format('d M Y H:i'),
+            'total' => $rows->count(),
+            'columns' => ['Display', 'Workstation', 'Workgroup', 'Facility', 'Task Type', 'Schedule Type', 'Due Date'],
+            'rows' => $rows->map(fn($task) => [
+                $task['display_model'] ?? '-',
+                $task['workstation'] ?? '-',
+                $task['workgroup'] ?? '-',
+                $task['facility'] ?? '-',
+                $task['name'] ?? '-',
+                $task['schtype'] ?? '-',
+                $this->formatReportDate($task['duedate'] ?? ($task['due_date_sort'] ?? null)),
+            ])->values()->all(),
+        ];
+    }
 }

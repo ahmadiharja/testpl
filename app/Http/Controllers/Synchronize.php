@@ -18,9 +18,13 @@ use App\Models\Alert;
 use App\Mail\AlertEmail;
 use App\Models\User;
 use App\Models\Task;
+use App\Models\ScheduleType;
+use App\Models\TaskType;
 use App\Models\SettingsName;
 use App\Models\History;
+use App\Models\HistorySyncResolution;
 use App\Models\QATask;
+use App\Models\SyncDisplayMapping;
 use DB;
 use App\Notifications\DisplayStatusChangedNotification;
 use App\Notifications\TaskCompletedNotification;
@@ -63,7 +67,6 @@ class Synchronize extends Controller
      */
     public function index()
     {
-        // TODO
     }
 
     /**
@@ -77,28 +80,629 @@ class Synchronize extends Controller
         return $this->workstation->displays()->where('client_id', $client_id)->first();
     }
 
-    private function resolveHistoryDisplay($clientId)
+    private function resolveHistoryDisplay($clientId, array $history = [])
     {
         $display = $this->getDisplay($clientId);
         if ($display) {
-            return $display;
+            return [
+                'display' => $display,
+                'resolution' => $this->makeHistoryResolutionMeta('exact', 'high', $clientId, $display, $history, [
+                    'matched_client_id' => $display->client_id,
+                ]),
+            ];
         }
 
         $fallbackDisplays = $this->workstation->displays()->get();
+        $context = $this->buildHistoryResolutionContext($clientId, $history, $fallbackDisplays);
 
         if ($fallbackDisplays->count() === 1) {
             $fallback = $fallbackDisplays->first();
-            $this->logger->info('DEBUG: HISTORY_DISPLAY_FALLBACK ' . json_encode([
-                'workstation_id' => $this->workstation->id,
-                'requested_client_id' => $clientId,
+            $this->logger->info('DEBUG: HISTORY_DISPLAY_FALLBACK ' . json_encode(array_merge($context, [
                 'fallback_display_id' => $fallback->id,
                 'fallback_client_id' => $fallback->client_id,
-            ]));
+                'fallback_serial' => $fallback->serial,
+                'fallback_display_name' => $fallback->display_name,
+                'fallback_connected' => $fallback->connected,
+            ])));
 
-            return $fallback;
+            return [
+                'display' => $fallback,
+                'resolution' => $this->makeHistoryResolutionMeta(
+                    'single_display_fallback',
+                    'medium',
+                    $clientId,
+                    $fallback,
+                    $history,
+                    ['reason' => 'workstation_has_single_display']
+                ),
+            ];
         }
 
-        return null;
+        $taskAffinityMatch = $this->resolveHistoryDisplayByTaskAffinity($fallbackDisplays, $history);
+        if ($taskAffinityMatch) {
+            $this->logger->info('DEBUG: HISTORY_DISPLAY_TASK_AFFINITY_MATCH ' . json_encode(array_merge($context, [
+                'matched_display_id' => $taskAffinityMatch['display']->id,
+                'matched_client_id' => $taskAffinityMatch['display']->client_id,
+                'matched_serial' => $taskAffinityMatch['display']->serial,
+                'matched_display_name' => $taskAffinityMatch['display']->display_name,
+                'matched_task_type' => $taskAffinityMatch['task_type'],
+                'matched_task_ids' => $taskAffinityMatch['task_ids'],
+                'score' => $taskAffinityMatch['score'],
+            ])));
+
+            return [
+                'display' => $taskAffinityMatch['display'],
+                'resolution' => $this->makeHistoryResolutionMeta(
+                    'task_affinity',
+                    $taskAffinityMatch['score'] >= 10 ? 'high' : 'medium',
+                    $clientId,
+                    $taskAffinityMatch['display'],
+                    $history,
+                    [
+                        'task_type' => $taskAffinityMatch['task_type'],
+                        'task_ids' => $taskAffinityMatch['task_ids'],
+                        'score' => $taskAffinityMatch['score'],
+                    ]
+                ),
+            ];
+        }
+
+        $mapped = $this->resolveHistoryDisplayByStoredMapping($fallbackDisplays, $clientId, $history);
+        if ($mapped) {
+            $this->logger->info('DEBUG: HISTORY_DISPLAY_MAPPING_MATCH ' . json_encode(array_merge($context, [
+                'matched_display_id' => $mapped['display']->id,
+                'matched_client_id' => $mapped['display']->client_id,
+                'matched_serial' => $mapped['display']->serial,
+                'matched_display_name' => $mapped['display']->display_name,
+                'mapping_id' => $mapped['mapping']->id,
+                'mapping_hit_count' => $mapped['mapping']->hit_count,
+                'mapping_confidence' => $mapped['mapping']->confidence,
+            ])));
+
+            return [
+                'display' => $mapped['display'],
+                'resolution' => $this->makeHistoryResolutionMeta(
+                    'stored_mapping',
+                    $mapped['mapping']->confidence ?: 'medium',
+                    $clientId,
+                    $mapped['display'],
+                    $history,
+                    [
+                        'mapping_id' => $mapped['mapping']->id,
+                        'mapping_hit_count' => $mapped['mapping']->hit_count,
+                    ]
+                ),
+            ];
+        }
+
+        $signalMatch = $this->resolveHistoryDisplayByExistingSignal($fallbackDisplays, $history);
+        if ($signalMatch) {
+            $this->logger->info('DEBUG: HISTORY_DISPLAY_SIGNAL_MATCH ' . json_encode(array_merge($context, [
+                'matched_display_id' => $signalMatch['display']->id,
+                'matched_client_id' => $signalMatch['display']->client_id,
+                'matched_serial' => $signalMatch['display']->serial,
+                'matched_display_name' => $signalMatch['display']->display_name,
+                'matched_connected' => $signalMatch['display']->connected,
+                'score' => $signalMatch['score'],
+            ])));
+
+            return [
+                'display' => $signalMatch['display'],
+                'resolution' => $this->makeHistoryResolutionMeta(
+                    'signal_match',
+                    $signalMatch['score'] >= 10 ? 'high' : 'medium',
+                    $clientId,
+                    $signalMatch['display'],
+                    $history,
+                    ['score' => $signalMatch['score']]
+                ),
+            ];
+        }
+
+        $this->logger->info('DEBUG: HISTORY_DISPLAY_UNRESOLVED ' . json_encode(array_merge($context, [
+            'available_displays' => $fallbackDisplays->map(function ($display) {
+                return [
+                    'id' => $display->id,
+                    'client_id' => $display->client_id,
+                    'serial' => $display->serial,
+                    'display_name' => $display->display_name,
+                    'connected' => $display->connected,
+                ];
+            })->values()->all(),
+        ])));
+
+        return [
+            'display' => null,
+            'resolution' => $this->makeHistoryResolutionMeta(
+                'unresolved',
+                'low',
+                $clientId,
+                null,
+                $history,
+                ['available_display_count' => $fallbackDisplays->count()]
+            ),
+        ];
+    }
+
+    private function buildHistoryResolutionContext($clientId, array $history, $displays)
+    {
+        return [
+            'workstation_id' => $this->workstation?->id,
+            'workstation_name' => $this->workstation?->workstation_name,
+            'workstation_key' => $this->workstation?->workstation_key,
+            'requested_client_id' => (string) $clientId,
+            'display_count' => $displays->count(),
+            'history_name' => $history['name'] ?? null,
+            'history_regulation' => $history['regulation'] ?? null,
+            'history_classification' => $history['classification'] ?? null,
+            'history_result' => $history['result'] ?? null,
+            'history_time' => $history['time'] ?? null,
+        ];
+    }
+
+    private function normalizeHistorySignalValue($value): string
+    {
+        return mb_strtolower(trim((string) $value));
+    }
+
+    private function buildHistorySignalSignature(array $history): array
+    {
+        $name = $this->normalizeHistorySignalValue($history['name'] ?? '');
+        $regulation = $this->normalizeHistorySignalValue($history['regulation'] ?? '');
+        $classification = $this->normalizeHistorySignalValue($history['classification'] ?? '');
+
+        return [
+            'name' => $name,
+            'regulation' => $regulation,
+            'classification' => $classification,
+            'hash' => sha1(implode('|', [$name, $regulation, $classification])),
+        ];
+    }
+
+    private function makeHistoryResolutionMeta(
+        string $method,
+        string $confidence,
+        $clientId,
+        ?Display $display,
+        array $history,
+        array $extra = []
+    ): array {
+        $context = array_merge([
+            'history_name' => $history['name'] ?? null,
+            'history_regulation' => $history['regulation'] ?? null,
+            'history_classification' => $history['classification'] ?? null,
+            'history_result' => $history['result'] ?? null,
+            'history_time' => $history['time'] ?? null,
+            'workstation_id' => $this->workstation?->id,
+            'workstation_name' => $this->workstation?->workstation_name,
+            'workstation_key' => $this->workstation?->workstation_key,
+        ], $extra);
+
+        $notes = match ($method) {
+            'exact' => null,
+            'single_display_fallback' => 'Matched by workstation fallback because the client reported a display id that was not present, and this workstation only has one known display.',
+            'task_affinity' => 'Matched using a workstation-local scheduled task that strongly fits this history payload.',
+            'stored_mapping' => 'Matched using a workstation-local sync mapping learned from previous consistent history patterns.',
+            'signal_match' => 'Matched by sync signal because the client reported a non-physical or unmapped display id for this history record.',
+            default => 'The client reported a display id that could not be resolved directly.',
+        };
+
+        return [
+            'method' => $method,
+            'confidence' => $confidence,
+            'requested_client_id' => (string) $clientId,
+            'resolved_display_id' => $display?->id,
+            'notes' => $notes,
+            'context' => $context,
+        ];
+    }
+
+    private function resolveHistoryDisplayByStoredMapping($candidateDisplays, $clientId, array $history = [])
+    {
+        if (!$this->workstation || $candidateDisplays->isEmpty()) {
+            return null;
+        }
+
+        $signature = $this->buildHistorySignalSignature($history);
+        $mapping = SyncDisplayMapping::query()
+            ->where('workstation_id', $this->workstation->id)
+            ->where('requested_client_id', (string) $clientId)
+            ->where('signal_hash', $signature['hash'])
+            ->whereIn('resolved_display_id', $candidateDisplays->pluck('id'))
+            ->orderByDesc('hit_count')
+            ->orderByDesc('last_matched_at')
+            ->first();
+
+        if (!$mapping) {
+            return null;
+        }
+
+        $display = $candidateDisplays->firstWhere('id', $mapping->resolved_display_id);
+        if (!$display) {
+            return null;
+        }
+
+        $mapping->hit_count = (int) $mapping->hit_count + 1;
+        $mapping->last_matched_at = now();
+        $mapping->save();
+
+        return [
+            'display' => $display,
+            'mapping' => $mapping,
+        ];
+    }
+
+    private function resolveHistoryDisplayByTaskAffinity($candidateDisplays, array $history = [])
+    {
+        if (!$this->workstation || $candidateDisplays->isEmpty()) {
+            return null;
+        }
+
+        $taskType = $this->inferTaskTypeKeyFromHistory($history);
+        if (!$taskType) {
+            return null;
+        }
+
+        $scored = collect();
+
+        foreach ($candidateDisplays as $candidate) {
+            $tasks = Task::query()
+                ->where('display_id', $candidate->id)
+                ->where('type', $taskType)
+                ->orderByDesc('updated_at')
+                ->get(['id', 'nextrun', 'lastrun', 'schtype']);
+
+            if ($tasks->isEmpty()) {
+                continue;
+            }
+
+            $score = 10;
+            $score += min(3, $tasks->count());
+
+            if ($tasks->contains(fn ($task) => (int) ($task->lastrun ?? 0) > 0 || (int) ($task->nextrun ?? 0) > 0)) {
+                $score += 2;
+            }
+
+            $scored->push([
+                'display' => $candidate,
+                'task_type' => $taskType,
+                'task_ids' => $tasks->pluck('id')->values()->all(),
+                'score' => $score,
+            ]);
+        }
+
+        if ($scored->isEmpty()) {
+            return null;
+        }
+
+        $scored = $scored->sortByDesc('score')->values();
+        $top = $scored->first();
+        $runnerUp = $scored->get(1);
+
+        if ($runnerUp && $runnerUp['score'] === $top['score']) {
+            return null;
+        }
+
+        return $top;
+    }
+
+    private function inferTaskTypeKeyFromHistory(array $history): ?string
+    {
+        $haystack = $this->normalizeHistorySignalValue(trim(sprintf(
+            '%s %s',
+            (string) ($history['name'] ?? ''),
+            (string) ($history['regulation'] ?? '')
+        )));
+
+        if ($haystack === '') {
+            return null;
+        }
+
+        $taskTypes = TaskType::query()->get(['key', 'title']);
+        $best = null;
+
+        foreach ($taskTypes as $taskType) {
+            $needle = $this->normalizeHistorySignalValue($taskType->title ?? '');
+            if ($needle === '' || !str_contains($haystack, $needle)) {
+                continue;
+            }
+
+            $length = mb_strlen($needle);
+            if (!$best || $length > $best['length']) {
+                $best = [
+                    'key' => $taskType->key,
+                    'length' => $length,
+                ];
+            }
+        }
+
+        return $best['key'] ?? null;
+    }
+
+    private function rememberHistoryDisplayMapping($clientId, Display $display, array $history, array $resolution): void
+    {
+        if (!$this->workstation) {
+            return;
+        }
+
+        if (!in_array($resolution['method'] ?? '', ['signal_match', 'stored_mapping'], true)) {
+            return;
+        }
+
+        $signature = $this->buildHistorySignalSignature($history);
+
+        $mapping = SyncDisplayMapping::firstOrNew([
+            'workstation_id' => $this->workstation->id,
+            'requested_client_id' => (string) $clientId,
+            'signal_hash' => $signature['hash'],
+        ]);
+
+        $mapping->signal_name = $signature['name'] !== '' ? $signature['name'] : null;
+        $mapping->signal_regulation = $signature['regulation'] !== '' ? $signature['regulation'] : null;
+        $mapping->signal_classification = $signature['classification'] !== '' ? $signature['classification'] : null;
+        $mapping->resolved_display_id = $display->id;
+        $mapping->confidence = $resolution['confidence'] ?? 'medium';
+        $mapping->hit_count = $mapping->exists ? ((int) $mapping->hit_count + 1) : 1;
+        $mapping->last_matched_at = now();
+        $mapping->save();
+    }
+
+    private function persistHistoryResolution(History $historyModel, $clientId, ?Display $display, array $resolution): void
+    {
+        HistorySyncResolution::updateOrCreate(
+            ['history_id' => $historyModel->id],
+            [
+                'workstation_id' => $this->workstation?->id,
+                'requested_client_id' => (string) $clientId,
+                'resolved_display_id' => $display?->id,
+                'method' => $resolution['method'] ?? 'exact',
+                'confidence' => $resolution['confidence'] ?? 'high',
+                'notes' => $resolution['notes'] ?? null,
+                'context' => $resolution['context'] ?? [],
+            ]
+        );
+    }
+
+    private function resolveHistoryDisplayByExistingSignal($candidateDisplays, array $history = [])
+    {
+        $historyName = trim((string) ($history['name'] ?? ''));
+        $historyRegulation = trim((string) ($history['regulation'] ?? ''));
+        $historyClassification = trim((string) ($history['classification'] ?? ''));
+
+        $scored = collect();
+
+        foreach ($candidateDisplays as $candidate) {
+            $serial = trim((string) ($candidate->serial ?? ''));
+            if ($serial === '') {
+                continue;
+            }
+
+            $peerDisplayIds = Display::query()
+                ->where('serial', $serial)
+                ->where('id', '!=', $candidate->id)
+                ->pluck('id');
+
+            if ($peerDisplayIds->isEmpty()) {
+                continue;
+            }
+
+            $baseQuery = History::query()->whereIn('display_id', $peerDisplayIds);
+            $score = 0;
+
+            if ($historyName !== '' && $historyRegulation !== '' &&
+                (clone $baseQuery)->where('name', $historyName)->where('regulation', $historyRegulation)->exists()) {
+                $score += 10;
+            }
+
+            if ($historyName !== '' &&
+                (clone $baseQuery)->where('name', $historyName)->exists()) {
+                $score += 4;
+            }
+
+            if ($historyRegulation !== '' &&
+                (clone $baseQuery)->where('regulation', $historyRegulation)->exists()) {
+                $score += 3;
+            }
+
+            if ($historyClassification !== '' &&
+                (clone $baseQuery)->where('classification', $historyClassification)->exists()) {
+                $score += 2;
+            }
+
+            if ((clone $baseQuery)->exists()) {
+                $score += 1;
+            }
+
+            if ($score > 0) {
+                $scored->push([
+                    'display' => $candidate,
+                    'score' => $score,
+                    'serial' => $serial,
+                ]);
+            }
+        }
+
+        if ($scored->isEmpty()) {
+            return null;
+        }
+
+        $scored = $scored->sortByDesc('score')->values();
+        $top = $scored->first();
+        $runnerUp = $scored->get(1);
+
+        if ($runnerUp && $runnerUp['score'] === $top['score']) {
+            $this->logger->info('DEBUG: HISTORY_DISPLAY_SIGNAL_TIE ' . json_encode([
+                'workstation_id' => $this->workstation?->id,
+                'workstation_key' => $this->workstation?->workstation_key,
+                'history_name' => $historyName,
+                'history_regulation' => $historyRegulation,
+                'history_classification' => $historyClassification,
+                'candidates' => $scored->map(function ($item) {
+                    return [
+                        'display_id' => $item['display']->id,
+                        'client_id' => $item['display']->client_id,
+                        'serial' => $item['serial'],
+                        'score' => $item['score'],
+                    ];
+                })->all(),
+            ]));
+
+            return null;
+        }
+
+        return $top;
+    }
+
+    private function resolveWorkstationFallback()
+    {
+        $incomingKey = trim((string) ($this->req_header['workstationid'] ?? ''));
+        if ($incomingKey === '' || !$this->facility) {
+            return null;
+        }
+
+        $workgroupIds = $this->facility->workgroups()->pluck('id');
+        if ($workgroupIds->isEmpty()) {
+            return null;
+        }
+
+        $remoteIp = $_SERVER['REMOTE_ADDR'] ?? null;
+
+        $candidate = Workstation::query()
+            ->whereIn('workgroup_id', $workgroupIds)
+            ->where(function ($query) {
+                $query->whereNull('workstation_key')
+                    ->orWhere('workstation_key', '');
+            })
+            ->when($remoteIp, function ($query) use ($remoteIp) {
+                $query->where('ip_address', $remoteIp);
+            })
+            ->orderByDesc('last_connected')
+            ->orderByDesc('updated_at')
+            ->first();
+
+        if (!$candidate) {
+            return null;
+        }
+
+        $candidate->workstation_key = $incomingKey;
+        if ($remoteIp) {
+            $candidate->ip_address = $remoteIp;
+        }
+        $candidate->save();
+
+        if ($this->logger) {
+            $this->logger->info('DEBUG: WORKSTATION_KEY_BACKFILL ' . json_encode([
+                'workstation_id' => $candidate->id,
+                'name' => $candidate->name,
+                'workstation_key' => $incomingKey,
+                'ip_address' => $remoteIp,
+            ]));
+        }
+
+        return $candidate;
+    }
+
+    /**
+     * Some client reinstalls generate a brand-new workstation key even though
+     * the physical machine name stays the same. When that happens we should
+     * adopt the existing workstation row instead of creating a duplicate.
+     *
+     * To stay conservative, we only auto-adopt when there is a single clear
+     * candidate in the same facility by workstation name, or a single exact
+     * IP match among multiple same-name candidates.
+     */
+    private function resolveWorkstationReinstallFallback()
+    {
+        $incomingKey = trim((string) ($this->req_header['workstationid'] ?? ''));
+        $incomingName = trim((string) ($this->req_data['name'] ?? ''));
+
+        if ($incomingKey === '' || $incomingName === '' || !$this->facility) {
+            return null;
+        }
+
+        $workgroupIds = $this->facility->workgroups()->pluck('id');
+        if ($workgroupIds->isEmpty()) {
+            return null;
+        }
+
+        $remoteIp = $_SERVER['REMOTE_ADDR'] ?? null;
+        $incomingApp = trim((string) ($this->req_data['app'] ?? ''));
+
+        $candidates = Workstation::query()
+            ->whereIn('workgroup_id', $workgroupIds)
+            ->where('name', $incomingName)
+            ->where(function ($query) use ($incomingKey) {
+                $query->whereNull('workstation_key')
+                    ->orWhere('workstation_key', '')
+                    ->orWhere('workstation_key', '!=', $incomingKey);
+            })
+            ->when($incomingApp !== '', function ($query) use ($incomingApp) {
+                $query->where(function ($appQuery) use ($incomingApp) {
+                    $appQuery->whereNull('app')
+                        ->orWhere('app', '')
+                        ->orWhere('app', $incomingApp);
+                });
+            })
+            ->orderByDesc('last_connected')
+            ->orderByDesc('updated_at')
+            ->get();
+
+        if ($candidates->isEmpty()) {
+            return null;
+        }
+
+        $candidate = null;
+
+        if ($remoteIp) {
+            $ipMatches = $candidates->filter(function ($item) use ($remoteIp) {
+                return (string) $item->ip_address === (string) $remoteIp;
+            })->values();
+
+            if ($ipMatches->count() === 1) {
+                $candidate = $ipMatches->first();
+            }
+        }
+
+        if (!$candidate && $candidates->count() === 1) {
+            $candidate = $candidates->first();
+        }
+
+        if (!$candidate) {
+            if ($this->logger) {
+                $this->logger->info('DEBUG: WORKSTATION_REINSTALL_FALLBACK_AMBIGUOUS ' . json_encode([
+                    'name' => $incomingName,
+                    'workstation_key' => $incomingKey,
+                    'ip_address' => $remoteIp,
+                    'candidate_ids' => $candidates->pluck('id')->values()->all(),
+                    'candidate_keys' => $candidates->pluck('workstation_key')->values()->all(),
+                ]));
+            }
+
+            return null;
+        }
+
+        $oldWorkstationKey = $candidate->workstation_key;
+
+        $candidate->workstation_key = $incomingKey;
+        if ($remoteIp) {
+            $candidate->ip_address = $remoteIp;
+        }
+        if ($incomingApp !== '') {
+            $candidate->app = $incomingApp;
+        }
+        $candidate->save();
+
+        if ($this->logger) {
+            $this->logger->info('DEBUG: WORKSTATION_REINSTALL_FALLBACK_APPLIED ' . json_encode([
+                'workstation_id' => $candidate->id,
+                'name' => $candidate->name,
+                'old_workstation_key' => $oldWorkstationKey,
+                'new_workstation_key' => $incomingKey,
+                'ip_address' => $remoteIp,
+            ]));
+        }
+
+        return $candidate;
     }
 
     private function normalizeSyncTimestamp($value)
@@ -107,7 +711,19 @@ class Synchronize extends Controller
             return null;
         }
 
-        return is_numeric($value) ? (int) $value : $value;
+        if (!is_numeric($value)) {
+            return $value;
+        }
+
+        $timestamp = (int) $value;
+
+        // Legacy/sentinel max-int placeholders are not meaningful schedule
+        // runtimes and should never be treated as real due dates.
+        if (in_array($timestamp, [2147483647, 4294967295], true)) {
+            return null;
+        }
+
+        return $timestamp;
     }
 
     private function isUtcMidnightTimestamp($value)
@@ -126,6 +742,60 @@ class Synchronize extends Controller
             str_contains($haystack, 'day') => 2 * 86400,
             default => 2 * 86400,
         };
+    }
+
+    /**
+     * Keep QA day-anchor timestamps canonical in UTC so the server never
+     * stores mixed precision in nextdate/nextdateFixed for the same task.
+     */
+    private function canonicalizeQaTaskNextdateFixed(?int $nextdate, ?int $nextdateFixed): ?int
+    {
+        if (is_int($nextdateFixed) && $this->isUtcMidnightTimestamp($nextdateFixed)) {
+            return $nextdateFixed;
+        }
+
+        if (!is_int($nextdate) || $nextdate <= 0) {
+            return $nextdateFixed;
+        }
+
+        return Carbon::createFromTimestampUTC($nextdate)
+            ->startOfDay()
+            ->timestamp;
+    }
+
+    /**
+     * When the server still has a pending QA task change (sync=0) but its
+     * stored nextdate is only a midnight UTC day-anchor, do not push that
+     * stale anchor back to the client if the client is already sending a more
+     * precise runtime for the same task.
+     */
+    private function shouldDeferPendingServerQaOverride($serverTask, array $incomingTask): bool
+    {
+        if (!$serverTask || (int) ($serverTask->sync ?? 1) !== 0) {
+            return false;
+        }
+
+        $serverNextdate = $this->normalizeSyncTimestamp($serverTask->getRawOriginal('nextdate'));
+        $incomingNextdate = $this->normalizeSyncTimestamp($incomingTask['nextdate'] ?? null);
+
+        if (!is_int($serverNextdate) || !is_int($incomingNextdate)) {
+            return false;
+        }
+
+        if (!$this->isUtcMidnightTimestamp($serverNextdate)) {
+            return false;
+        }
+
+        if ($this->isUtcMidnightTimestamp($incomingNextdate)) {
+            return false;
+        }
+
+        $windowSeconds = $this->qaTaskPreserveWindowSeconds(
+            $incomingTask['freq'] ?? $serverTask->freq,
+            $incomingTask['freqCodes'] ?? $serverTask->freqCodes
+        );
+
+        return abs($incomingNextdate - $serverNextdate) <= $windowSeconds;
     }
 
     /**
@@ -192,7 +862,10 @@ class Synchronize extends Controller
 
         if ($this->shouldPreserveQaTaskExactNextdate($existingTask, $incomingTask)) {
             $resolved['nextdate'] = (int) $existingTask->getRawOriginal('nextdate');
-            $resolved['nextdateFixed'] = $incomingNextdateFixed ?? $incomingNextdate;
+            $resolved['nextdateFixed'] = $this->canonicalizeQaTaskNextdateFixed(
+                $resolved['nextdate'],
+                $incomingNextdateFixed ?? $incomingNextdate
+            );
             $resolved['preserved'] = true;
             return $resolved;
         }
@@ -200,6 +873,11 @@ class Synchronize extends Controller
         if ($resolved['nextdateFixed'] === null && $this->isUtcMidnightTimestamp($incomingNextdate)) {
             $resolved['nextdateFixed'] = $incomingNextdate;
         }
+
+        $resolved['nextdateFixed'] = $this->canonicalizeQaTaskNextdateFixed(
+            $resolved['nextdate'],
+            $resolved['nextdateFixed']
+        );
 
         return $resolved;
     }
@@ -244,6 +922,135 @@ class Synchronize extends Controller
         }
     }
 
+    private function shouldCloseCompletedOneShotCalibrationTask(array $task, ?Task $existingTask = null): bool
+    {
+        $scheduleType = (int) ($task['schtype'] ?? ($existingTask->schtype ?? -1));
+        if (!in_array($scheduleType, [ScheduleType::STARTUP, ScheduleType::ONCE], true)) {
+            return false;
+        }
+
+        $incomingLastRun = (int) ($task['lastrun'] ?? 0);
+        $existingLastRun = (int) ($existingTask->lastrun ?? 0);
+
+        return max($incomingLastRun, $existingLastRun) > 0;
+    }
+
+    private function resolveHistoryTaskTypeKeys(array $history): array
+    {
+        $terms = collect([
+            trim((string) ($history['regulation'] ?? '')),
+            trim((string) ($history['name'] ?? '')),
+            trim((string) ($history['classification'] ?? '')),
+        ])->filter()->unique()->values();
+
+        if ($terms->isEmpty()) {
+            return [];
+        }
+
+        $taskTypes = TaskType::query()->get(['key', 'title']);
+        $matches = $taskTypes->filter(function ($taskType) use ($terms) {
+            $title = strtolower(trim((string) ($taskType->title ?? '')));
+            $key = strtolower(trim((string) ($taskType->key ?? '')));
+
+            foreach ($terms as $term) {
+                $needle = strtolower(trim((string) $term));
+                if ($needle === '') {
+                    continue;
+                }
+
+                if ($needle === $title || $needle === $key) {
+                    return true;
+                }
+
+                if ($title !== '' && str_contains($needle, $title)) {
+                    return true;
+                }
+
+                if ($title !== '' && str_contains($title, $needle)) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+
+        return $matches
+            ->pluck('key')
+            ->filter(fn ($value) => trim((string) $value) !== '')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function syncCalibrationTaskRunFromHistory(Display $display, array $history): void
+    {
+        $result = (int) ($history['result'] ?? 0);
+        $runTimestamp = (int) ($history['time'] ?? 0);
+        if (!in_array($result, [2, 3], true) || $runTimestamp <= 0) {
+            return;
+        }
+
+        $taskTypeKeys = $this->resolveHistoryTaskTypeKeys($history);
+        if (empty($taskTypeKeys)) {
+            $this->logger->info('DEBUG: HISTORY_TASK_SYNC_SKIPPED_NO_MATCH ' . json_encode([
+                'display_id' => $display->id,
+                'history_name' => $history['name'] ?? null,
+                'history_regulation' => $history['regulation'] ?? null,
+            ]));
+            return;
+        }
+
+        $task = Task::query()
+            ->where('display_id', $display->id)
+            ->where('deleted', 0)
+            ->whereIn('type', $taskTypeKeys)
+            ->where(function ($query) use ($runTimestamp) {
+                $query->whereNull('lastrun')
+                    ->orWhere('lastrun', '<', $runTimestamp);
+            })
+            ->orderByRaw('CASE WHEN nextrun > 0 AND nextrun <= ? THEN 0 ELSE 1 END', [$runTimestamp])
+            ->orderByRaw('CASE WHEN nextrun > 0 THEN ABS(nextrun - ?) ELSE 2147483647 END', [$runTimestamp])
+            ->orderByDesc('id')
+            ->first();
+
+        if (!$task) {
+            $this->logger->info('DEBUG: HISTORY_TASK_SYNC_SKIPPED_NO_TASK ' . json_encode([
+                'display_id' => $display->id,
+                'task_type_keys' => $taskTypeKeys,
+                'history_name' => $history['name'] ?? null,
+                'history_regulation' => $history['regulation'] ?? null,
+            ]));
+            return;
+        }
+
+        $before = [
+            'task_id' => $task->id,
+            'task_type' => $task->type,
+            'previous_lastrun' => $task->lastrun,
+            'previous_nextrun' => $task->nextrun,
+        ];
+
+        // History already comes from the client runtime, so we should only
+        // mirror the latest execution timestamp here. Re-triggering the task
+        // observer from this path can corrupt nextrun for periodic tasks when
+        // the row also carries future schedule metadata from the client.
+        $task->lastrun = $runTimestamp;
+        if (in_array((int) ($task->schtype ?? 0), [ScheduleType::STARTUP, ScheduleType::ONCE], true)) {
+            $task->nextrun = 0;
+        }
+        $task->sync = 1;
+        $task->updated_at = now();
+        $task->save();
+
+        $this->logger->info('DEBUG: HISTORY_TASK_SYNC_APPLIED ' . json_encode(array_merge($before, [
+            'new_lastrun' => $task->lastrun,
+            'new_nextrun' => $task->nextrun,
+            'history_time' => $runTimestamp,
+            'history_name' => $history['name'] ?? null,
+            'history_regulation' => $history['regulation'] ?? null,
+        ])));
+    }
+
     /**
      * Main processing 
      * 
@@ -276,6 +1083,9 @@ class Synchronize extends Controller
 
         // Check workstation 
         $this->workstation = Workstation::whereWorkstation_key($this->req_header['workstationid'])->first();
+        if (!$this->workstation) {
+            $this->workstation = $this->resolveWorkstationFallback();
+        }
 
         // Call the action method
         $this->action = strtoupper($this->req_header['action']);
@@ -283,7 +1093,6 @@ class Synchronize extends Controller
             return $this->getResponse(NO_ACTION);
         } else {
             // wrap the action into transaction to make sure the consistent of DB
-            // TODO: should handle exception here
             // DO NOT CALL ACTION IF THERE IS NO DATA
             //if (count($this->req_data) > 0) {
             DB::transaction(function () {
@@ -368,6 +1177,10 @@ class Synchronize extends Controller
         // If workstation does not exist, then add new workstation
 
         if (!$this->workstation) {
+            $this->workstation = $this->resolveWorkstationReinstallFallback();
+        }
+
+        if (!$this->workstation) {
             // check connection limitation
             $license = License::find(1);
             // $maxconn = hexdec(substr($license->activation_code, 10, 2));
@@ -432,7 +1245,6 @@ class Synchronize extends Controller
     private function DISPLAY()
     {
         $this->logger->info('DEBUG:workstation-id: ' . $this->workstation->id);
-        // TODO: need display title
         // firstly we disconnect all displays, then connect the ones that sent from client
         Display::whereWorkstation_id($this->workstation->id)->update(['connected' => false]);
         // update or create displays under $this->workstation
@@ -642,11 +1454,9 @@ class Synchronize extends Controller
 
 
 
-            // if ($changed) {
-            //     $display->save();
-            // }
-
-            // TODO : Send alerts for workstations that lost connection.
+            if ($changed) {
+                $display->save();
+            }
 
         }
 
@@ -752,6 +1562,10 @@ class Synchronize extends Controller
                     $update_data['nextrun'] = $resolvedNextRun;
                 }
 
+                if ($this->shouldCloseCompletedOneShotCalibrationTask($task, $existingTask)) {
+                    $update_data['nextrun'] = 0;
+                }
+
                 Task::updateOrCreate($where, $update_data);
             }
         }
@@ -784,6 +1598,12 @@ class Synchronize extends Controller
 
     private function QATASKS()
     {
+        $incomingTaskIndex = collect((array) $this->req_data)
+            ->filter(fn ($task) => is_array($task) && !empty($task['taskKey']) && array_key_exists('displayid', $task))
+            ->keyBy(function ($task) {
+                return trim((string) ($task['taskKey'] ?? '')) . '|' . trim((string) ($task['displayid'] ?? ''));
+            });
+
         // remove qatasks not exists on client
         $serverTasks = $this->workstation->qatasks()->get();
         // get array of taskkey from client
@@ -797,7 +1617,7 @@ class Synchronize extends Controller
         );
         
         $excludeServers = [];
-        $serverTasks = $serverTasks->filter(function ($task, $key) use ($clientTasks, &$excludeServers) {
+        $serverTasks = $serverTasks->filter(function ($task, $key) use ($clientTasks, &$excludeServers, $incomingTaskIndex) {
             if (!in_array($task->taskKey, $clientTasks)) {
                 $this->logger->info('DEBUG: should delete' . json_encode($task->taskKey));
                 $task->delete();
@@ -805,6 +1625,20 @@ class Synchronize extends Controller
             }
             // filter server changes to sync back to client
             if ($task->sync == 0) {
+                $incomingKey = trim((string) $task->taskKey) . '|' . trim((string) optional($task->display)->client_id);
+                $incomingTask = $incomingTaskIndex->get($incomingKey);
+
+                if ($incomingTask && $this->shouldDeferPendingServerQaOverride($task, $incomingTask)) {
+                    $this->logger->info('DEBUG: DEFER_STALE_SERVER_QATASK_OVERRIDE' . json_encode([
+                        'taskKey' => $task->taskKey,
+                        'display_id' => $task->display_id,
+                        'server_nextdate' => $task->getRawOriginal('nextdate'),
+                        'incoming_nextdate' => $this->normalizeSyncTimestamp($incomingTask['nextdate'] ?? null),
+                    ]));
+
+                    return true;
+                }
+
                 $res = [
                     'displayid' => strval($task->display->client_id),
                     'nextdate' => $task->nextdate_timestamp,
@@ -870,6 +1704,28 @@ class Synchronize extends Controller
             }
         }
 
+    }
+
+    private function QASTEPS()
+    {
+        if (!$this->workstation) {
+            return;
+        }
+
+        \App\Models\WorkstationPreference::updateOrCreate(
+            [
+                'name' => 'QA_steps_catalog',
+                'workstation_id' => $this->workstation->id,
+            ],
+            [
+                'value' => json_encode([
+                    'received_at' => Carbon::now()->toIso8601String(),
+                    'steps' => $this->req_data,
+                ], JSON_UNESCAPED_UNICODE),
+                // Client-owned read-only catalog; do not push it back as a pending preference.
+                'sync' => 1,
+            ]
+        );
     }
 
     /**
@@ -959,7 +1815,9 @@ class Synchronize extends Controller
         foreach ($this->req_data as $history) {
             $client_id = $history['displayid'];
             // get the server display 
-            $display = $this->resolveHistoryDisplay($client_id);
+            $resolved = $this->resolveHistoryDisplay($client_id, $history);
+            $display = $resolved['display'] ?? null;
+            $resolution = $resolved['resolution'] ?? [];
             if (!$display) continue;
             
             if(!isset($history['regulation'])) $history['regulation']='';
@@ -990,6 +1848,11 @@ class Synchronize extends Controller
             } else {
                 $newHist->update($update_data);
             }
+
+            $this->persistHistoryResolution($newHist, $client_id, $display, $resolution);
+            $this->rememberHistoryDisplayMapping($client_id, $display, $history, $resolution);
+
+            $this->syncCalibrationTaskRunFromHistory($display, $history);
             
             // store every time to get the latest history after all
             $results[$display->id] = $newHist;

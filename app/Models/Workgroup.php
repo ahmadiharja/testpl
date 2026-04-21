@@ -12,6 +12,18 @@ class Workgroup extends Model
     protected $table='workgroups';
     protected $guarded = [];
     public $timestamps = false;
+    public $incrementing = false;
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (!$model->getKey()) {
+                $model->id = ((int) static::max('id')) + 1;
+            }
+        });
+    }
 
     // Data relationship
     public function facility(){

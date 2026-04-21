@@ -15,6 +15,7 @@
         'Site Settings' => ($role ?? null) === 'super' ? __('Site Settings') : null,
         'Application Settings' => $canManageDesktop ? __('Application Settings') : null,
         'Alert Settings' => $canManageDesktop ? __('Alert Settings') : null,
+        'Scope Explorer' => ($role ?? null) === 'super' ? __('Scope Explorer') : null,
         'Client Monitor' => ($role ?? null) === 'super' ? __('Client Monitor') : null,
         'Users' => $canManageUsersDesktop ? __('Users') : null,
     ]);
@@ -61,18 +62,19 @@
                 
                 routes: {
                     'Dashboard': '{{ url("dashboard") }}',
-                    'Facilities': '{{ url("facilities-management") }}',
+                    'Facilities': '{{ route("facilities.management") }}',
                     'Facility Information': '{{ url("facility-info") }}',
-                    'Workgroups': '{{ url("workgroups") }}',
-                    'Workstations': '{{ url("workstations") }}',
-                    'Displays': '{{ url("displays") }}',
+                    'Workgroups': '{{ route("workgroups.management") }}',
+                    'Workstations': '{{ route("workstations.management") }}',
+                    'Displays': '{{ route("displays.management") }}',
                     @if ($canManageDesktop)
-                    'Calibrate Display': '{{ url("display-calibration") }}',
-                    'Scheduler': '{{ url("scheduler") }}',
+                    'Calibrate Display': '{{ route("displays.calibration") }}',
+                    'Scheduler': '{{ route("displays.scheduler") }}',
                     @endif
-                    'History & Reports': '{{ url("histories-reports") }}',
+                    'History & Reports': '{{ route("history.reports") }}',
                     @if (($role ?? null) === 'super')
                     'Site Settings': '{{ url("site-settings") }}',
+                    'Scope Explorer': '{{ url("scope-explorer") }}',
                     'Client Monitor': '{{ url("client-monitor") }}',
                     @endif
                     @if ($canManageDesktop)
@@ -103,9 +105,86 @@
 
     @include('tasks.schedule_task_modal')
     @include('common.modals.action-confirm-modal')
-    @include('common.modals.hierarchical-location-modal')
-
     <script>
+        window.PerfectlumHierarchyModalLoader = window.PerfectlumHierarchyModalLoader || {
+            endpoint: @json(url('partials/hierarchy-modal')),
+            promise: null,
+            hasModal() {
+                return !!document.querySelector('[data-hierarchy-modal-root]');
+            },
+            async load() {
+                if (this.hasModal()) {
+                    return true;
+                }
+
+                if (!this.promise) {
+                    this.promise = fetch(this.endpoint, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'text/html',
+                        },
+                        credentials: 'same-origin',
+                    })
+                        .then((response) => {
+                            if (!response.ok) {
+                                throw new Error('Unable to load hierarchy modal.');
+                            }
+                            return response.text();
+                        })
+                        .then((html) => {
+                            const template = document.createElement('template');
+                            template.innerHTML = html.trim();
+                            const scripts = Array.from(template.content.querySelectorAll('script'));
+                            scripts.forEach((script) => script.remove());
+                            document.body.appendChild(template.content);
+                            scripts.forEach((script) => {
+                                const executable = document.createElement('script');
+                                Array.from(script.attributes).forEach((attr) => executable.setAttribute(attr.name, attr.value));
+                                executable.textContent = script.textContent;
+                                document.body.appendChild(executable);
+                            });
+
+                            const root = document.querySelector('[data-hierarchy-modal-root]');
+                            if (root && window.Alpine?.initTree) {
+                                window.Alpine.initTree(root);
+                            }
+
+                            if (window.lucide) {
+                                window.lucide.createIcons();
+                            }
+
+                            return true;
+                        })
+                        .catch((error) => {
+                            this.promise = null;
+                            throw error;
+                        });
+                }
+
+                return this.promise;
+            },
+        };
+
+        window.addEventListener('open-hierarchy', (event) => {
+            const loader = window.PerfectlumHierarchyModalLoader;
+            if (!loader || loader.hasModal()) {
+                return;
+            }
+
+            const detail = event.detail ? { ...event.detail } : {};
+            event.stopImmediatePropagation();
+
+            loader.load()
+                .then(() => {
+                    window.dispatchEvent(new CustomEvent('open-hierarchy', { detail }));
+                })
+                .catch(() => {
+                    if (typeof window.notify === 'function') {
+                        window.notify('failed', 'Unable to open hierarchy detail.');
+                    }
+                });
+        }, true);
+
         // Modern Notification System
         function notify(type, msg) {
             const container = document.getElementById('notification-center');

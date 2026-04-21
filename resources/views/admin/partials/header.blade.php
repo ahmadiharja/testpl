@@ -429,6 +429,8 @@ if (!window.notificationBell) {
             items: [],
             unreadCount: 0,
             pollHandle: null,
+            focusHandle: null,
+            visibilityHandle: null,
             apiUrl: @json(url('api/notifications')),
             readAllUrl: @json(url('api/notifications/read-all')),
             csrf: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
@@ -436,7 +438,30 @@ if (!window.notificationBell) {
 
             init() {
                 this.load(true);
-                this.pollHandle = window.setInterval(() => this.load(true), 60000);
+                this.pollHandle = window.setInterval(() => this.load(true), 15000);
+                this.focusHandle = () => this.load(true);
+                this.visibilityHandle = () => {
+                    if (document.visibilityState === 'visible') {
+                        this.load(true);
+                    }
+                };
+                window.addEventListener('focus', this.focusHandle);
+                document.addEventListener('visibilitychange', this.visibilityHandle);
+            },
+
+            destroy() {
+                if (this.pollHandle) {
+                    window.clearInterval(this.pollHandle);
+                    this.pollHandle = null;
+                }
+                if (this.focusHandle) {
+                    window.removeEventListener('focus', this.focusHandle);
+                    this.focusHandle = null;
+                }
+                if (this.visibilityHandle) {
+                    document.removeEventListener('visibilitychange', this.visibilityHandle);
+                    this.visibilityHandle = null;
+                }
             },
 
             close() {

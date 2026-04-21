@@ -15,6 +15,72 @@ use App\Notifications\TestEmailNotification;
 
 class SettingsController extends Controller
 {
+    private function publicBrandingDirectories(string $directory): array
+    {
+        $candidates = [
+            public_path($directory),
+            base_path('../public_html/new/' . $directory),
+            base_path('public_html/new/' . $directory),
+        ];
+
+        $directories = [];
+        foreach ($candidates as $candidate) {
+            $normalized = rtrim(str_replace('\\', '/', $candidate), '/');
+            if ($normalized !== '' && !in_array($normalized, $directories, true)) {
+                $directories[] = $normalized;
+            }
+        }
+
+        return $directories;
+    }
+
+    private function storeBrandingAsset(Request $request, string $inputName, string $settingTitle, string $directory): ?string
+    {
+        if (!$request->hasFile($inputName)) {
+            return null;
+        }
+
+        $file = $request->file($inputName);
+        if (!$file || !$file->isValid()) {
+            return null;
+        }
+
+        $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'png');
+        $fileName = Str::slug(Carbon::now()->format('Y-m-d H-i-s')) . '-' . Str::lower(Str::random(8)) . '.' . $extension;
+        $relativePath = trim($directory, '/') . '/' . $fileName;
+        $directories = $this->publicBrandingDirectories($directory);
+        $primaryDirectory = $directories[0];
+
+        if (!is_dir($primaryDirectory)) {
+            mkdir($primaryDirectory, 0755, true);
+        }
+
+        $file->move($primaryDirectory, $fileName);
+        $primaryFile = $primaryDirectory . '/' . $fileName;
+
+        foreach (array_slice($directories, 1) as $directoryPath) {
+            if (!is_dir(dirname($directoryPath))) {
+                continue;
+            }
+
+            if (!is_dir($directoryPath)) {
+                mkdir($directoryPath, 0755, true);
+            }
+
+            $targetFile = $directoryPath . '/' . $fileName;
+            if ($targetFile !== $primaryFile) {
+                @copy($primaryFile, $targetFile);
+            }
+        }
+
+        \App\Models\Setting::updateOrCreate(
+            ['title' => $settingTitle],
+            ['value' => $relativePath]
+        );
+
+        return $relativePath;
+    }
+
     protected function settingsManager(Request $request): ?\App\Models\User
     {
         return \App\Models\User::find($request->session()->get('id'));
@@ -102,6 +168,10 @@ class SettingsController extends Controller
     private function buildWorkstationOptionCatalog($workstationIds)
     {
         $settingNames = [
+            'Language',
+            'DataBaseSynchronizationInterval',
+            'RemindMinutes',
+            'backupPeriod',
             'units',
             'LumUnits',
             'AmbientStable',
@@ -141,55 +211,21 @@ class SettingsController extends Controller
         $data=\App\Models\Setting::pluck('value', 'title')->toArray();
         
         if($request->input('site')!=''){
+            $request->validate([
+                'site_logo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,ico', 'max:5120'],
+                'favicon' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,ico', 'max:5120'],
+                'sidebar_collapsed_logo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif,ico', 'max:5120'],
+            ]);
+
             $site_name=$request->input('site');
             $sender_email=$request->input('email');
             $sender_name=$request->input('sender');
             
-            //logo
-            if($request->file('site_logo')!='')
-            {
-                $file=$request->file('site_logo');
-            
-                //Move Uploaded File
-                $destinationPath = 'site_logo';
-                $extension = $file->getClientOriginalExtension();
-                // Rename file
-                $fileName = Str::slug(Carbon::now()->toDayDateTimeString()).rand(11111, 99999) .'.' . $extension;
-            
-                if($file->move($destinationPath,$fileName)) {
-                    $pathToImage=$destinationPath.'/'.$fileName;
-                    //ImageOptimizer::optimize($pathToImage);
-                    $featured_image=$pathToImage;
-                    
-                    \App\Models\Setting::where('title', 'Site logo')->update([
-                        'value'=>$featured_image
-                    ]);
-                }
-            }
-            
-            //favicon
-            if($request->file('favicon')!='')
-            {
-                $file=$request->file('favicon');
-            
-                //Move Uploaded File
-                $destinationPath = 'favicon';
-                $extension = $file->getClientOriginalExtension();
-                // Rename file
-                $fileName = Str::slug(Carbon::now()->toDayDateTimeString()).rand(11111, 99999) .'.' . $extension;
-            
-                if($file->move($destinationPath,$fileName)) {
-                    $pathToImage=$destinationPath.'/'.$fileName;
-                    //ImageOptimizer::optimize($pathToImage);
-                    $featured_image=$pathToImage;
-                    
-                    \App\Models\Setting::where('title', 'favicon')->update([
-                        'value'=>$featured_image
-                    ]);
-                }
-            }
-            
-            \App\Models\Setting::where('title', 'Site name')->update([
+            $this->storeBrandingAsset($request, 'site_logo', 'Site logo', 'site_logo');
+            $this->storeBrandingAsset($request, 'favicon', 'favicon', 'favicon');
+            $this->storeBrandingAsset($request, 'sidebar_collapsed_logo', 'Sidebar collapsed logo', 'sidebar_logo');
+
+            \App\Models\Setting::updateOrCreate(['title' => 'Site name'], [
                 'value'=>$site_name
             ]);
             

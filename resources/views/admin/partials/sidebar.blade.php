@@ -5,13 +5,13 @@
 
     $primaryLinks = array_values(array_filter([
         ['name' => 'Dashboard', 'icon' => 'layout-grid', 'url' => 'dashboard'],
-        ['name' => 'Facilities', 'icon' => 'building-2', 'url' => 'facilities-management'],
-        ['name' => 'Workgroups', 'icon' => 'network', 'url' => 'workgroups'],
-        ['name' => 'Workstations', 'icon' => 'monitor-speaker', 'url' => 'workstations'],
-        ['name' => 'Displays', 'icon' => 'monitor', 'url' => 'displays'],
-        $canManageDesktop ? ['name' => 'Calibrate Display', 'icon' => 'crosshair', 'url' => 'display-calibration'] : null,
-        $canManageDesktop ? ['name' => 'Scheduler', 'icon' => 'calendar-days', 'url' => 'scheduler'] : null,
-        ['name' => 'History & Reports', 'icon' => 'files', 'url' => 'histories-reports'],
+        ['name' => 'Facilities', 'icon' => 'building-2', 'url' => route('facilities.management')],
+        ['name' => 'Workgroups', 'icon' => 'network', 'url' => route('workgroups.management')],
+        ['name' => 'Workstations', 'icon' => 'monitor-speaker', 'url' => route('workstations.management')],
+        ['name' => 'Displays', 'icon' => 'monitor', 'url' => route('displays.management')],
+        $canManageDesktop ? ['name' => 'Calibrate Display', 'icon' => 'crosshair', 'url' => route('displays.calibration')] : null,
+        $canManageDesktop ? ['name' => 'Scheduler', 'icon' => 'calendar-days', 'url' => route('displays.scheduler')] : null,
+        ['name' => 'History & Reports', 'icon' => 'files', 'url' => route('history.reports')],
         $canManageUsersDesktop ? ['name' => 'Users', 'icon' => 'users', 'url' => 'users-management'] : null,
     ]));
 
@@ -19,6 +19,7 @@
         $sidebarRole === 'super' ? ['name' => 'Site Settings', 'icon' => 'settings-2'] : null,
         $canManageDesktop ? ['name' => 'Application Settings', 'icon' => 'sliders-horizontal'] : null,
         $canManageDesktop ? ['name' => 'Alert Settings', 'icon' => 'bell-ring'] : null,
+        $sidebarRole === 'super' ? ['name' => 'Scope Explorer', 'icon' => 'folder-tree'] : null,
         $sidebarRole === 'super' ? ['name' => 'Client Monitor', 'icon' => 'terminal'] : null,
     ]));
 @endphp
@@ -33,15 +34,15 @@
                 <img
                     x-show="sidebarCollapsed"
                     x-cloak
-                    src="{{ asset('assets/images/perfectlum_circle.png') }}"
-                    alt="PerfectLum"
+                    src="{{ $desktopBrandCompactLogo ?? asset('assets/images/perfectlum_circle.png') }}"
+                    alt="{{ $desktopBrandName ?? 'PerfectLum' }}"
                     class="h-11 w-11 shrink-0 object-contain"
                 >
                 <img
                     x-show="!sidebarCollapsed"
                     x-cloak
-                    src="{{ asset('assets/images/perfectlum-logo.png') }}"
-                    alt="PerfectLum"
+                    src="{{ $desktopBrandLogo ?? asset('assets/images/perfectlum-logo.png') }}"
+                    alt="{{ $desktopBrandName ?? 'PerfectLum' }}"
                     class="h-11 w-auto max-w-[180px] shrink-0 object-contain"
                 >
             </a>
@@ -54,7 +55,7 @@
 
             <div class="space-y-1">
                 @foreach ($primaryLinks as $item)
-                    <a href="{{ url($item['url']) }}"
+                    <a href="{{ $item['url'] }}"
                        class="group flex items-center rounded-2xl transition-all duration-200"
                        :class="[
                            sidebarCollapsed ? 'mx-auto h-14 w-14 justify-center' : 'gap-3 px-4 py-3.5',
@@ -78,7 +79,7 @@
                             class="group flex w-full items-center rounded-2xl transition-all duration-200"
                             :class="[
                                 sidebarCollapsed ? 'mx-auto h-14 w-14 justify-center' : 'gap-3 px-4 py-3.5',
-                                ['Site Settings', 'Application Settings', 'Alert Settings', 'Client Monitor'].includes(activeMenu)
+                                ['Site Settings', 'Application Settings', 'Alert Settings', 'Scope Explorer', 'Client Monitor'].includes(activeMenu)
                                     ? (theme === 'perfectlum' ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' : 'bg-sky-500 text-white shadow-[0_0_30px_-8px_rgba(14,165,233,0.6)]')
                                     : (theme === 'perfectlum' ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-900' : 'text-white/45 hover:bg-white/5 hover:text-white')
                             ]"
@@ -94,6 +95,7 @@
                                 'Site Settings' => 'site-settings',
                                 'Application Settings' => 'global-settings',
                                 'Alert Settings' => 'alert-settings',
+                                'Scope Explorer' => 'scope-explorer',
                                 'Client Monitor' => 'client-monitor',
                                 default => 'site-settings',
                             }) }}"

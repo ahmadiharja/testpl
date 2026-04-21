@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\SchedulerWorkspaceNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
@@ -10,6 +11,10 @@ use Illuminate\Support\Str;
 
 class NotificationController extends Controller
 {
+    public function __construct(protected SchedulerWorkspaceNotificationService $schedulerWorkspaceNotificationService)
+    {
+    }
+
     public function page(Request $request)
     {
         return view('notifications.index', [
@@ -27,6 +32,8 @@ class NotificationController extends Controller
                 'meta' => $this->emptyMeta(),
             ]);
         }
+
+        $this->schedulerWorkspaceNotificationService->syncForUser($user);
 
         $filter = $request->get('filter') === 'all' ? 'all' : 'unread';
         $limit = max(1, min((int) $request->get('limit', 8), 20));

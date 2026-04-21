@@ -11,6 +11,34 @@
         $currentPlatform,
         $desktopShellUser?->fullname ?: $desktopShellUser?->name,
     ], static fn ($value) => filled($value)));
+
+    $desktopBrandSettings = [];
+    try {
+        if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
+            $desktopBrandSettings = \App\Models\Setting::pluck('value', 'title')->toArray();
+        }
+    } catch (\Throwable $exception) {
+        $desktopBrandSettings = [];
+    }
+
+    $desktopBrandAsset = static function (string $key, string $fallback) use ($desktopBrandSettings): string {
+        $path = trim((string) ($desktopBrandSettings[$key] ?? ''));
+
+        if ($path === '') {
+            return asset($fallback);
+        }
+
+        if (\Illuminate\Support\Str::startsWith($path, ['http://', 'https://', '//', 'data:'])) {
+            return $path;
+        }
+
+        return url($path);
+    };
+
+    $desktopBrandName = trim((string) ($desktopBrandSettings['Site name'] ?? '')) ?: 'PerfectLum';
+    $desktopBrandLogo = $desktopBrandAsset('Site logo', 'assets/images/perfectlum-logo.png');
+    $desktopBrandFavicon = $desktopBrandAsset('favicon', 'assets/images/perfectlum_circle.png');
+    $desktopBrandCompactLogo = $desktopBrandAsset('Sidebar collapsed logo', 'assets/images/perfectlum_circle.png');
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -18,7 +46,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ __($title ?? 'PerfectLum') }} | PerfectLum</title>
+    <link rel="icon" href="{{ $desktopBrandFavicon }}">
+    <link rel="shortcut icon" href="{{ $desktopBrandFavicon }}">
+    <link rel="apple-touch-icon" href="{{ $desktopBrandCompactLogo }}">
+    <title>{{ __($title ?? $desktopBrandName) }} | {{ $desktopBrandName }}</title>
     <!-- Tailwind & Lucide -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

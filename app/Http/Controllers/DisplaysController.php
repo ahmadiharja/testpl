@@ -380,7 +380,7 @@ class DisplaysController extends Controller
             }
             
             $request->session()->flash('success', "Calibration task created successfully!");
-            return redirect('display-calibration');
+            return redirect()->route('displays.calibration');
         }
 
         if($request->input('tasktype')!='')
@@ -422,7 +422,7 @@ class DisplaysController extends Controller
             }
             
             $request->session()->flash('success', "Calibration task created successfully!");
-            return redirect('display-calibration');
+            return redirect()->route('displays.calibration');
         }
         
         return view('display_callibration.display_calibration', [
@@ -743,6 +743,7 @@ class DisplaysController extends Controller
             'CommunicationType' => 'nullable|string|max:50',
             'InternalSensor' => 'nullable|boolean',
             'CurrentLUTIndex' => 'nullable|string|max:255',
+            'BacklightStabilization' => 'nullable|string|max:255',
             'InstalationDate' => 'nullable|date',
             'Manufacturer' => 'nullable|string|max:255',
             'Model' => 'nullable|string|max:255',
@@ -767,6 +768,7 @@ class DisplaysController extends Controller
             'CommunicationType' => $request->filled('CommunicationType') ? $request->input('CommunicationType') : '3',
             'InternalSensor' => $request->boolean('InternalSensor') ? 'true' : 'false',
             'CurrentLUTIndex' => $request->input('CurrentLUTIndex', ''),
+            'BacklightStabilization' => $request->input('BacklightStabilization', ''),
             'InstalationDate' => $request->input('InstalationDate', ''),
             'Manufacturer' => $request->input('Manufacturer', ''),
             'Model' => $request->input('Model', ''),
@@ -809,6 +811,60 @@ class DisplaysController extends Controller
         ]);
     }
 
+    protected function display_setting_options(int $workstationId, ?string $lutNamesValue = null, array $selectedValues = []): array
+    {
+        $settingOptions = \App\Models\SettingName::where('workstation_id', $workstationId)
+            ->whereIn('setting_name', ['TypeOfDisplay', 'DisplayTechnology', 'ScreenSize', 'BacklightStabilization'])
+            ->pluck('setting_value', 'setting_name')
+            ->toArray();
+
+        $decodeOptions = function ($value) {
+            $decoded = json_decode($value ?? '[]', true);
+            if (!is_array($decoded)) {
+                return [];
+            }
+
+            return collect($decoded)
+                ->filter(fn ($item) => $item !== null && $item !== '')
+                ->map(fn ($item) => ['value' => (string) $item, 'label' => (string) $item])
+                ->unique('value')
+                ->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)
+                ->values()
+                ->all();
+        };
+
+        $options = [
+            'TypeOfDisplay' => $decodeOptions($settingOptions['TypeOfDisplay'] ?? null),
+            'DisplayTechnology' => $decodeOptions($settingOptions['DisplayTechnology'] ?? null),
+            'ScreenSize' => $decodeOptions($settingOptions['ScreenSize'] ?? null),
+            'BacklightStabilization' => $decodeOptions($settingOptions['BacklightStabilization'] ?? null),
+            'lut_names' => collect(explode('||', (string) $lutNamesValue))
+            ->filter(fn ($item) => $item !== null && trim((string) $item) !== '')
+            ->map(fn ($item) => ['value' => (string) $item, 'label' => (string) $item])
+            ->unique('value')
+            ->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->all(),
+        ];
+
+        foreach ($selectedValues as $key => $value) {
+            $normalized = trim((string) $value);
+            if ($normalized === '' || !array_key_exists($key, $options)) {
+                continue;
+            }
+
+            if (!collect($options[$key])->contains(fn ($item) => (string) ($item['value'] ?? '') === $normalized)) {
+                $options[$key][] = ['value' => $normalized, 'label' => $normalized];
+                $options[$key] = collect($options[$key])
+                    ->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)
+                    ->values()
+                    ->all();
+            }
+        }
+
+        return $options;
+    }
+
     public function edit_display_modal(Request $request, $id)
     {
         $userId = $request->session()->get('id');
@@ -823,24 +879,13 @@ class DisplaysController extends Controller
         }
 
         $preferences = $display->preferences->pluck('value', 'name');
-        $settingOptions = \App\Models\SettingName::where('workstation_id', $display->workstation_id)
-            ->whereIn('setting_name', ['TypeOfDisplay', 'DisplayTechnology'])
-            ->pluck('setting_value', 'setting_name')
-            ->toArray();
-
-        $decodeOptions = function ($value) {
-            $decoded = json_decode($value ?? '[]', true);
-            if (!is_array($decoded)) {
-                return collect();
-            }
-
-            return collect($decoded)
-                ->filter(fn ($item) => $item !== null && $item !== '')
-                ->map(fn ($item) => ['value' => (string) $item, 'label' => (string) $item])
-                ->unique('value')
-                ->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)
-                ->values();
-        };
+        $options = $this->display_setting_options((int) $display->workstation_id, (string) $preferences->get('lut_names', ''), [
+            'TypeOfDisplay' => (string) $preferences->get('TypeOfDisplay', ''),
+            'DisplayTechnology' => (string) $preferences->get('DisplayTechnology', ''),
+            'ScreenSize' => (string) $preferences->get('ScreenSize', ''),
+            'BacklightStabilization' => (string) $preferences->get('BacklightStabilization', ''),
+            'lut_names' => (string) $preferences->get('CurrentLUTIndex', ''),
+        ]);
 
         return response()->json([
             'id' => $display->id,
@@ -850,6 +895,7 @@ class DisplaysController extends Controller
                 'CommunicationType' => (string) $preferences->get('CommunicationType', '3'),
                 'InternalSensor' => (string) $preferences->get('InternalSensor', 'false') === 'true',
                 'CurrentLUTIndex' => (string) $preferences->get('CurrentLUTIndex', ''),
+                'BacklightStabilization' => (string) $preferences->get('BacklightStabilization', ''),
                 'InstalationDate' => str_replace('.', '-', (string) $preferences->get('InstalationDate', '')),
                 'Manufacturer' => (string) $preferences->get('Manufacturer', $display->manufacturer ?? ''),
                 'Model' => (string) $preferences->get('Model', $display->model ?? ''),
@@ -868,10 +914,7 @@ class DisplaysController extends Controller
                 'current_value' => $display->current_value,
                 'expected_replacement_date' => $display->expected_replacement_date ? str_replace('.', '-', (string) $display->expected_replacement_date) : '',
             ],
-            'options' => [
-                'TypeOfDisplay' => $decodeOptions($settingOptions['TypeOfDisplay'] ?? null),
-                'DisplayTechnology' => $decodeOptions($settingOptions['DisplayTechnology'] ?? null),
-            ],
+            'options' => $options,
             'permissions' => [
                 'edit' => $this->display_can_manage($userRole),
                 'delete' => $this->display_can_manage($userRole),
@@ -881,150 +924,31 @@ class DisplaysController extends Controller
 
     public function display_move_options(Request $request, $id)
     {
-        $userId = $request->session()->get('id');
-        $user = \App\Models\User::find($userId);
-        $userRole = $request->session()->get('role');
-
-        $display = \App\Models\Display::with('workstation.workgroup.facility')->findOrFail($id);
-        $currentWorkstation = $display->workstation;
-        $currentWorkgroup = optional($currentWorkstation)->workgroup;
-        $currentFacility = optional($currentWorkgroup)->facility;
-
-        if ($userRole !== 'super' && (!$user || !$currentFacility || (int) $currentFacility->id !== (int) $user->facility_id)) {
-            abort(404);
-        }
-
-        $facilityQuery = \App\Models\Facility::query()->orderBy('name');
-        if ($userRole !== 'super') {
-            $facilityQuery->where('id', $user->facility_id);
-        }
-
-        $facilities = $facilityQuery->get(['id', 'name'])->map(fn($facility) => [
-            'id' => $facility->id,
-            'name' => $facility->name,
-        ])->values();
-
-        $workgroups = collect();
-        if ($currentFacility) {
-            $workgroups = \App\Models\Workgroup::where('facility_id', $currentFacility->id)
-                ->orderBy('name')
-                ->get(['id', 'name'])
-                ->map(fn($workgroup) => [
-                    'id' => $workgroup->id,
-                    'name' => $workgroup->name,
-                ])
-                ->values();
-        }
-
-        $workstations = collect();
-        if ($currentWorkgroup) {
-            $workstations = \App\Models\Workstation::where('workgroup_id', $currentWorkgroup->id)
-                ->orderBy('name')
-                ->get(['id', 'name'])
-                ->map(fn($workstation) => [
-                    'id' => $workstation->id,
-                    'name' => $workstation->name,
-                ])
-                ->values();
-        }
-
         return response()->json([
-            'current' => [
-                'facilityId' => $currentFacility->id ?? null,
-                'workgroupId' => $currentWorkgroup->id ?? null,
-                'workstationId' => $currentWorkstation->id ?? null,
-            ],
-            'facilities' => $facilities,
-            'workgroups' => $workgroups,
-            'workstations' => $workstations,
-        ]);
+            'message' => 'Displays are bound to their synced workstation and cannot be moved manually.',
+        ], 403);
     }
 
     public function display_move_workgroups(Request $request, $facilityId)
     {
-        $userId = $request->session()->get('id');
-        $user = \App\Models\User::find($userId);
-        $userRole = $request->session()->get('role');
-
-        $facility = \App\Models\Facility::findOrFail($facilityId);
-        if ($userRole !== 'super' && (!$user || (int) $facility->id !== (int) $user->facility_id)) {
-            abort(404);
-        }
-
-        $workgroups = \App\Models\Workgroup::where('facility_id', $facility->id)
-            ->orderBy('name')
-            ->get(['id', 'name'])
-            ->map(fn($workgroup) => [
-                'id' => $workgroup->id,
-                'name' => $workgroup->name,
-            ])
-            ->values();
-
-        return response()->json($workgroups);
+        return response()->json([
+            'message' => 'Displays are bound to their synced workstation and cannot be moved manually.',
+        ], 403);
     }
 
     public function display_move_workstations(Request $request, $workgroupId)
     {
-        $userId = $request->session()->get('id');
-        $user = \App\Models\User::find($userId);
-        $userRole = $request->session()->get('role');
-
-        $workgroup = \App\Models\Workgroup::with('facility')->findOrFail($workgroupId);
-        if ($userRole !== 'super' && (!$user || (int) optional($workgroup->facility)->id !== (int) $user->facility_id)) {
-            abort(404);
-        }
-
-        $workstations = \App\Models\Workstation::where('workgroup_id', $workgroup->id)
-            ->orderBy('name')
-            ->get(['id', 'name'])
-            ->map(fn($workstation) => [
-                'id' => $workstation->id,
-                'name' => $workstation->name,
-            ])
-            ->values();
-
-        return response()->json($workstations);
+        return response()->json([
+            'message' => 'Displays are bound to their synced workstation and cannot be moved manually.',
+        ], 403);
     }
 
     public function move_display_modal(Request $request, $id)
     {
-        $userId = $request->session()->get('id');
-        $user = \App\Models\User::find($userId);
-        $userRole = $request->session()->get('role');
-
-        $display = \App\Models\Display::with('workstation.workgroup.facility')->findOrFail($id);
-        $currentFacility = optional(optional($display->workstation)->workgroup)->facility;
-
-        if ($userRole !== 'super' && (!$user || !$currentFacility || (int) $currentFacility->id !== (int) $user->facility_id)) {
-            abort(404);
-        }
-
-        if (!$this->display_can_manage($userRole)) {
-            return response()->json(['message' => 'You are not allowed to move this display.'], 403);
-        }
-
-        $request->validate([
-            'workstation_id' => 'required|integer|exists:workstations,id',
-        ]);
-
-        $targetWorkstation = \App\Models\Workstation::with('workgroup.facility')->findOrFail($request->integer('workstation_id'));
-        $targetFacility = optional(optional($targetWorkstation)->workgroup)->facility;
-
-        if (!$targetFacility) {
-            abort(422, 'Target workstation is invalid.');
-        }
-
-        if ($userRole !== 'super' && (!$user || (int) $targetFacility->id !== (int) $user->facility_id)) {
-            abort(404);
-        }
-
-        $display->workstation_id = $targetWorkstation->id;
-        $display->save();
-
         return response()->json([
-            'success' => true,
-            'message' => 'Display moved successfully.',
-        ]);
+            'success' => false,
+            'message' => 'Displays are bound to their synced workstation and cannot be moved manually.',
+        ], 403);
     }
 
     public function api_display_modal(Request $request, $id)
@@ -1372,6 +1296,12 @@ class DisplaysController extends Controller
             ];
         })->values();
 
+        $latestFailedHistory = $recentHistories
+            ->sortByDesc('time')
+            ->first(function ($history) {
+                return (int) $history->result === 3;
+            });
+
         $extractHistoryScores = function ($history) {
             return collect($history->steps)
                 ->flatMap(function ($step) {
@@ -1471,7 +1401,7 @@ class DisplaysController extends Controller
             'name' => $displayName,
             'permissions' => [
                 'edit' => $this->display_can_manage($userRole),
-                'move' => $this->display_can_manage($userRole),
+                'move' => false,
                 'delete' => $this->display_can_manage($userRole),
             ],
             'manufacturer' => $manufacturer,
@@ -1488,6 +1418,7 @@ class DisplaysController extends Controller
             'typeOfDisplay' => $preferences['TypeOfDisplay'] ?? '-',
             'displayTechnology' => $preferences['DisplayTechnology'] ?? '-',
             'screenSize' => $preferences['ScreenSize'] ?? '-',
+            'backlightStabilization' => $preferences['BacklightStabilization'] ?? '-',
             'installationDate' => !empty($preferences['InstalationDate']) ? str_replace('.', '-', $preferences['InstalationDate']) : '-',
             'currentLut' => $preferences['CurrentLUTIndex'] ?? '-',
             'exclude' => (string) ($preferences['exclude'] ?? '0') === '1',
@@ -1525,6 +1456,13 @@ class DisplaysController extends Controller
                 'calibration' => url('display-calibration?display_id=' . $display->id),
                 'scheduler' => url('scheduler?display_id=' . $display->id),
             ],
+            'settingsOptions' => $this->display_setting_options((int) $display->workstation_id, (string) ($preferences['lut_names'] ?? ''), [
+                'TypeOfDisplay' => (string) ($preferences['TypeOfDisplay'] ?? ''),
+                'DisplayTechnology' => (string) ($preferences['DisplayTechnology'] ?? ''),
+                'ScreenSize' => (string) ($preferences['ScreenSize'] ?? ''),
+                'BacklightStabilization' => (string) ($preferences['BacklightStabilization'] ?? ''),
+                'lut_names' => (string) ($preferences['CurrentLUTIndex'] ?? ''),
+            ]),
             'hierarchy' => [
                 'facility' => [
                     'id' => $facility->id ?? null,
@@ -1563,6 +1501,14 @@ class DisplaysController extends Controller
                 'bucket' => $timelineConfig['bucket'],
                 'timelineTitle' => $timelineConfig['title'],
                 'latestEvaluation' => $latestEvaluation,
+                'latestFailed' => $latestFailedHistory ? [
+                    'id' => $latestFailedHistory->id,
+                    'name' => $latestFailedHistory->name ?: 'Calibration',
+                    'performedAt' => \Carbon\Carbon::createFromTimestamp($latestFailedHistory->time)->format('d M Y H:i'),
+                    'resultLabel' => $latestFailedHistory->result_desc ?? 'Unknown',
+                    'resultTone' => 'danger',
+                    'url' => url('histories/' . $latestFailedHistory->id),
+                ] : null,
                 'chart' => $chart,
                 'timeline' => $timeline,
                 'metrics' => $metricSeries,

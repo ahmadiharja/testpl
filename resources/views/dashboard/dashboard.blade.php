@@ -18,7 +18,7 @@
             ? ['label' => __('Facility scope'), 'tone' => 'border-emerald-200 bg-emerald-50 text-emerald-700']
             : ['label' => __('Read only'), 'tone' => 'border-slate-200 bg-slate-50 text-slate-600']);
 
-    $dueTasksFullUrl = $isUserDashboard ? url('due-tasks') : url('scheduler');
+    $dueTasksFullUrl = $isUserDashboard ? url('due-tasks') : route('displays.scheduler');
 
     $failedSectionDescription = $isUserDashboard
         ? __('The latest ten displays with active issues inside your visible scope.')
@@ -46,7 +46,7 @@
     ];
 
     $dashboardJs = [
-        'historiesUrl' => url('histories-reports'),
+        'historiesUrl' => route('history.reports'),
         'canManageDashboardTasks' => in_array(session('role'), ['super', 'admin'], true),
         'noActions' => __('No actions'),
         'scheduleTask' => __('Schedule Task'),
@@ -58,19 +58,19 @@
                 'eyebrow' => __('Displays OK'),
                 'title' => $dashboardText['healthyDisplays'],
                 'description' => __('Review the latest ten displays that are currently reported as healthy.'),
-                'fullUrl' => url('displays?type=ok'),
+                'fullUrl' => route('displays.management', ['type' => 'ok']),
             ],
             'displays_failed' => [
                 'eyebrow' => __('Displays Not OK'),
                 'title' => $dashboardText['displaysNeedFollowUp'],
                 'description' => __('Review the latest ten failed displays and jump straight into the affected hierarchy.'),
-                'fullUrl' => url('displays?type=failed'),
+                'fullUrl' => route('displays.management', ['type' => 'failed']),
             ],
             'workstations' => [
                 'eyebrow' => __('Workstations'),
                 'title' => __('Workstation fleet overview'),
                 'description' => __('Scan workstation identity, hierarchy scope, connected state, and display coverage from one compact view.'),
-                'fullUrl' => url('workstations'),
+                'fullUrl' => route('workstations.management'),
             ],
             'due_tasks' => [
                 'eyebrow' => __('Due Tasks'),
@@ -97,6 +97,9 @@
             'displayLabel' => __('Display'),
             'performedAt' => __('Performed At'),
             'result' => __('Result'),
+            'syncResolution' => __('Sync Resolution'),
+            'historyMatchedByServer' => __('This history was matched by the web server because the client reported a virtual or unmapped display id.'),
+            'resolutionConfidence' => __('Confidence'),
             'section' => __('Section'),
             'reviewScoredChecks' => __('Review scored checks, question answers, and comments captured for this task.'),
             'score' => __('Score'),
@@ -451,7 +454,6 @@
 
 </div>
 
-@include('tasks.schedule_task_modal')
 @include('tasks.delete_task_confirm_modal')
 
 <style>
@@ -544,14 +546,16 @@
 
 <div
     id="dashboard-stat-modal"
-    class="pointer-events-none fixed inset-0 z-[90] hidden opacity-0 transition duration-200"
+    class="pointer-events-none fixed inset-0 hidden opacity-0 transition duration-200"
+    style="z-index: 2147482500;"
     aria-hidden="true"
 >
-    <div id="dashboard-stat-modal-overlay" class="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"></div>
+    <div id="dashboard-stat-modal-overlay" class="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]" style="z-index: 2147482500;"></div>
     <div class="flex min-h-full items-center justify-center px-4 py-8">
         <div
             id="dashboard-stat-modal-panel"
             class="relative flex max-h-[88vh] w-full max-w-7xl translate-y-3 scale-[0.985] flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl transition duration-200"
+            style="z-index: 2147482501;"
         >
             <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
                 <div class="min-w-0">
@@ -621,9 +625,9 @@
     </div>
 </div>
 
-<div id="dashboard-investigate-drawer" class="fixed inset-0 z-[130] hidden">
-    <div data-dashboard-investigate-overlay class="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px] opacity-0 transition-opacity duration-200"></div>
-    <aside data-dashboard-investigate-panel class="absolute inset-y-0 right-0 flex h-full w-full max-w-2xl translate-x-full flex-col border-l border-slate-200 bg-white shadow-[0_28px_80px_rgba(15,23,42,0.28)] transition-transform duration-200">
+<div id="dashboard-investigate-drawer" class="fixed inset-0 hidden" style="z-index: 2147482700;">
+    <div data-dashboard-investigate-overlay class="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px] opacity-0 transition-opacity duration-200" style="z-index: 2147482700;"></div>
+    <aside data-dashboard-investigate-panel class="absolute inset-y-0 right-0 flex h-full w-full max-w-2xl translate-x-full flex-col border-l border-slate-200 bg-white shadow-[0_28px_80px_rgba(15,23,42,0.28)] transition-transform duration-200" style="z-index: 2147482701;">
         <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
             <div class="min-w-0">
                 <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Investigation</p>
@@ -640,10 +644,10 @@
     </aside>
 </div>
 
-<div id="dashboard-task-detail-modal" class="fixed inset-0 z-[9400] hidden">
-    <div data-dashboard-task-overlay class="absolute inset-0 bg-slate-900/45 backdrop-blur-sm opacity-0 transition-opacity duration-200"></div>
+<div id="dashboard-task-detail-modal" class="fixed inset-0 hidden" style="z-index: 2147483600;">
+    <div data-dashboard-task-overlay class="absolute inset-0 bg-slate-900/45 backdrop-blur-sm opacity-0 transition-opacity duration-200" style="z-index: 2147483600;"></div>
     <div class="pointer-events-none absolute inset-0 flex items-center justify-center p-4 sm:p-6">
-        <div data-dashboard-task-panel class="pointer-events-auto relative w-full max-w-4xl overflow-hidden rounded-[1.75rem] border border-slate-200 bg-[#F8FAFC] shadow-[0_24px_80px_rgba(15,23,42,0.24)] opacity-0 transition-all duration-200 scale-[0.985] translate-y-4">
+        <div data-dashboard-task-panel class="pointer-events-auto relative w-full max-w-4xl overflow-hidden rounded-[1.75rem] border border-slate-200 bg-[#F8FAFC] shadow-[0_24px_80px_rgba(15,23,42,0.24)] opacity-0 transition-all duration-200 scale-[0.985] translate-y-4" style="z-index: 2147483601;">
             <div class="relative overflow-hidden bg-gradient-to-r from-[#1175FF] to-[#0A62F0] px-8 py-7 text-white">
                 <div class="absolute inset-0 opacity-[0.18]" style="background-image: radial-gradient(rgba(255,255,255,1) 1.4px, transparent 1.4px); background-size: 16px 16px;"></div>
                 <button type="button" data-dashboard-task-close class="absolute right-6 top-6 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/10 text-white transition hover:bg-black/20">
@@ -707,6 +711,12 @@
                         <button type="button" id="dashboard-task-workstation-link" class="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:bg-slate-100">
                             <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-500 text-[8px] font-black text-white">WS</span>
                             <span id="dashboard-task-workstation" class="truncate font-semibold text-slate-700"></span>
+                        </button>
+                    </div>
+                    <div id="dashboard-task-reschedule-wrap" class="hidden pt-2">
+                        <button type="button" id="dashboard-task-reschedule-button" class="inline-flex w-full items-center justify-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-bold uppercase tracking-[0.12em] text-sky-700 transition hover:bg-sky-100">
+                            <i data-lucide="calendar-plus-2" class="h-4 w-4"></i>
+                            Reschedule
                         </button>
                     </div>
                 </div>
@@ -805,6 +815,27 @@
             >
                 <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[8px] font-black leading-none tracking-tight text-white">${dashboardEscapeHtml(shortCode)}</span>
                 <span class="min-w-0 truncate text-left">${dashboardEscapeHtml(label)}</span>
+            </button>
+        `;
+    }
+
+    function dashboardScopeCompactButton(type, id, label, shortCode) {
+        const iconMap = {
+            facility: hierarchyIcons.facility,
+            workgroup: hierarchyIcons.workgroup,
+            workstation: hierarchyIcons.workstation,
+        };
+
+        return `
+            <button
+                type="button"
+                onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: '${type}', id: ${id} }}))"
+                class="group inline-flex min-w-0 items-center gap-1.5 text-[11px] font-semibold text-slate-500 transition hover:text-sky-600"
+                title="${dashboardEscapeHtml(label)}"
+            >
+                <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[8px] font-black leading-none tracking-tight text-white transition duration-200 group-hover:-translate-x-0.5 group-hover:bg-sky-600">${dashboardEscapeHtml(shortCode)}</span>
+                <span class="min-w-0 truncate text-left">${dashboardEscapeHtml(label)}</span>
+                <span class="shrink-0 text-slate-300 transition duration-200 group-hover:translate-x-0.5 group-hover:text-sky-500">${iconMap[type] || ''}</span>
             </button>
         `;
     }
@@ -1298,27 +1329,53 @@
         }
     }
 
-    const dashboardGridClasses = {
-        table: 'w-full text-sm text-left',
-        th: 'px-4 py-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 border-b border-slate-100 bg-transparent',
-        td: 'px-4 py-2.5 border-b border-slate-100 align-middle bg-transparent',
-        container: 'text-slate-700',
-        pagination: 'flex items-center justify-between px-5 py-4 text-xs font-medium text-slate-500'
+    const dashboardPageRuntime = {
+        active: true,
+        timeoutIds: new Set(),
+        idleIds: new Set(),
+        listeners: [],
+        abortControllers: new Set(),
     };
 
-    const dashboardGridStyles = {
-        table: { border: 'none' },
-        th: { background: '#f8fbff', boxShadow: 'none' },
-        td: { background: 'transparent' },
-        footer: { background: 'transparent' }
-    };
-
-    function dashboardDeferRender(fn, timeout = 160) {
-        if (typeof window.requestIdleCallback === 'function') {
-            window.requestIdleCallback(() => fn(), { timeout });
+    function dashboardAddListener(target, type, handler, options) {
+        if (!target || typeof target.addEventListener !== 'function' || typeof handler !== 'function') {
             return;
         }
-        window.setTimeout(fn, Math.min(timeout, 120));
+
+        target.addEventListener(type, handler, options);
+        dashboardPageRuntime.listeners.push(() => {
+            try {
+                target.removeEventListener(type, handler, options);
+            } catch (_) {}
+        });
+    }
+
+    function dashboardDeferRender(fn, timeout = 160) {
+        if (typeof fn !== 'function') {
+            return;
+        }
+
+        const wrapped = () => {
+            if (!dashboardPageRuntime.active) {
+                return;
+            }
+            fn();
+        };
+
+        if (typeof window.requestIdleCallback === 'function') {
+            const idleId = window.requestIdleCallback(() => {
+                dashboardPageRuntime.idleIds.delete(idleId);
+                wrapped();
+            }, { timeout });
+            dashboardPageRuntime.idleIds.add(idleId);
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            dashboardPageRuntime.timeoutIds.delete(timeoutId);
+            wrapped();
+        }, Math.min(timeout, 120));
+        dashboardPageRuntime.timeoutIds.add(timeoutId);
     }
 
     window.dashboardGridsRendered = false;
@@ -1331,11 +1388,59 @@
     const dashboardGridText = @json($dashboardJs['grid']);
     const dashboardHistorySummaryText = @json($dashboardJs['historySummary']);
 
+    function dashboardBuildReschedulePayload(reschedule = {}) {
+        const displayId = Number(reschedule.displayId || 0);
+        const taskTypeKey = String(reschedule.taskTypeKey || '').trim();
+        if (!displayId || !taskTypeKey) {
+            return null;
+        }
+
+        const dayOfMonth = Math.max(1, Number(reschedule.dayOfMonth || 1));
+        const monthNumber = Math.max(1, Number(reschedule.monthNumber || 1));
+        const dayOfWeek = Math.max(1, Number(reschedule.dayOfWeek || 1));
+
+        return {
+            id: 0,
+            displays: [displayId],
+            facility2: Number(reschedule.facilityId || 0),
+            workgroup2: Number(reschedule.workgroupId || 0),
+            workstation2: Number(reschedule.workstationId || 0),
+            tasktype: taskTypeKey,
+            lock_tasktype: 1,
+            reschedule_lite: 1,
+            startdate: reschedule.startDate || '',
+            starttime: reschedule.startTime || '',
+            dailytask: 1,
+            dayinmonth: 2,
+            week: 1,
+            rdayinmonth: 1,
+            dayofmonth: dayOfMonth,
+            week_of_month: 1,
+            dayofweek: dayOfWeek,
+            weekdays: [dayOfWeek],
+            monthly: [monthNumber],
+        };
+    }
+
+    function dashboardEnsureSingletonRoot(id, root) {
+        if (!id || !root) return root;
+        document.querySelectorAll(`#${id}`).forEach((node) => {
+            if (node !== root) {
+                node.remove();
+            }
+        });
+        return root;
+    }
+
     const dashboardHistorySummaryModal = {
         activeId: null,
         init() {
             this.root = document.getElementById('dashboard-history-summary-modal');
+            this.root = dashboardEnsureSingletonRoot('dashboard-history-summary-modal', this.root);
             if (!this.root || this.initialized) return;
+            if (this.root.parentElement !== document.body) {
+                document.body.appendChild(this.root);
+            }
             this.initialized = true;
             this.overlay = this.root.querySelector('[data-dashboard-history-summary-overlay]');
             this.panel = this.root.querySelector('[data-dashboard-history-summary-panel]');
@@ -1387,6 +1492,41 @@
             const cls = map[tone] || map.neutral;
             return `<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${cls}">${dashboardEscapeHtml(label || '-')}</span>`;
         },
+        renderSyncResolution(resolution) {
+            if (!resolution || resolution.method === 'exact') {
+                return '';
+            }
+
+            const methodLabelMap = {
+                single_display_fallback: 'Single-display fallback',
+                stored_mapping: 'Stored workstation mapping',
+                signal_match: 'Signal match',
+                unresolved: 'Unresolved',
+            };
+
+            const confidenceTone = {
+                high: 'success',
+                medium: 'warning',
+                low: 'danger',
+            };
+
+            const methodLabel = methodLabelMap[resolution.method] || resolution.method || 'Fallback';
+            const confidenceLabel = resolution.confidence
+                ? `${dashboardHistorySummaryText.resolutionConfidence}: ${resolution.confidence}`
+                : dashboardHistorySummaryText.resolutionConfidence;
+
+            return `
+                <section class="rounded-[1.5rem] border border-amber-200 bg-amber-50 px-4 py-4">
+                    <div class="flex flex-wrap items-center gap-2">
+                        ${this.renderBadge(dashboardHistorySummaryText.syncResolution, 'warning')}
+                        ${this.renderBadge(methodLabel, 'warning')}
+                        ${this.renderBadge(confidenceLabel, confidenceTone[resolution.confidence] || 'neutral')}
+                    </div>
+                    <p class="mt-3 text-sm leading-6 text-amber-900">${dashboardEscapeHtml(resolution.notes || dashboardHistorySummaryText.historyMatchedByServer)}</p>
+                    ${resolution.requestedClientId ? `<p class="mt-2 text-xs font-medium text-amber-800">Client display id: ${dashboardEscapeHtml(String(resolution.requestedClientId))}</p>` : ''}
+                </section>
+            `;
+        },
         renderInfoGrid(items) {
             if (!items?.length) return '';
             return `<section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">${items.map((item) => `
@@ -1394,6 +1534,37 @@
                     <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">${dashboardEscapeHtml(item.label || '-')}</p>
                     <p class="mt-2 break-words text-sm font-medium text-slate-800">${dashboardEscapeHtml(item.value || '-')}</p>
                 </div>`).join('')}</section>`;
+        },
+        normalizeInfoLabel(value) {
+            return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+        },
+        filterHeaderInfo(items) {
+            if (!Array.isArray(items) || !items.length) return [];
+
+            const hiddenLabels = new Set([
+                dashboardHistorySummaryText.facility,
+                dashboardHistorySummaryText.workgroup,
+                dashboardHistorySummaryText.workstation,
+                dashboardHistorySummaryText.displayLabel,
+                dashboardHistorySummaryText.performedAt,
+                dashboardHistorySummaryText.result,
+                'Report Name',
+                'Performed Date',
+            ].map((label) => this.normalizeInfoLabel(label)));
+            const seen = new Set();
+
+            return items.filter((item) => {
+                const labelKey = this.normalizeInfoLabel(item?.label);
+                const valueKey = String(item?.value || '').trim().toLowerCase();
+                const pairKey = `${labelKey}:${valueKey}`;
+
+                if (!labelKey || hiddenLabels.has(labelKey) || seen.has(pairKey)) {
+                    return false;
+                }
+
+                seen.add(pairKey);
+                return true;
+            });
         },
         renderSection(section) {
             const scores = Array.isArray(section.scores) ? section.scores : [];
@@ -1451,14 +1622,16 @@
                 { label: dashboardHistorySummaryText.performedAt, value: payload.performedAt || '-' },
                 { label: dashboardHistorySummaryText.result, value: payload.resultLabel || '-' },
             ];
+            const headerInfo = this.filterHeaderInfo(payload.header);
             this.body.innerHTML = `
                 <div class="space-y-5">
                     <section class="flex flex-wrap items-center gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4">
                         ${this.renderBadge(payload.resultLabel || 'Unknown', payload.resultTone || 'neutral')}
                         <span class="text-sm text-slate-500">${dashboardEscapeHtml(dashboardHistorySummaryText.detailedSummaryForTask)}</span>
                     </section>
+                    ${this.renderSyncResolution(payload.syncResolution)}
                     ${this.renderInfoGrid(displayInfo)}
-                    ${payload.header?.length ? this.renderInfoGrid(payload.header) : ''}
+                    ${headerInfo.length ? this.renderInfoGrid(headerInfo) : ''}
                     ${payload.sections?.length ? payload.sections.map((section) => this.renderSection(section)).join('') : `<div class="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">${dashboardEscapeHtml(dashboardHistorySummaryText.noStructuredSummary)}</div>`}
                 </div>`;
             if (window.lucide) window.lucide.createIcons();
@@ -1496,35 +1669,51 @@
     };
 
     function renderDashboardDueTaskActions(row) {
+        const detailPayload = JSON.stringify({
+            id: Number(row?.id || 0),
+            taskName: row?.taskName || '-',
+            scheduleName: row?.scheduleName || '-',
+            dueAt: row?.dueAt || '-',
+            dueColor: row?.dueColor || '',
+            displayId: Number(row?.displayId || 0),
+            displayName: row?.displayName || '-',
+            wsId: Number(row?.wsId || 0),
+            wsName: row?.wsName || '-',
+            wgId: Number(row?.wgId || 0),
+            wgName: row?.wgName || '-',
+            facId: Number(row?.facId || 0),
+            facName: row?.facName || '-',
+            reschedule: row?.reschedule || null,
+        }).replace(/'/g, '&#39;');
+
+        const viewButton = `
+            <button
+                type="button"
+                data-dashboard-task-detail='${detailPayload}'
+                class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-sky-600 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
+                title="Open task detail"
+            >
+                <i data-lucide="eye" class="h-4 w-4"></i>
+            </button>
+        `;
+
         if (!canManageDashboardTasks) {
-            return `<span class="text-xs text-slate-400">${dashboardNoActionsLabel}</span>`;
+            return `<div class="flex items-center justify-center gap-2">${viewButton}</div>`;
         }
 
         return `
-            <div class="relative flex justify-end">
+            <div class="flex items-center justify-center gap-2">
+                ${viewButton}
                 <button
                     type="button"
-                    data-dashboard-due-task-toggle="${row.id}"
-                    class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                    data-dashboard-due-task-delete="${row.id}"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-rose-600 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                    title="${dashboardDeleteTaskLabel}"
                 >
-                    <i data-lucide="more-vertical" class="h-4 w-4"></i>
+                    <i data-lucide="trash-2" class="h-4 w-4"></i>
                 </button>
-                <div data-dashboard-due-task-menu="${row.id}" class="absolute right-0 top-full z-20 mt-2 hidden w-44 overflow-hidden rounded-2xl border border-slate-200 bg-white py-1 shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
-                    <button type="button" data-dashboard-due-task-edit="${row.id}" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                        <i data-lucide="calendar-clock" class="h-4 w-4 text-sky-500"></i>
-                        ${dashboardScheduleTaskLabel}
-                    </button>
-                    <button type="button" data-dashboard-due-task-delete="${row.id}" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50">
-                        <i data-lucide="trash-2" class="h-4 w-4"></i>
-                        ${dashboardDeleteTaskLabel}
-                    </button>
-                </div>
             </div>
         `;
-    }
-
-    function closeDashboardDueTaskMenus() {
-        document.querySelectorAll('[data-dashboard-due-task-menu]').forEach((menu) => menu.classList.add('hidden'));
     }
 
     async function deleteDashboardDueTask(id) {
@@ -1543,6 +1732,7 @@
             if (window.currentDashboardStatModalKey === 'due_tasks') {
                 window.openDashboardStatModal('due_tasks');
             }
+            window.refreshDashboardGrids?.();
         } catch (error) {
             notify('failed', 'Failed to delete task.');
         }
@@ -1556,576 +1746,6 @@
         history: '<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
     };
     const hierarchyIcons = window.hierarchyIcons;
-
-    const dashboardStatModalConfigs = {
-        displays_ok: {
-            eyebrow: @json($dashboardJs['modals']['displays_ok']['eyebrow']),
-            title: @json($dashboardJs['modals']['displays_ok']['title']),
-            description: @json($dashboardJs['modals']['displays_ok']['description']),
-            fullUrl: @json($dashboardJs['modals']['displays_ok']['fullUrl']),
-            baseUrl: (page = 1, limit = 10) => `/api/displays?type=ok&page=${page}&limit=${limit}`,
-            columns: [
-                {
-                    name: @json(__('Display')),
-                    formatter: (cell) => gridjs.html(`
-                        <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'display', id: ${cell.displayId} }}))" class="min-w-[16rem] text-left text-[13px] font-bold text-slate-900 transition hover:text-sky-600">
-                            ${dashboardEscapeHtml(cell.displayName)}
-                        </button>
-                    `)
-                },
-                {
-                    name: dashboardGridText.workstation,
-                    formatter: (cell, row) => gridjs.html(dashboardHierarchyButton('workstation', row.cells[0].data.wsId, cell, hierarchyIcons.workstation))
-                },
-                {
-                    name: @json(__('Workgroup')),
-                    formatter: (cell, row) => gridjs.html(dashboardHierarchyButton('workgroup', row.cells[0].data.wgId, cell, hierarchyIcons.workgroup))
-                },
-                {
-                    name: @json(__('Facility')),
-                    formatter: (cell, row) => gridjs.html(dashboardHierarchyButton('facility', row.cells[0].data.facId, cell, hierarchyIcons.facility))
-                },
-                {
-                    name: @json(__('Status')),
-                    formatter: () => gridjs.html(`<span class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-700">${dashboardGridText.ok}</span>`)
-                }
-            ],
-            server: {
-                url: (page = 1, limit = 10) => `/api/displays?type=ok&page=${page}&limit=${limit}`,
-                then: (data) => {
-                    setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 50);
-                    return (data.data || []).map((item) => [
-                        {
-                            displayId: item.id,
-                            displayName: item.displayName,
-                            wsId: item.wsId,
-                            wgId: item.wgId,
-                            facId: item.facId
-                        },
-                        item.wsName,
-                        item.wgName,
-                        item.facName,
-                        item.status
-                    ]);
-                },
-                total: (data) => data.total || 0
-            }
-        },
-        displays_failed: {
-            eyebrow: @json($dashboardJs['modals']['displays_failed']['eyebrow']),
-            title: @json($dashboardJs['modals']['displays_failed']['title']),
-            description: @json($dashboardJs['modals']['displays_failed']['description']),
-            fullUrl: @json($dashboardJs['modals']['displays_failed']['fullUrl']),
-            baseUrl: (page = 1, limit = 10) => `/api/displays?type=failed&sort=updated_at&order=desc&page=${page}&limit=${limit}`,
-            columns: [
-                {
-                    name: @json(__('Display')),
-                    formatter: (cell) => gridjs.html(`
-                        <div class="flex min-h-[2.5rem] items-center">
-                            <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'display', id: ${cell.displayId} }}))" class="min-w-[16rem] text-left text-[13px] font-bold leading-5 text-slate-900 transition hover:text-sky-600">
-                                ${dashboardEscapeHtml(cell.displayName)}
-                            </button>
-                        </div>
-                    `)
-                },
-                {
-                    name: @json(__('Workstation')),
-                    formatter: (cell, row) => gridjs.html(`
-                        <div class="flex min-h-[2.5rem] items-center">
-                            ${dashboardHierarchyButton('workstation', row.cells[0].data.wsId, cell, hierarchyIcons.workstation)}
-                        </div>
-                    `)
-                },
-                {
-                    name: @json(__('Workgroup')),
-                    formatter: (cell, row) => gridjs.html(`
-                        <div class="flex min-h-[2.5rem] items-center">
-                            ${dashboardHierarchyButton('workgroup', row.cells[0].data.wgId, cell, hierarchyIcons.workgroup)}
-                        </div>
-                    `)
-                },
-                {
-                    name: @json(__('Facility')),
-                    formatter: (cell, row) => gridjs.html(`
-                        <div class="flex min-h-[2.5rem] items-center">
-                            ${dashboardHierarchyButton('facility', row.cells[0].data.facId, cell, hierarchyIcons.facility)}
-                        </div>
-                    `)
-                },
-                {
-                    name: dashboardGridText.errorDetails,
-                    formatter: (cell) => gridjs.html(`
-                        <div class="flex min-h-[2.5rem] items-center">
-                            <div class="max-w-[22rem] whitespace-normal text-sm font-medium leading-6 text-rose-600">${dashboardEscapeHtml(cell)}</div>
-                        </div>
-                    `)
-                },
-                {
-                    name: @json(__('Status')),
-                    formatter: () => gridjs.html(`
-                        <div class="flex min-h-[2.5rem] items-center">
-                            <span class="inline-flex rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-rose-700">${dashboardGridText.fail}</span>
-                        </div>
-                    `)
-                }
-            ],
-            server: {
-                url: (page = 1, limit = 10) => `/api/displays?type=failed&sort=updated_at&order=desc&page=${page}&limit=${limit}`,
-                then: (data) => {
-                    setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 50);
-                    return (data.data || []).map((item) => [
-                        {
-                            displayId: item.id,
-                            displayName: item.displayName,
-                            wsId: item.wsId,
-                            wgId: item.wgId,
-                            facId: item.facId
-                        },
-                        item.wsName,
-                        item.wgName,
-                        item.facName,
-                        item.attentionText || dashboardDisplayErrorText(item.errors),
-                        item.status
-                    ]);
-                },
-                total: (data) => data.total || 0
-            }
-        },
-        workstations: {
-            eyebrow: @json($dashboardJs['modals']['workstations']['eyebrow']),
-            title: @json($dashboardJs['modals']['workstations']['title']),
-            description: @json($dashboardJs['modals']['workstations']['description']),
-            fullUrl: @json($dashboardJs['modals']['workstations']['fullUrl']),
-            baseUrl: (page = 1, limit = 10) => `/api/workstations?page=${page}&limit=${limit}`,
-            customRenderer: true
-        },
-        due_tasks: {
-            eyebrow: @json($dashboardJs['modals']['due_tasks']['eyebrow']),
-            title: @json($dashboardJs['modals']['due_tasks']['title']),
-            description: @json($dashboardJs['modals']['due_tasks']['description']),
-            fullUrl: @json($dashboardJs['modals']['due_tasks']['fullUrl']),
-            baseUrl: (page = 1, limit = 10) => `/api/due-tasks?page=${page}&limit=${limit}`,
-            columns: [
-                {
-                    name: @json(__('Task Name')),
-                    formatter: (cell) => gridjs.html(`
-                        <div class="min-w-[14rem] max-w-[15rem] whitespace-normal text-[13px] font-bold leading-5 text-slate-900">
-                            ${dashboardEscapeHtml(cell)}
-                        </div>
-                    `)
-                },
-                {
-                    name: @json(__('Display')),
-                    formatter: (cell) => gridjs.html(`
-                        <div class="min-w-[22rem]">
-                            <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'display', id: ${cell.displayId} }}))" class="text-left text-[13px] font-bold text-slate-900 transition hover:text-sky-600">
-                                ${dashboardEscapeHtml(cell.displayName)}
-                            </button>
-                            <div class="mt-1 flex items-center gap-2 whitespace-nowrap text-[11px] leading-5 text-slate-500">
-                                ${dashboardHierarchyButton('workstation', cell.wsId, cell.wsName, hierarchyIcons.workstation)}
-                                <span class="h-1 w-1 rounded-full bg-slate-300"></span>
-                                ${dashboardHierarchyButton('workgroup', cell.wgId, cell.wgName, hierarchyIcons.workgroup)}
-                                <span class="h-1 w-1 rounded-full bg-slate-300"></span>
-                                ${dashboardHierarchyButton('facility', cell.facId, cell.facName, hierarchyIcons.facility)}
-                            </div>
-                        </div>
-                    `)
-                },
-                {
-                    name: @json(__('Schedule Type')),
-                    formatter: (cell) => gridjs.html(`
-                        <div class="flex justify-start text-left">
-                            <span class="inline-flex items-center justify-center rounded-full bg-amber-50 px-2.5 py-1 text-center text-[11px] font-bold text-amber-700">${dashboardEscapeHtml(cell)}</span>
-                        </div>
-                    `)
-                },
-                {
-                    name: @json(__('Due Date')),
-                    formatter: (cell) => gridjs.html(`<span class="whitespace-nowrap text-sm font-semibold text-slate-700">${dashboardEscapeHtml(cell.formatted)}</span>`)
-                },
-                {
-                    name: @json(__('Status')),
-                    formatter: (cell) => {
-                        const tone = cell.statusColor === 'danger'
-                            ? 'border-rose-200 bg-rose-50 text-rose-700'
-                            : (cell.statusColor === 'warning'
-                                ? 'border-amber-200 bg-amber-50 text-amber-700'
-                                : 'border-emerald-200 bg-emerald-50 text-emerald-700');
-                        return gridjs.html(`
-                            <div class="flex justify-center text-center">
-                                <span class="inline-flex items-center justify-center rounded-full border px-2.5 py-1 text-center text-[11px] font-bold uppercase tracking-[0.14em] ${tone}">${dashboardEscapeHtml(cell.label)}</span>
-                            </div>
-                        `);
-                    }
-                },
-                    {
-                        name: @json(__('Actions')),
-                        sort: false,
-                        formatter: (cell, row) => gridjs.html(`
-                            <div class="flex items-center justify-end gap-2">
-                                ${renderDashboardDueTaskActions(row.cells[1].data)}
-                            </div>
-                        `)
-                    }
-                ],
-                server: {
-                url: (page = 1, limit = 10) => `/api/due-tasks?page=${page}&limit=${limit}`,
-                then: (data) => {
-                    setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 50);
-                    return (data.data || []).map((item) => [
-                        item.taskName,
-                        {
-                            id: item.id,
-                            displayId: item.displayId,
-                            displayName: item.displayName,
-                            wsId: item.wsId,
-                            wsName: item.wsName,
-                            wgId: item.wgId,
-                            wgName: item.wgName,
-                            facId: item.facId,
-                            facName: item.facName
-                        },
-                        item.scheduleName,
-                        {
-                            formatted: item.dueAt
-                        },
-                        {
-                            label: item.status,
-                            statusColor: item.statusColor
-                        },
-                        null
-                    ]);
-                },
-                total: (data) => data.total || 0
-            }
-        }
-    };
-
-    window.closeDashboardStatModal = function () {
-        const modal = document.getElementById('dashboard-stat-modal');
-        const panel = document.getElementById('dashboard-stat-modal-panel');
-        if (!modal || !panel) {
-            return;
-        }
-
-        modal.classList.remove('opacity-100');
-        modal.classList.add('opacity-0', 'pointer-events-none');
-        panel.classList.remove('translate-y-0', 'scale-100');
-        panel.classList.add('translate-y-3', 'scale-[0.985]');
-
-        setTimeout(() => {
-            modal.classList.add('hidden');
-        }, 200);
-    };
-
-    window.openDashboardStatModal = function (key) {
-        const config = dashboardStatModalConfigs[key];
-        const modal = document.getElementById('dashboard-stat-modal');
-        const panel = document.getElementById('dashboard-stat-modal-panel');
-        const gridHolder = document.getElementById('dashboard-stat-modal-grid');
-
-        const needsGrid = !config?.customRenderer;
-        if (!config || !modal || !panel || !gridHolder || (needsGrid && (typeof gridjs === 'undefined' || typeof Perfectlum === 'undefined'))) {
-            return;
-        }
-
-        window.currentDashboardStatModalKey = key;
-
-        document.getElementById('dashboard-stat-modal-eyebrow').textContent = config.eyebrow;
-        document.getElementById('dashboard-stat-modal-title').textContent = config.title;
-        document.getElementById('dashboard-stat-modal-description').textContent = config.description;
-        document.getElementById('dashboard-stat-modal-link').href = config.fullUrl;
-
-        if (config.customRenderer) {
-            gridHolder.innerHTML = '<div class="w-full"></div>';
-            renderDashboardWorkstationModalPage(1, 10);
-        } else {
-            const mountId = `dashboard-stat-modal-grid-${Date.now()}`;
-            gridHolder.innerHTML = `<div id="${mountId}" class="w-full"></div>`;
-            const gridTarget = document.getElementById(mountId);
-
-            Perfectlum.createGrid(gridTarget, {
-                columns: config.columns,
-                server: {
-                    url: config.server.url(1, 10),
-                    then: config.server.then,
-                    total: config.server.total
-                },
-                sort: false,
-                search: false,
-                pagination: {
-                    enabled: true,
-                    limit: 10,
-                    server: {
-                        url: (prev, page, limit) => {
-                            const base = prev.split('?')[0];
-                            const params = new URLSearchParams(prev.split('?')[1] || '');
-                            params.set('page', page + 1);
-                            params.set('limit', limit);
-                            return `${base}?${params.toString()}`;
-                        }
-                    }
-                },
-                className: dashboardGridClasses,
-                style: dashboardGridStyles
-            });
-        }
-
-        modal.classList.remove('hidden', 'pointer-events-none', 'opacity-0');
-        modal.classList.add('opacity-100');
-
-        requestAnimationFrame(() => {
-            panel.classList.remove('translate-y-3', 'scale-[0.985]');
-            panel.classList.add('translate-y-0', 'scale-100');
-            if (window.lucide) {
-                window.lucide.createIcons();
-            }
-        });
-    };
-
-    window.renderDashboardGrids = function () {
-        if (window.dashboardGridsRendered) {
-            return;
-        }
-
-        if (typeof gridjs === 'undefined' || typeof Perfectlum === 'undefined') {
-            setTimeout(window.renderDashboardGrids, 100);
-            return;
-        }
-
-        if (document.getElementById('failed-displays-grid')) {
-            Perfectlum.createGrid(document.getElementById('failed-displays-grid'), {
-                columns: [
-                    {
-                    name: dashboardGridText.display,
-                        formatter: (cell) => gridjs.html(`
-                            <div class="min-w-[14rem]">
-                                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'display', id: ${cell.displayId} }}))" class="line-clamp-1 text-left text-[13px] font-bold leading-5 text-slate-900 transition hover:text-sky-600">
-                                    ${dashboardEscapeHtml(cell.displayName)}
-                                </button>
-                                <div class="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]">
-                                    ${dashboardHierarchyButton('workstation', cell.wsId, cell.wsName, hierarchyIcons.workstation)}
-                                    <span class="h-1 w-1 rounded-full bg-slate-300"></span>
-                                    ${dashboardHierarchyButton('workgroup', cell.wgId, cell.wgName, hierarchyIcons.workgroup)}
-                                    <span class="h-1 w-1 rounded-full bg-slate-300"></span>
-                                    ${dashboardHierarchyButton('facility', cell.facId, cell.facName, hierarchyIcons.facility)}
-                                </div>
-                            </div>
-                        `)
-                    },
-                    {
-                    name: @json(__('Workstation')),
-                        formatter: (cell) => gridjs.html(`<span class="text-sm font-semibold text-slate-700">${dashboardEscapeHtml(cell)}</span>`)
-                    },
-                    {
-                    name: dashboardGridText.lastUpdate,
-                        formatter: (cell) => gridjs.html(`<span class="whitespace-nowrap text-xs font-semibold text-slate-500">${dashboardEscapeHtml(cell)}</span>`)
-                    },
-                    {
-                    name: dashboardGridText.errorDetails,
-                        formatter: (cell) => gridjs.html(`<div class="max-w-[16rem] whitespace-normal text-[12px] font-semibold leading-5 text-rose-600">${dashboardEscapeHtml(cell)}</div>`)
-                    },
-                    {
-                    name: dashboardGridText.actions,
-                        sort: false,
-                        formatter: (cell, row) => gridjs.html(`
-                            <div class="flex items-center justify-end gap-2">
-                                ${dashboardActionButton({
-                                    onClick: `window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'display', id: ${row.cells[0].data.displayId} } }))`,
-                                    tone: 'blue',
-                                    icon: hierarchyIcons.display
-                                })}
-                                ${dashboardActionButton({
-                                    href: dashboardHistoryUrl(row.cells[0].data.displayId),
-                                    tone: 'amber',
-                                    icon: hierarchyIcons.history
-                                })}
-                            </div>
-                        `)
-                    }
-                ],
-                server: {
-                    url: '/api/displays?type=failed&sort=updated_at&order=desc&limit=10&page=1',
-                    then: (data) => (data.data || []).map((item) => [
-                        {
-                            displayId: item.id,
-                            displayName: item.displayName,
-                            wsId: item.wsId,
-                            wsName: item.wsName,
-                            wgId: item.wgId,
-                            wgName: item.wgName,
-                            facId: item.facId,
-                            facName: item.facName,
-                        },
-                        item.wsName,
-                        item.updatedAt,
-                        item.attentionText || dashboardDisplayErrorText(item.errors),
-                        null,
-                    ])
-                },
-                sort: false,
-                pagination: false,
-                search: false,
-                className: dashboardGridClasses,
-                style: dashboardGridStyles
-            });
-        }
-
-        if (document.getElementById('latest-performed-grid')) {
-            Perfectlum.createGrid(document.getElementById('latest-performed-grid'), {
-                columns: [
-                    {
-                    name: dashboardGridText.task,
-                        formatter: (cell) => gridjs.html(`
-                            <div class="min-w-[10rem]">
-                                <button type="button" data-dashboard-history-open="${cell.historyId}" data-dashboard-history-name="${dashboardEscapeHtml(cell.name)}" class="line-clamp-2 block text-left text-[13px] font-bold leading-5 text-slate-900 transition hover:text-sky-600 hover:underline">
-                                    ${dashboardEscapeHtml(cell.name)}
-                                </button>
-                                <p class="mt-0.5 truncate text-[11px] font-medium text-slate-500">${dashboardEscapeHtml(cell.displayName)}</p>
-                            </div>
-                        `)
-                    },
-                    {
-                    name: dashboardGridText.result,
-                        formatter: (cell) => {
-                            const tone = cell === 'ok'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : 'bg-rose-50 text-rose-700 border-rose-200';
-                            const label = cell === 'ok' ? dashboardGridText.pass : dashboardGridText.fail;
-                            return gridjs.html(`<span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] ${tone}">${label}</span>`);
-                        }
-                    },
-                    {
-                    name: dashboardGridText.performed,
-                        formatter: (cell) => gridjs.html(`<span class="whitespace-nowrap text-xs font-semibold text-slate-500">${dashboardEscapeHtml(cell)}</span>`)
-                    }
-                ],
-                server: {
-                    url: '/api/latest-performed?limit=8',
-                    then: (data) => data.map((item) => [
-                        {
-                            historyId: item.historyId,
-                            name: item.name,
-                            displayName: item.displayName,
-                        },
-                        item.result,
-                        item.timeFormatted,
-                    ])
-                },
-                sort: false,
-                pagination: false,
-                search: false,
-                className: dashboardGridClasses,
-                style: dashboardGridStyles
-            });
-        }
-
-        const dueGridTarget = document.getElementById('due-tasks-grid');
-        const watchlistTarget = document.getElementById('connection-watchlist-widget');
-
-        if (watchlistTarget) {
-            dashboardDeferRender(() => renderDashboardConnectionWatchlist(5), 180);
-        }
-
-        if (dueGridTarget) {
-            dashboardDeferRender(() => {
-                Perfectlum.createGrid(dueGridTarget, {
-                columns: [
-                    {
-                    name: dashboardGridText.taskName,
-                        formatter: (cell) => gridjs.html(`
-                            <div class="min-w-[12rem] max-w-[14rem] whitespace-normal text-[13px] font-bold leading-5 text-slate-900">
-                                ${dashboardEscapeHtml(cell)}
-                            </div>
-                        `)
-                    },
-                    {
-                    name: dashboardGridText.display,
-                        formatter: (cell) => gridjs.html(`
-                            <div class="min-w-[18rem] max-w-[22rem]">
-                                <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'display', id: ${cell.displayId} }}))" class="line-clamp-1 text-left text-[13px] font-bold leading-5 text-slate-900 transition hover:text-sky-600">
-                                    ${dashboardEscapeHtml(cell.displayName)}
-                                </button>
-                                <div class="mt-1 flex items-center gap-1.5 whitespace-nowrap text-[11px] leading-4 text-slate-500">
-                                    ${dashboardHierarchyButton('workstation', cell.wsId, cell.wsName, hierarchyIcons.workstation)}
-                                    <span class="h-1 w-1 rounded-full bg-slate-300"></span>
-                                    ${dashboardHierarchyButton('workgroup', cell.wgId, cell.wgName, hierarchyIcons.workgroup)}
-                                    <span class="h-1 w-1 rounded-full bg-slate-300"></span>
-                                    ${dashboardHierarchyButton('facility', cell.facId, cell.facName, hierarchyIcons.facility)}
-                                </div>
-                            </div>
-                        `)
-                    },
-                    {
-                    name: dashboardGridText.scheduleType,
-                        formatter: (cell) => gridjs.html(`<span class="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">${dashboardEscapeHtml(cell)}</span>`)
-                    },
-                    {
-                    name: dashboardGridText.dueDate,
-                        formatter: (cell) => gridjs.html(`<span class="whitespace-nowrap text-xs font-semibold text-slate-700">${dashboardEscapeHtml(cell.formatted)}</span>`)
-                    },
-                    {
-                    name: dashboardGridText.status,
-                        formatter: (cell) => {
-                            const tones = {
-                                overdue: 'bg-rose-50 text-rose-700 border-rose-200',
-                                today: 'bg-amber-50 text-amber-700 border-amber-200',
-                                upcoming: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                            };
-                            const label = cell === 'overdue'
-                                ? dashboardGridText.overdue
-                                : (cell === 'today' ? dashboardGridText.today : dashboardGridText.upcoming);
-                            return gridjs.html(`<span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] ${tones[cell]}">${label}</span>`);
-                        }
-                    },
-                    {
-                    name: dashboardGridText.actions,
-                        sort: false,
-                        formatter: (cell, row) => gridjs.html(`
-                            <div class="flex items-center justify-end gap-2">
-                                ${dashboardActionButton({
-                                    onClick: `window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'display', id: ${row.cells[1].data.displayId} } }))`,
-                                    tone: 'blue',
-                                    icon: hierarchyIcons.display
-                                })}
-                            </div>
-                        `)
-                    }
-                ],
-                server: {
-                    url: '/api/due-tasks?limit=8&without_total=1',
-                    then: (data) => (data.data || []).map((item) => [
-                        item.taskName,
-                        {
-                            id: item.id,
-                            displayId: item.displayId,
-                            displayName: item.displayName,
-                            wsId: item.wsId,
-                            wsName: item.wsName,
-                            wgId: item.wgId,
-                            wgName: item.wgName,
-                            facId: item.facId,
-                            facName: item.facName
-                        },
-                        item.scheduleName,
-                        {
-                            formatted: item.dueAt
-                        },
-                        item.dueColor === 'danger' ? 'overdue' : (item.dueColor === 'warning' ? 'today' : 'upcoming'),
-                        null
-                    ])
-                },
-                sort: false,
-                pagination: false,
-                search: false,
-                className: dashboardGridClasses,
-                style: dashboardGridStyles
-            });
-            }, 240);
-        }
-
-        window.dashboardGridsRendered = true;
-    };
 
     const dashboardNativeModalConfig = {
         displays_ok: {
@@ -2180,10 +1800,29 @@
     }
 
     function dashboardFetchJsonNative(url) {
-        return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } })
+        const controller = typeof AbortController === 'function' ? new AbortController() : null;
+        if (controller) {
+            dashboardPageRuntime.abortControllers.add(controller);
+        }
+
+        return fetch(url, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+            ...(controller ? { signal: controller.signal } : {}),
+        })
             .then((r) => {
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 return r.json();
+            })
+            .then((payload) => {
+                if (!dashboardPageRuntime.active) {
+                    throw new Error('Dashboard runtime is inactive');
+                }
+                return payload;
+            })
+            .finally(() => {
+                if (controller) {
+                    dashboardPageRuntime.abortControllers.delete(controller);
+                }
             });
     }
 
@@ -2211,7 +1850,42 @@
             return;
         }
 
-        holder.innerHTML = dashboardNativeEmpty(@json(__('Loading records...')));
+        if (state.key === 'displays_failed' && page === 1 && window.dashboardFailedDisplaysCache?.data?.length) {
+            const cachedItems = window.dashboardFailedDisplaysCache.data || [];
+            const cachedTotal = Number(window.dashboardFailedDisplaysCache.total || cachedItems.length || 0);
+            state.page = page;
+            state.limit = limit;
+            state.total = cachedTotal;
+            const cacheColumns = [@json(__('Display')), dashboardGridText.errorDetails, @json(__('Status')), @json(__('Actions'))];
+            const cacheRows = cachedItems.map((item) => `<tr>
+                <td class="w-[36%]">
+                    <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'display', id: ${Number(item.id || 0)} }}))" class="text-left text-[13px] font-bold leading-5 text-slate-900 transition hover:text-sky-600">${dashboardEscapeHtml(item.displayName || '-')}</button>
+                    <div class="mt-1 text-xs text-slate-500">
+                        <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'workstation', id: ${Number(item.wsId || 0)} }}))" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">${dashboardEscapeHtml(item.wsName || '-')}</button>
+                        <span class="mx-1.5">&middot;</span>
+                        <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'workgroup', id: ${Number(item.wgId || 0)} }}))" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">${dashboardEscapeHtml(item.wgName || '-')}</button>
+                        <span class="mx-1.5">&middot;</span>
+                        <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'facility', id: ${Number(item.facId || 0)} }}))" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">${dashboardEscapeHtml(item.facName || '-')}</button>
+                    </div>
+                </td>
+                <td class="w-[42%]"><div class="max-w-[22rem] whitespace-normal text-[12px] font-semibold leading-6 text-rose-600">${dashboardEscapeHtml(item.attentionText || dashboardDisplayErrorText(item.errors))}</div></td>
+                <td class="text-center"><span class="inline-flex rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-rose-700">${dashboardGridText.fail}</span></td>
+                <td class="text-center"><div class="flex items-center justify-center">${dashboardRenderInvestigateAction(item)}</div></td>
+            </tr>`);
+            const cachedTotalPages = Math.max(1, Math.ceil(cachedTotal / limit));
+            holder.innerHTML = dashboardNativeTable(cacheColumns, cacheRows.length ? cacheRows : [`<tr><td colspan="${cacheColumns.length}" class="px-6 py-8">${dashboardNativeEmpty(@json(__('No records found')))}</td></tr>`], 'max-h-[58vh]') + `
+                <div class="mt-4 flex items-center justify-between gap-3">
+                    <p class="text-xs font-semibold text-slate-500">${((page - 1) * limit) + 1}-${Math.min(page * limit, cachedTotal)} / ${cachedTotal}</p>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="window.changeDashboardNativeModalPage(-1)" ${page <= 1 ? 'disabled' : ''} class="inline-flex h-9 items-center rounded-full border border-slate-200 px-3 text-xs font-bold uppercase tracking-[0.12em] text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">Prev</button>
+                        <span class="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">${page} / ${cachedTotalPages}</span>
+                        <button type="button" onclick="window.changeDashboardNativeModalPage(1)" ${page >= cachedTotalPages ? 'disabled' : ''} class="inline-flex h-9 items-center rounded-full border border-slate-200 px-3 text-xs font-bold uppercase tracking-[0.12em] text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">Next</button>
+                    </div>
+                </div>
+            `;
+        } else {
+            holder.innerHTML = dashboardNativeEmpty(@json(__('Loading records...')));
+        }
         dashboardFetchJsonNative(config.endpoint(page, limit)).then((payload) => {
             const items = payload.data || [];
             const total = Number(payload.total || items.length || 0);
@@ -2231,14 +1905,21 @@
                     <td class="text-center"><span class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-emerald-700">${dashboardGridText.ok}</span></td>
                 </tr>`);
             } else if (state.key === 'displays_failed') {
-                columns = [@json(__('Display')), @json(__('Workstation')), @json(__('Workgroup')), @json(__('Facility')), dashboardGridText.errorDetails, @json(__('Status'))];
+                columns = [@json(__('Display')), dashboardGridText.errorDetails, @json(__('Status')), @json(__('Actions'))];
                 rows = items.map((item) => `<tr>
-                    <td><button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'display', id: ${Number(item.id || 0)} }}))" class="text-left text-[13px] font-bold leading-5 text-slate-900 transition hover:text-sky-600">${dashboardEscapeHtml(item.displayName || '-')}</button></td>
-                    <td>${dashboardHierarchyButton('workstation', Number(item.wsId || 0), item.wsName || '-', hierarchyIcons.workstation)}</td>
-                    <td>${dashboardHierarchyButton('workgroup', Number(item.wgId || 0), item.wgName || '-', hierarchyIcons.workgroup)}</td>
-                    <td>${dashboardHierarchyButton('facility', Number(item.facId || 0), item.facName || '-', hierarchyIcons.facility)}</td>
-                    <td><div class="max-w-[18rem] whitespace-normal text-[12px] font-semibold leading-5 text-rose-600">${dashboardEscapeHtml(item.attentionText || dashboardDisplayErrorText(item.errors))}</div></td>
+                    <td class="w-[36%]">
+                        <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'display', id: ${Number(item.id || 0)} }}))" class="text-left text-[13px] font-bold leading-5 text-slate-900 transition hover:text-sky-600">${dashboardEscapeHtml(item.displayName || '-')}</button>
+                        <div class="mt-1 text-xs text-slate-500">
+                        <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'workstation', id: ${Number(item.wsId || 0)} }}))" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">${dashboardEscapeHtml(item.wsName || '-')}</button>
+                        <span class="mx-1.5">&middot;</span>
+                        <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'workgroup', id: ${Number(item.wgId || 0)} }}))" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">${dashboardEscapeHtml(item.wgName || '-')}</button>
+                        <span class="mx-1.5">&middot;</span>
+                        <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'facility', id: ${Number(item.facId || 0)} }}))" class="font-semibold text-sky-600 hover:text-sky-700 hover:underline">${dashboardEscapeHtml(item.facName || '-')}</button>
+                    </div>
+                    </td>
+                    <td class="w-[42%]"><div class="max-w-[22rem] whitespace-normal text-[12px] font-semibold leading-6 text-rose-600">${dashboardEscapeHtml(item.attentionText || dashboardDisplayErrorText(item.errors))}</div></td>
                     <td class="text-center"><span class="inline-flex rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-rose-700">${dashboardGridText.fail}</span></td>
+                    <td class="text-center"><div class="flex items-center justify-center">${dashboardRenderInvestigateAction(item)}</div></td>
                 </tr>`);
             } else if (state.key === 'due_tasks') {
                 columns = [@json(__('Task Name')), @json(__('Display')), @json(__('Schedule Type')), @json(__('Due Date')), @json(__('Status')), @json(__('Actions'))];
@@ -2288,8 +1969,11 @@
 
     const dashboardInvestigate = {
         activeDisplayId: null,
+        activeMode: 'overview',
+        overviewPayload: null,
         init() {
             this.root = document.getElementById('dashboard-investigate-drawer');
+            this.root = dashboardEnsureSingletonRoot('dashboard-investigate-drawer', this.root);
             if (!this.root || this.initialized) return;
             if (this.root.parentElement !== document.body) {
                 document.body.appendChild(this.root);
@@ -2308,6 +1992,8 @@
         },
         openSkeleton(displayId, displayName) {
             this.activeDisplayId = Number(displayId || 0);
+            this.activeMode = 'overview';
+            this.overviewPayload = null;
             this.title.textContent = displayName || 'Display Investigation';
             this.subtitle.textContent = 'Loading latest sync, hierarchy, and recent results...';
             this.body.innerHTML = '<div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">Loading investigation data...</div>';
@@ -2334,32 +2020,17 @@
             return `<span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] ${cls}">${dashboardEscapeHtml(label || '-')}</span>`;
         },
         render(payload) {
-            const hierarchy = payload?.hierarchy || {};
+            this.activeMode = 'overview';
+            this.overviewPayload = payload || {};
             const history = payload?.history || {};
             const recent = Array.isArray(history.recent) ? history.recent.slice(0, 5) : [];
             const links = payload?.links || {};
-            const latestError = payload?.latestError || payload?.statusSummary || '-';
             const lastSync = payload?.lastSync || '-';
             const wsConnected = payload?.connectedLabel || '-';
 
             this.subtitle.textContent = `Last sync ${lastSync} • ${wsConnected}`;
             this.body.innerHTML = `
                 <div class="space-y-4">
-                    <section class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Latest Error Signal</p>
-                        <p class="mt-2 text-sm font-semibold leading-6 text-rose-600">${dashboardEscapeHtml(latestError)}</p>
-                        <p class="mt-2 text-xs font-semibold text-slate-500">Last Activity: ${dashboardEscapeHtml(lastSync)}</p>
-                    </section>
-
-                    <section class="rounded-2xl border border-slate-200 bg-white p-4">
-                        <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Scope</p>
-                        <div class="mt-3 space-y-2 text-sm text-slate-700">
-                            <div class="flex items-center gap-2"><span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-500 text-[9px] font-black text-white">F</span><span class="truncate">${dashboardEscapeHtml(hierarchy?.facility?.name || '-')}</span></div>
-                            <div class="flex items-center gap-2"><span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-500 text-[8px] font-black text-white">WG</span><span class="truncate">${dashboardEscapeHtml(hierarchy?.workgroup?.name || '-')}</span></div>
-                            <div class="flex items-center gap-2"><span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-500 text-[8px] font-black text-white">WS</span><span class="truncate">${dashboardEscapeHtml(hierarchy?.workstation?.name || '-')}</span></div>
-                        </div>
-                    </section>
-
                     <section class="rounded-2xl border border-slate-200 bg-white p-4">
                         <div class="flex items-center justify-between gap-3">
                             <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Recent Test Results</p>
@@ -2367,24 +2038,123 @@
                         </div>
                         <div class="mt-3 space-y-2">
                             ${recent.length ? recent.map((item) => `
-                                <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                <button
+                                    type="button"
+                                    data-dashboard-investigate-history-open="${Number(item.id || 0)}"
+                                    data-dashboard-investigate-history-name="${dashboardEscapeHtml(item.name || '-')}"
+                                    class="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:border-sky-200 hover:bg-sky-50/50"
+                                >
                                     <div class="min-w-0">
                                         <p class="truncate text-sm font-semibold text-slate-800">${dashboardEscapeHtml(item.name || '-')}</p>
                                         <p class="mt-0.5 text-xs font-medium text-slate-500">${dashboardEscapeHtml(item.performedAt || '-')}</p>
                                     </div>
                                     ${this.resultBadge(item.resultTone, item.resultLabel)}
-                                </div>
+                                </button>
                             `).join('') : '<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs text-slate-500">No recent results</div>'}
                         </div>
                     </section>
 
                     <div class="flex flex-wrap items-center gap-2 pt-1">
-                        <a href="${dashboardEscapeHtml(links.settings || '#')}" class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-slate-700 hover:bg-slate-50">Open Display Detail</a>
-                        <a href="${dashboardEscapeHtml(links.calibration || '#')}" class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-slate-700 hover:bg-slate-50">Open Calibration</a>
+                        <button
+                            type="button"
+                            onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'display', id: ${Number(this.activeDisplayId || 0)} }}))"
+                            class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-slate-700 hover:bg-slate-50"
+                        >
+                            Open Display Detail
+                        </button>
                     </div>
                 </div>
             `;
             if (window.lucide) window.lucide.createIcons();
+        },
+        renderHistoryInline(payload) {
+            this.activeMode = 'history';
+            this.title.textContent = payload?.name || dashboardHistorySummaryText.summaryTitle;
+            this.subtitle.textContent = `${payload?.performedAt || '-'} • ${payload?.display?.display || '-'}`;
+
+            this.body.innerHTML = `
+                <div class="space-y-5">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button
+                            type="button"
+                            data-dashboard-investigate-back
+                            class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-bold uppercase tracking-[0.12em] text-slate-700 hover:bg-slate-50"
+                        >
+                            <i data-lucide="arrow-left" class="h-3.5 w-3.5"></i>
+                            Back to investigation
+                        </button>
+                    </div>
+
+                    <section class="flex flex-wrap items-center gap-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4">
+                        ${dashboardHistorySummaryModal.renderBadge(payload?.resultLabel || 'Unknown', payload?.resultTone || 'neutral')}
+                        <span class="text-sm text-slate-500">${dashboardEscapeHtml(dashboardHistorySummaryText.detailedSummaryForTask)}</span>
+                    </section>
+                    ${dashboardHistorySummaryModal.renderSyncResolution(payload?.syncResolution)}
+                    ${payload?.sections?.length
+                        ? payload.sections.map((section) => dashboardHistorySummaryModal.renderSection(section)).join('')
+                        : `<div class="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">${dashboardEscapeHtml(dashboardHistorySummaryText.noStructuredSummary)}</div>`}
+
+                    <div class="sticky bottom-0 z-10 -mx-1 pt-3">
+                        <div class="mx-auto flex w-fit flex-wrap items-center justify-center gap-3 rounded-[1.5rem] border border-white/70 bg-white/72 px-4 py-3 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.65)] backdrop-blur-xl supports-[backdrop-filter]:bg-white/64">
+                            ${payload?.reschedule?.taskTypeKey && payload?.reschedule?.displayId ? `
+                                <button
+                                    type="button"
+                                    data-dashboard-history-reschedule='${JSON.stringify(dashboardBuildReschedulePayload(payload.reschedule)).replace(/'/g, '&#39;')}'
+                                    data-dashboard-history-reschedule-title="${dashboardEscapeHtml(payload?.name || 'Task')}"
+                                    class="inline-flex min-w-[11rem] items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-emerald-700 transition hover:bg-emerald-100"
+                                >
+                                    <i data-lucide="calendar-plus" class="h-4 w-4"></i>
+                                    Reschedule
+                                </button>
+                            ` : ''}
+                            <a
+                                href="${dashboardEscapeHtml(payload?.printUrl || '#')}"
+                                target="_blank"
+                                rel="noopener"
+                                class="inline-flex min-w-[11rem] items-center justify-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-sky-700 transition hover:bg-sky-100"
+                            >
+                                <i data-lucide="printer" class="h-4 w-4"></i>
+                                ${dashboardEscapeHtml(dashboardHistorySummaryText.printPreview)}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+            if (window.lucide) window.lucide.createIcons();
+        },
+        async loadHistoryInline(id, name) {
+            const historyId = Number(id || 0);
+            if (!historyId) return;
+            this.activeMode = 'history';
+            this.title.textContent = name || dashboardHistorySummaryText.summaryTitle;
+            this.subtitle.textContent = dashboardHistorySummaryText.loadingReportSummary;
+            this.body.innerHTML = `<div class="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">${dashboardEscapeHtml(dashboardHistorySummaryText.loadingReportSummary)}</div>`;
+
+            try {
+                const payload = await Perfectlum.request(`/api/history-modal/${historyId}`);
+                if (this.activeMode !== 'history') return;
+                this.renderHistoryInline(payload);
+            } catch (error) {
+                this.body.innerHTML = `
+                    <div class="space-y-4">
+                        <button
+                            type="button"
+                            data-dashboard-investigate-back
+                            class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-bold uppercase tracking-[0.12em] text-slate-700 hover:bg-slate-50"
+                        >
+                            <i data-lucide="arrow-left" class="h-3.5 w-3.5"></i>
+                            Back to investigation
+                        </button>
+                        <div class="rounded-[1.5rem] border border-rose-200 bg-rose-50 px-4 py-8 text-center text-sm text-rose-600">${dashboardEscapeHtml(dashboardHistorySummaryText.failedToLoadHistorySummary)}</div>
+                    </div>
+                `;
+                if (window.lucide) window.lucide.createIcons();
+            }
+        },
+        backToOverview() {
+            if (this.overviewPayload) {
+                this.render(this.overviewPayload);
+            }
         },
         async load(displayId, displayName) {
             this.openSkeleton(displayId, displayName);
@@ -2401,6 +2171,7 @@
     const dashboardTaskDetailModal = {
         init() {
             this.root = document.getElementById('dashboard-task-detail-modal');
+            this.root = dashboardEnsureSingletonRoot('dashboard-task-detail-modal', this.root);
             if (!this.root || this.initialized) return;
             if (this.root.parentElement !== document.body) {
                 document.body.appendChild(this.root);
@@ -2434,6 +2205,26 @@
                 window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type, id: value.id } }));
             };
         },
+        bindReschedule(item) {
+            const wrap = document.getElementById('dashboard-task-reschedule-wrap');
+            const button = document.getElementById('dashboard-task-reschedule-button');
+            if (!wrap || !button) return;
+
+            const payload = item?.reschedule ? dashboardBuildReschedulePayload(item.reschedule) : null;
+            if (!payload || typeof window.openTaskEditorWithPayload !== 'function') {
+                wrap.classList.add('hidden');
+                button.onclick = null;
+                return;
+            }
+
+            wrap.classList.remove('hidden');
+            button.onclick = () => {
+                window.openTaskEditorWithPayload(payload, {
+                    title: 'Reschedule Task',
+                    subtitle: `Create a new schedule for ${item.taskName || 'this task'} on the same display.`,
+                });
+            };
+        },
         open(item) {
             if (!this.root || !this.panel) return;
             document.getElementById('dashboard-task-title').textContent = item.taskName || 'Task detail';
@@ -2457,6 +2248,7 @@
             this.bindScopeButton('dashboard-task-facility-link', 'facility', { id: item.facId });
             this.bindScopeButton('dashboard-task-workgroup-link', 'workgroup', { id: item.wgId });
             this.bindScopeButton('dashboard-task-workstation-link', 'workstation', { id: item.wsId });
+            this.bindReschedule(item);
 
             this.root.classList.remove('hidden');
             document.body.classList.add('overflow-hidden', 'dashboard-task-modal-open');
@@ -2495,6 +2287,7 @@
 
         modal.classList.remove('hidden', 'pointer-events-none', 'opacity-0');
         modal.classList.add('opacity-100');
+        document.body.classList.add('overflow-hidden');
         requestAnimationFrame(() => {
             panel.classList.remove('translate-y-3', 'scale-[0.985]');
             panel.classList.add('translate-y-0', 'scale-100');
@@ -2513,6 +2306,7 @@
             dashboardDeferRender(() => {
                 dashboardFetchJsonNative('/api/displays?type=failed&sort=updated_at&order=desc&limit=5&page=1').then((payload) => {
                     const items = payload.data || [];
+                    window.dashboardFailedDisplaysCache = payload;
                     const columns = [
                         dashboardGridText.display,
                         @json(__('Scope')),
@@ -2523,7 +2317,7 @@
                             <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-hierarchy', { detail: { type: 'display', id: ${Number(item.id || 0)} }}))" class="block text-left text-[13px] font-bold leading-5 text-slate-900 transition hover:text-sky-600">${dashboardEscapeHtml(item.displayName || '-')}</button>
                             <div class="mt-1 max-w-[30rem] whitespace-normal text-[12px] font-semibold leading-5 text-rose-600">${dashboardEscapeHtml(item.attentionText || dashboardDisplayErrorText(item.errors))}</div>
                             <div class="mt-1.5 text-[11px] font-semibold text-slate-500">
-                                Last Activity: ${dashboardEscapeHtml(item.updatedAt || '-')}
+                                ${(item.latestFailedHistoryAt && item.latestFailedHistoryAt !== '-') ? 'Failed At' : 'Last Activity'}: ${dashboardEscapeHtml((item.latestFailedHistoryAt && item.latestFailedHistoryAt !== '-') ? item.latestFailedHistoryAt : (item.updatedAt || '-'))}
                             </div>
                         </td>
                         <td class="w-[28%]">
@@ -2542,7 +2336,7 @@
                     failedTarget.innerHTML = dashboardNativeTable(columns, rows.length ? rows : [`<tr><td colspan="3" class="px-6 py-8">${dashboardNativeEmpty(@json(__('No failed displays detected')))}</td></tr>`], 'h-[31rem]');
                     if (window.lucide) window.lucide.createIcons();
                 }).catch(() => { failedTarget.innerHTML = dashboardNativeEmpty(@json(__('Unable to load failed displays'))); });
-            }, 80);
+            }, 220);
         }
 
         if (latestTarget) {
@@ -2567,7 +2361,7 @@
                     </tr>`);
                     latestTarget.innerHTML = dashboardNativeTable(columns, rows.length ? rows : [`<tr><td colspan="2" class="px-6 py-8">${dashboardNativeEmpty(@json(__('No recent activity')))}</td></tr>`], 'h-[31rem]');
                 }).catch(() => { latestTarget.innerHTML = dashboardNativeEmpty(@json(__('Unable to load recent activity'))); });
-            }, 120);
+            }, 300);
         }
 
         if (dueTarget) {
@@ -2596,43 +2390,23 @@
                         <td class="whitespace-nowrap text-center text-xs font-semibold text-slate-700">${dashboardEscapeHtml(item.dueAt || '-')}</td>
                         <td class="text-center">${dashboardDueBadgeNative(item.dueColor)}</td>
                         <td class="text-center">
-                            <div class="flex items-center justify-center gap-2">
-                                <button
-                                    type="button"
-                                    data-dashboard-task-detail='${JSON.stringify({
-                                        id: Number(item.id || 0),
-                                        taskName: item.taskName || '-',
-                                        scheduleName: item.scheduleName || '-',
-                                        dueAt: item.dueAt || '-',
-                                        dueColor: item.dueColor || '',
-                                        displayId: Number(item.displayId || 0),
-                                        displayName: item.displayName || '-',
-                                        wsId: Number(item.wsId || 0),
-                                        wsName: item.wsName || '-',
-                                        wgId: Number(item.wgId || 0),
-                                        wgName: item.wgName || '-',
-                                        facId: Number(item.facId || 0),
-                                        facName: item.facName || '-'
-                                    }).replace(/'/g, '&#39;')}'
-                                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600 transition hover:bg-sky-100"
-                                    title="Open task detail"
-                                >
-                                    <i data-lucide="eye" class="h-4 w-4"></i>
-                                </button>
-                            </div>
+                            ${renderDashboardDueTaskActions(item)}
                         </td>
                     </tr>`);
                     dueTarget.innerHTML = dashboardNativeTable(columns, rows.length ? rows : [`<tr><td colspan="6" class="px-6 py-8">${dashboardNativeEmpty(@json(__('No due tasks found')))}</td></tr>`], 'max-h-[36rem]');
                     if (window.lucide) window.lucide.createIcons();
                 }).catch(() => { dueTarget.innerHTML = dashboardNativeEmpty(@json(__('Unable to load due tasks'))); });
-            }, 240);
+            }, 420);
         }
 
         window.dashboardGridsRendered = true;
     };
 
     function initDashboardPage() {
-        const gridRoot = document.getElementById('failed-displays-grid');
+        const gridRoot = document.getElementById('failed-displays-grid')
+            || document.getElementById('latest-performed-grid')
+            || document.getElementById('due-tasks-grid');
+
         if (!gridRoot || gridRoot.dataset.dashboardInitialized === '1') {
             return;
         }
@@ -2645,27 +2419,72 @@
         const overlay = document.getElementById('dashboard-stat-modal-overlay');
         const closeButton = document.getElementById('dashboard-stat-modal-close');
 
+        if (modal) {
+            dashboardEnsureSingletonRoot('dashboard-stat-modal', modal);
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+        }
+
         if (overlay) {
-            overlay.addEventListener('click', () => window.closeDashboardStatModal && window.closeDashboardStatModal());
+            dashboardAddListener(overlay, 'click', () => window.closeDashboardStatModal && window.closeDashboardStatModal());
         }
 
         if (closeButton) {
-            closeButton.addEventListener('click', () => window.closeDashboardStatModal && window.closeDashboardStatModal());
+            dashboardAddListener(closeButton, 'click', () => window.closeDashboardStatModal && window.closeDashboardStatModal());
         }
 
-        document.addEventListener('keydown', (event) => {
+        const dashboardEscapeHandler = (event) => {
             if (event.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
                 window.closeDashboardStatModal && window.closeDashboardStatModal();
             }
-        });
+        };
+        dashboardAddListener(document, 'keydown', dashboardEscapeHandler);
 
-        document.addEventListener('click', (event) => {
+        const dashboardClickHandler = (event) => {
+            const historyRescheduleButton = event.target.closest('[data-dashboard-history-reschedule]');
+            const investigateHistoryTrigger = event.target.closest('[data-dashboard-investigate-history-open]');
+            const investigateBackButton = event.target.closest('[data-dashboard-investigate-back]');
             const historyTrigger = event.target.closest('[data-dashboard-history-open]');
-            const toggle = event.target.closest('[data-dashboard-due-task-toggle]');
-            const editButton = event.target.closest('[data-dashboard-due-task-edit]');
             const deleteButton = event.target.closest('[data-dashboard-due-task-delete]');
             const investigateButton = event.target.closest('[data-dashboard-investigate]');
             const taskDetailButton = event.target.closest('[data-dashboard-task-detail]');
+
+            if (historyRescheduleButton) {
+                event.preventDefault();
+                event.stopPropagation();
+                try {
+                    const payload = JSON.parse(historyRescheduleButton.dataset.dashboardHistoryReschedule || '{}');
+                    if (payload && typeof window.openTaskEditorWithPayload === 'function') {
+                        window.openTaskEditorWithPayload(payload, {
+                            title: 'Reschedule Task',
+                            subtitle: `Create a new schedule for ${historyRescheduleButton.dataset.dashboardHistoryRescheduleTitle || 'this task'} on the same display.`,
+                        });
+                    }
+                } catch (error) {
+                    if (typeof window.notify === 'function') {
+                        window.notify('failed', 'Unable to open reschedule form.');
+                    }
+                }
+                return;
+            }
+
+            if (investigateBackButton) {
+                event.preventDefault();
+                event.stopPropagation();
+                dashboardInvestigate.backToOverview();
+                return;
+            }
+
+            if (investigateHistoryTrigger) {
+                event.preventDefault();
+                event.stopPropagation();
+                dashboardInvestigate.loadHistoryInline(
+                    Number(investigateHistoryTrigger.dataset.dashboardInvestigateHistoryOpen || 0),
+                    investigateHistoryTrigger.dataset.dashboardInvestigateHistoryName || dashboardHistorySummaryText.summaryTitle
+                );
+                return;
+            }
 
             if (historyTrigger) {
                 event.preventDefault();
@@ -2694,40 +2513,21 @@
                 return;
             }
 
-            if (toggle) {
-                const menu = document.querySelector(`[data-dashboard-due-task-menu="${toggle.dataset.dashboardDueTaskToggle}"]`);
-                const willOpen = menu?.classList.contains('hidden');
-                closeDashboardDueTaskMenus();
-                if (menu && willOpen) {
-                    menu.classList.remove('hidden');
-                }
-                return;
-            }
-
-            if (editButton) {
-                closeDashboardDueTaskMenus();
-                window.edit_task?.(null, editButton.dataset.dashboardDueTaskEdit);
-                return;
-            }
-
             if (deleteButton) {
-                closeDashboardDueTaskMenus();
                 window.openTaskDeleteConfirm?.({
                     onConfirm: () => deleteDashboardDueTask(deleteButton.dataset.dashboardDueTaskDelete)
                 });
                 return;
             }
+        };
+        dashboardAddListener(document, 'click', dashboardClickHandler);
 
-            if (!event.target.closest('[data-dashboard-due-task-menu]')) {
-                closeDashboardDueTaskMenus();
-            }
-        });
-
-        window.addEventListener('task-saved', () => {
+        const dashboardTaskSavedHandler = () => {
             if (window.currentDashboardStatModalKey === 'due_tasks') {
                 window.openDashboardStatModal('due_tasks');
             }
-        });
+        };
+        dashboardAddListener(window, 'task-saved', dashboardTaskSavedHandler);
 
         window.renderDashboardGrids();
     }
@@ -2738,10 +2538,34 @@
         initDashboardPage();
     }
 
-    window.dashboardPageMount = initDashboardPage;
+    window.dashboardPageMount = function () {
+        dashboardPageRuntime.active = true;
+        initDashboardPage();
+    };
     window.dashboardPageCleanup = function () {
+        dashboardPageRuntime.active = false;
         window.dashboardGridsRendered = false;
         window.currentDashboardStatModalKey = null;
+
+        dashboardPageRuntime.timeoutIds.forEach((id) => window.clearTimeout(id));
+        dashboardPageRuntime.timeoutIds.clear();
+
+        if (typeof window.cancelIdleCallback === 'function') {
+            dashboardPageRuntime.idleIds.forEach((id) => window.cancelIdleCallback(id));
+        }
+        dashboardPageRuntime.idleIds.clear();
+        dashboardPageRuntime.abortControllers.forEach((controller) => {
+            try {
+                controller.abort();
+            } catch (_) {}
+        });
+        dashboardPageRuntime.abortControllers.clear();
+        dashboardPageRuntime.listeners.forEach((cleanup) => {
+            try {
+                cleanup();
+            } catch (_) {}
+        });
+        dashboardPageRuntime.listeners = [];
 
         document.body.classList.remove('overflow-hidden', 'dashboard-task-modal-open');
 
@@ -2759,16 +2583,25 @@
         const historySummaryRoot = document.getElementById('dashboard-history-summary-modal');
         if (historySummaryRoot) {
             historySummaryRoot.classList.add('hidden');
+            if (historySummaryRoot.parentElement === document.body) {
+                historySummaryRoot.remove();
+            }
         }
 
         const investigateRoot = document.getElementById('dashboard-investigate-drawer');
         if (investigateRoot) {
             investigateRoot.classList.add('hidden');
+            if (investigateRoot.parentElement === document.body) {
+                investigateRoot.remove();
+            }
         }
 
         const taskRoot = document.getElementById('dashboard-task-detail-modal');
         if (taskRoot) {
             taskRoot.classList.add('hidden');
+            if (taskRoot.parentElement === document.body) {
+                taskRoot.remove();
+            }
         }
     };
     })();

@@ -245,10 +245,18 @@
                         <form id="settings-modal-form-application" class="space-y-4">
                             {{ csrf_field() }}
                             <div class="grid gap-4 lg:grid-cols-2">
+                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">{{ __('Language') }}</span><select id="Language" name="Language" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
+                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">{{ __('Database Synchronization Interval') }}</span><select id="DataBaseSynchronizationInterval" name="DataBaseSynchronizationInterval" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
+                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">{{ __('Reminder Interval') }}</span><select id="RemindMinutes" name="RemindMinutes" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select><span class="block text-xs leading-5 text-slate-500">{{ __('Applied on the workstation after the next client sync.') }}</span></label>
+                                <label class="space-y-2"><span class="text-sm font-medium text-slate-700">{{ __('Backup Period') }}</span><select id="backupPeriod" name="backupPeriod" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
                                 <label class="space-y-2"><span class="text-sm font-medium text-slate-700">{{ __('Units of Length') }}</span><select id="units" name="units" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
                                 <label class="space-y-2"><span class="text-sm font-medium text-slate-700">{{ __('Units of Luminance') }}</span><select id="LumUnits" name="LumUnits" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
                                 <label class="space-y-2"><span class="text-sm font-medium text-slate-700">Veiling Luminance</span><input id="AmbientLight" name="AmbientLight" type="text" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></label>
                                 <label class="space-y-2"><span class="text-sm font-medium text-slate-700">{{ __('Ambient Conditions Stable') }}</span><select id="AmbientStable" name="AmbientStable" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"></select></label>
+                            </div>
+                            <div class="grid gap-3 lg:grid-cols-2">
+                                <label class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-sm text-slate-700"><input id="UseScheduler" name="UseScheduler" type="checkbox" value="1" class="mt-1 h-4 w-4 rounded border-slate-300 text-sky-500"><span><span class="block font-medium text-slate-800">{{ __('Enable Scheduler') }}</span><span class="mt-1 block text-xs leading-5 text-slate-500">{{ __('Allow the client application to run and remind scheduled tasks.') }}</span></span></label>
+                                <label class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-sm text-slate-700"><input id="UpdateSoftwareAutomaticaly" name="UpdateSoftwareAutomaticaly" type="checkbox" value="1" class="mt-1 h-4 w-4 rounded border-slate-300 text-sky-500"><span><span class="block font-medium text-slate-800">{{ __('Update Software Automatically') }}</span><span class="mt-1 block text-xs leading-5 text-slate-500">{{ __('Let the workstation pull approved software updates automatically.') }}</span></span></label>
                             </div>
                             <div class="rounded-xl border border-slate-200 p-3.5">
                                 <label class="flex items-center gap-3 text-sm font-medium text-slate-700"><input id="PutDisplaysToEnergySaveMode" name="PutDisplaysToEnergySaveMode" type="checkbox" value="1" class="h-4 w-4 rounded border-slate-300 text-sky-500">{{ __('Enable Display Energy Save Mode') }}</label>
@@ -371,6 +379,7 @@ const tabDefinitions = {
 };
 
 const fieldIds = [
+    'Language','DataBaseSynchronizationInterval','RemindMinutes','backupPeriod','UseScheduler','UpdateSoftwareAutomaticaly',
     'units','LumUnits','AmbientLight','AmbientStable','PutDisplaysToEnergySaveMode','StartEnergySaveMode','EndEnergySaveMode',
     'CalibrationPresents','CalibrationType','Gamma','gamut_name','ColorTemperatureAdjustment','ColorTemperatureAdjustment_ext',
     'WhiteLevel_u_extcombo','WhiteLevel_u_input','WhiteLevel','BlackLevel','SetWhiteLevel','SetBlackLevel','CreateICCICMProfile',
@@ -397,7 +406,7 @@ const state = {
     closeTimer: null,
 };
 const byId = (id) => document.getElementById(id);
-const searchableSelectIds = ['units','LumUnits','AmbientStable','CalibrationPresents','CalibrationType','ColorTemperatureAdjustment','WhiteLevel_u_extcombo','UsedRegulation','UsedClassification','workgroup_id'];
+const searchableSelectIds = ['Language','DataBaseSynchronizationInterval','RemindMinutes','backupPeriod','units','LumUnits','AmbientStable','CalibrationPresents','CalibrationType','ColorTemperatureAdjustment','WhiteLevel_u_extcombo','UsedRegulation','UsedClassification','workgroup_id'];
 const searchableSelects = new Map();
 const normalizeSearch = (value) => String(value || '').trim().toLowerCase();
 const escapeHtml = (value) => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -632,6 +641,15 @@ const syncConditionalFields = () => {
     const energyWrap = byId('settings-energy-fields');
     if (energyWrap) energyWrap.classList.toggle('hidden', !byId('PutDisplaysToEnergySaveMode')?.checked);
 
+    const reminderSelect = byId('RemindMinutes');
+    const schedulerEnabled = !!byId('UseScheduler')?.checked;
+    if (reminderSelect) {
+        reminderSelect.disabled = !schedulerEnabled;
+        reminderSelect.classList.toggle('cursor-not-allowed', !schedulerEnabled);
+        reminderSelect.classList.toggle('bg-slate-100', !schedulerEnabled);
+        reminderSelect.classList.toggle('text-slate-400', !schedulerEnabled);
+    }
+
     const colorWrap = byId('settings-color-temp-custom-wrap');
     if (colorWrap) colorWrap.classList.toggle('hidden', byId('ColorTemperatureAdjustment')?.value !== '20');
 
@@ -827,7 +845,7 @@ const resetForms = () => {
         setInputValue(fieldId, '');
         applyMixedState(fieldId, false);
     });
-    ['units','LumUnits','AmbientStable','CalibrationPresents','CalibrationType','ColorTemperatureAdjustment','WhiteLevel_u_extcombo','UsedRegulation','UsedClassification','workgroup_id'].forEach((fieldId) => populateSelect(fieldId, fieldId === 'workgroup_id' ? [] : optionSource(fieldId, null), '', false));
+    ['Language','DataBaseSynchronizationInterval','RemindMinutes','backupPeriod','units','LumUnits','AmbientStable','CalibrationPresents','CalibrationType','ColorTemperatureAdjustment','WhiteLevel_u_extcombo','UsedRegulation','UsedClassification','workgroup_id'].forEach((fieldId) => populateSelect(fieldId, fieldId === 'workgroup_id' || fieldId === 'UsedClassification' ? [] : optionSource(fieldId, null), '', false));
     syncConditionalFields();
 };
 
@@ -1004,6 +1022,10 @@ const applyPayloadToFields = async () => {
     const options = payload.options || {};
 
     const resolvedOptions = {
+        Language: optionSource('Language', options.Language),
+        DataBaseSynchronizationInterval: optionSource('DataBaseSynchronizationInterval', options.DataBaseSynchronizationInterval),
+        RemindMinutes: optionSource('RemindMinutes', options.RemindMinutes),
+        backupPeriod: optionSource('backupPeriod', options.backupPeriod),
         units: optionSource('units', options.units),
         LumUnits: optionSource('LumUnits', options.LumUnits),
         AmbientStable: optionSource('AmbientStable', options.AmbientStable),
@@ -1015,6 +1037,10 @@ const applyPayloadToFields = async () => {
         workgroup_id: optionSource('workgroup_id', options.workgroup_id),
     };
 
+    populateSelect('Language', resolvedOptions.Language, data.Language, isMixed('Language'), 'Select language');
+    populateSelect('DataBaseSynchronizationInterval', resolvedOptions.DataBaseSynchronizationInterval, data.DataBaseSynchronizationInterval, isMixed('DataBaseSynchronizationInterval'), 'Select sync interval');
+    populateSelect('RemindMinutes', resolvedOptions.RemindMinutes, data.RemindMinutes, isMixed('RemindMinutes'), 'Select reminder interval');
+    populateSelect('backupPeriod', resolvedOptions.backupPeriod, data.backupPeriod, isMixed('backupPeriod'), 'Select backup period');
     populateSelect('units', resolvedOptions.units, data.units, isMixed('units'), 'Select length unit');
     populateSelect('LumUnits', resolvedOptions.LumUnits, data.LumUnits, isMixed('LumUnits'), 'Select luminance unit');
     populateSelect('AmbientStable', resolvedOptions.AmbientStable, data.AmbientStable, isMixed('AmbientStable'), 'Select a value');
@@ -1028,7 +1054,7 @@ const applyPayloadToFields = async () => {
     if (moveSelect) moveSelect.disabled = !moveEnabled();
 
     fieldIds.forEach((fieldId) => {
-        if (['units','LumUnits','AmbientStable','CalibrationPresents','CalibrationType','ColorTemperatureAdjustment','WhiteLevel_u_extcombo','UsedRegulation','UsedClassification','workgroup_id'].includes(fieldId)) return;
+        if (['Language','DataBaseSynchronizationInterval','RemindMinutes','backupPeriod','units','LumUnits','AmbientStable','CalibrationPresents','CalibrationType','ColorTemperatureAdjustment','WhiteLevel_u_extcombo','UsedRegulation','UsedClassification','workgroup_id'].includes(fieldId)) return;
         setInputValue(fieldId, data[fieldId]);
     });
 
@@ -1108,11 +1134,16 @@ const saveCurrentTab = async () => {
     setStatus('Saving changes...', 'neutral');
 
     const saveTargets = saveScopes();
+    const checkboxFieldsByTab = {
+        application: ['PutDisplaysToEnergySaveMode', 'UseScheduler', 'UpdateSoftwareAutomaticaly'],
+        calibration: ['CreateICCICMProfile'],
+        qa: ['AutoDailyTests'],
+    };
     for (const scope of saveTargets) {
         const formData = new FormData(form);
-        ['PutDisplaysToEnergySaveMode','CreateICCICMProfile','AutoDailyTests'].forEach((fieldId) => {
+        (checkboxFieldsByTab[state.modalTab] || []).forEach((fieldId) => {
             const field = byId(fieldId);
-            if (field && !field.checked) formData.delete(fieldId);
+            if (field) formData.set(fieldId, field.checked ? '1' : '0');
         });
 
         const response = await fetch(`/app-settings/save/${actionMap[state.modalTab]}/${scope}`, {

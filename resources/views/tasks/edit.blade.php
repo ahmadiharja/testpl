@@ -9,6 +9,27 @@
         <input type="hidden" name="tasktype" value="{{ $task->type ?: 'cal' }}">
         <input type="hidden" name="testpattern" value="{{ $task->testpattern ?: 'SMPTE' }}">
     @endif
+    @if($rescheduleLite ?? false)
+        <input type="hidden" name="starttime" value="{{ $task->starttime ?: date('H:i') }}">
+        <input type="hidden" name="startdate" value="{{ $task->startdatedisplay ?: date('Y-m-d') }}">
+        <input type="hidden" name="dailytask" value="{{ ($task->nthflag ?? null) === 0 && !empty($task->everynday) ? 3 : (($task->daysofweek ?? '') === '1;2;3;4;5' && ($task->nthflag ?? null) == 1 ? 2 : 1) }}">
+        <input type="hidden" name="dayinmonth" value="{{ $task->everynday ?: 2 }}">
+        <input type="hidden" name="week" value="{{ $task->everynweek ?: 1 }}">
+        <input type="hidden" name="rdayinmonth" value="{{ ($task->nthflag ?? null) === 0 && !empty($task->weekofmonth) ? 2 : 1 }}">
+        <input type="hidden" name="dayofmonth" value="{{ $task->dayofmonth ?: 1 }}">
+        <input type="hidden" name="week_of_month" value="{{ $task->weekofmonth ?: 1 }}">
+        <input type="hidden" name="dayofweek" value="{{ !empty($task->daysofweek) ? explode(';', $task->daysofweek)[0] : 1 }}">
+        @php
+            $rescheduleMonths = !empty($task->monthes) ? explode(';', $task->monthes) : ['1'];
+            $rescheduleWeekdays = !empty($task->daysofweek) ? explode(';', $task->daysofweek) : ['1'];
+        @endphp
+        @foreach($rescheduleMonths as $monthValue)
+            <input type="hidden" name="monthly[]" value="{{ $monthValue }}">
+        @endforeach
+        @foreach($rescheduleWeekdays as $weekdayValue)
+            <input type="hidden" name="weekdays[]" value="{{ $weekdayValue }}">
+        @endforeach
+    @endif
 
     <div class="grid gap-4 md:grid-cols-2">
         @unless($lockTaskType ?? false)
@@ -23,6 +44,13 @@
             {{ Form::select('scheduletype', $scheduletype, $task->schtype, ['class' => 'h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 md:h-11 md:rounded-xl', 'onchange' => 'schedule_type(this)','id' =>'scheduletype', 'placeholder' => __('-- Select Schedule Type --')]) }}
         </label>
 
+        @if($rescheduleLite ?? false)
+            <div class="md:col-span-2 rounded-[1.5rem] border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-800">
+                {{ __('This quick reschedule keeps the same test and display. Choose the schedule type and save.') }}
+            </div>
+        @endif
+
+        @unless($rescheduleLite ?? false)
         @unless($lockTaskType ?? false)
             <label class="block md:col-span-2" id="testpaternId" style="display:none;">
                 <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('Test Pattern') }}</span>
@@ -31,11 +59,8 @@
         @endunless
 
         <div class="date-time-fields md:col-span-2 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 md:rounded-2xl">
-            <label class="flex items-start gap-3 text-sm text-slate-700">
-                <input class="mt-1 h-4 w-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500/30" type="checkbox" id="formCheck-3" name="disabletask" @if ($task->disabled == 1) checked @endif>
-                <span>{{ __('Disable Task') }}</span>
-            </label>
-            <p class="mt-3 text-sm text-slate-500">{{ __('Specify the time and date pattern when the task will be performed.') }}</p>
+            <input type="hidden" name="disabletask" value="{{ (int) ($task->disabled ?? 0) }}">
+            <p class="text-sm text-slate-500">{{ __('Specify the time and date pattern when the task will be performed.') }}</p>
         </div>
 
         <label class="block date-time-fields">
@@ -45,7 +70,7 @@
 
         <label class="block date-time-fields date-field">
             <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('Start Date') }}</span>
-            {{ Form::date('startdate', $task->startdatedisplay, ['class' => 'h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 md:h-11 md:rounded-xl']) }}
+            {{ Form::date('startdate', $task->startdatedisplay, ['min' => $minStartDate ?? date('Y-m-d'), 'class' => 'h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 md:h-11 md:rounded-xl']) }}
         </label>
 
         <div class="md:col-span-2" id="perform_task_box" style="display:none;">
@@ -110,6 +135,7 @@
             <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('Select Weekdays') }}</span>
             {{ Form::select('weekdays[]', $dayofweek, $task->daysofweekdisplay, ['class' => 'min-h-[9rem] w-full rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 md:rounded-2xl', 'multiple' => 'multiple', 'id' => 'weekdays']) }}
         </label>
+        @endunless
     </div>
 
     <div class="flex justify-end gap-3 border-t border-slate-200 pt-5">
